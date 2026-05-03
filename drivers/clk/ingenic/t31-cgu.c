@@ -37,8 +37,19 @@
 #define CGU_REG_CIMCDR		0x7c
 #define CGU_REG_ISPCDR		0x80
 #define CGU_REG_MSC1CDR		0xa4
+#define CGU_REG_I2STCDR		0x70
+#define CGU_REG_I2SRCDR		0x84
 #define CGU_REG_VPLL		0xe0
 #define CGU_REG_MACPHYC		0xe8
+
+/* Bits within the I2S{T,R}CDR registers */
+#define I2SCDR_PCS_SHIFT	30
+#define I2SCDR_PCS_MASK		(0x3 << I2SCDR_PCS_SHIFT)
+#define I2SCDR_CE_BIT		29
+#define I2SCDR_M_SHIFT		20
+#define I2SCDR_M_MASK		(0x1ff << I2SCDR_M_SHIFT)
+#define I2SCDR_N_SHIFT		0
+#define I2SCDR_N_MASK		(0xfffff << I2SCDR_N_SHIFT)
 
 /* bits within the OPCR register */
 #define OPCR_GATE_USBPHYCLK	BIT(23)
@@ -80,6 +91,160 @@ static const struct clk_ops t31_otg_phy_ops = {
 	.enable		= t31_usb_phy_enable,
 	.disable	= t31_usb_phy_disable,
 	.is_enabled	= t31_usb_phy_is_enabled,
+};
+
+/*
+ * I2S CDR fractional divider.
+ *
+ * The CDR register layout is:
+ *   bits 31:30 - parent select (mux: SCLKA/MPLL/VPLL)
+ *   bit  29    - CE (clock enable, exposed as a separate gate clock)
+ *   bits 28:20 - M numerator (9 bits)
+ *   bits 19:0  - N denominator (20 bits)
+ *
+ * Output rate = parent_rate * M / N. We brute-force search for the best
+ * (M, N) pair when set_rate is called.
+ *
+ * The i2s_parents indices below match each entry's `parents` table in the
+ * t31_cgu_clocks[] array.
+ */
+
+#define I2S_M_MAX		((1 << 9) - 1)
+#define I2S_N_MAX		((1 << 20) - 1)
+
+struct t31_i2s_div {
+	u32 reg;
+	u8 num_parents;
+	u8 parent_shift;
+	u8 parent_bits;
+};
+
+static const struct t31_i2s_div t31_i2s_div_t = {
+	.reg = CGU_REG_I2STCDR, .num_parents = 3,
+	.parent_shift = I2SCDR_PCS_SHIFT, .parent_bits = 2,
+};
+
+static const struct t31_i2s_div t31_i2s_div_r = {
+	.reg = CGU_REG_I2SRCDR, .num_parents = 3,
+	.parent_shift = I2SCDR_PCS_SHIFT, .parent_bits = 2,
+};
+
+static void t31_i2s_calc_mn(unsigned long parent_rate, unsigned long target,
+			    unsigned int *out_m, unsigned int *out_n)
+{
+	unsigned long best_err = ULONG_MAX;
+	unsigned int best_m = 1, best_n = 1;
+	unsigned int m, n;
+
+	if (!target || !parent_rate) {
+		*out_m = 1;
+		*out_n = 1;
+		return;
+	}
+
+	/* try each M from large to small; for each, derive nearest N */
+	for (m = I2S_M_MAX; m >= 1; m--) {
+		u64 numer = (u64)parent_rate * m;
+		u64 nq;
+		unsigned long got, err;
+
+		nq = div_u64(numer + target / 2, target);
+		if (nq < 1 || nq > I2S_N_MAX)
+			continue;
+
+		n = (unsigned int)nq;
+		got = div_u64((u64)parent_rate * m, n);
+		err = (got > target) ? (got - target) : (target - got);
+
+		if (err < best_err) {
+			best_err = err;
+			best_m = m;
+			best_n = n;
+			if (err == 0)
+				break;
+		}
+	}
+
+	*out_m = best_m;
+	*out_n = best_n;
+}
+
+static unsigned long t31_i2s_div_recalc_rate(struct clk_hw *hw,
+					     unsigned long parent_rate)
+{
+	const struct t31_i2s_div *info;
+	u32 reg;
+	unsigned int m, n;
+	const char *name = clk_hw_get_name(hw);
+
+	info = strstr(name, "div_i2sr") ? &t31_i2s_div_r : &t31_i2s_div_t;
+	reg = readl(cgu->base + info->reg);
+	m = (reg & I2SCDR_M_MASK) >> I2SCDR_M_SHIFT;
+	n = (reg & I2SCDR_N_MASK) >> I2SCDR_N_SHIFT;
+	if (!n)
+		return 0;
+	return div_u64((u64)parent_rate * m, n);
+}
+
+static int t31_i2s_div_determine_rate(struct clk_hw *hw,
+				      struct clk_rate_request *req)
+{
+	unsigned int m, n;
+
+	t31_i2s_calc_mn(req->best_parent_rate, req->rate, &m, &n);
+	req->rate = div_u64((u64)req->best_parent_rate * m, n);
+	return 0;
+}
+
+static int t31_i2s_div_set_rate(struct clk_hw *hw, unsigned long rate,
+				unsigned long parent_rate)
+{
+	const struct t31_i2s_div *info;
+	const char *name = clk_hw_get_name(hw);
+	unsigned int m, n;
+	u32 val;
+
+	info = strstr(name, "div_i2sr") ? &t31_i2s_div_r : &t31_i2s_div_t;
+	t31_i2s_calc_mn(parent_rate, rate, &m, &n);
+
+	val = readl(cgu->base + info->reg);
+	val &= ~(I2SCDR_M_MASK | I2SCDR_N_MASK);
+	val |= (m << I2SCDR_M_SHIFT) | (n << I2SCDR_N_SHIFT);
+	writel(val, cgu->base + info->reg);
+	return 0;
+}
+
+static u8 t31_i2s_div_get_parent(struct clk_hw *hw)
+{
+	const struct t31_i2s_div *info;
+	const char *name = clk_hw_get_name(hw);
+	u32 reg;
+
+	info = strstr(name, "div_i2sr") ? &t31_i2s_div_r : &t31_i2s_div_t;
+	reg = readl(cgu->base + info->reg);
+	return (reg & I2SCDR_PCS_MASK) >> I2SCDR_PCS_SHIFT;
+}
+
+static int t31_i2s_div_set_parent(struct clk_hw *hw, u8 index)
+{
+	const struct t31_i2s_div *info;
+	const char *name = clk_hw_get_name(hw);
+	u32 val;
+
+	info = strstr(name, "div_i2sr") ? &t31_i2s_div_r : &t31_i2s_div_t;
+	val = readl(cgu->base + info->reg);
+	val &= ~I2SCDR_PCS_MASK;
+	val |= (u32)index << I2SCDR_PCS_SHIFT;
+	writel(val, cgu->base + info->reg);
+	return 0;
+}
+
+static const struct clk_ops t31_i2s_div_ops = {
+	.recalc_rate	= t31_i2s_div_recalc_rate,
+	.determine_rate	= t31_i2s_div_determine_rate,
+	.set_rate	= t31_i2s_div_set_rate,
+	.get_parent	= t31_i2s_div_get_parent,
+	.set_parent	= t31_i2s_div_set_parent,
 };
 
 /*
@@ -509,6 +674,34 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 		"usb_phy", CGU_CLK_GATE,
 		.parents = { T31_CLK_PCLK, -1, -1, -1 },
 		.gate = { CGU_REG_OPCR, 23, .clear_to_gate = true },
+	},
+
+	/* I2S TX/RX fractional dividers (custom: M/N ratio) */
+
+	[T31_CLK_DIV_I2ST] = {
+		"div_i2st", CGU_CLK_CUSTOM,
+		.parents = { T31_CLK_SCLKA, T31_CLK_MPLL, T31_CLK_VPLL, -1 },
+		.custom = { &t31_i2s_div_ops },
+	},
+
+	[T31_CLK_DIV_I2SR] = {
+		"div_i2sr", CGU_CLK_CUSTOM,
+		.parents = { T31_CLK_SCLKA, T31_CLK_MPLL, T31_CLK_VPLL, -1 },
+		.custom = { &t31_i2s_div_ops },
+	},
+
+	/* CE (clock-enable) gates inside the CDR registers, bit 29 */
+
+	[T31_CLK_CE_I2ST] = {
+		"ce_i2st", CGU_CLK_GATE,
+		.parents = { T31_CLK_DIV_I2ST, -1, -1, -1 },
+		.gate = { CGU_REG_I2STCDR, I2SCDR_CE_BIT },
+	},
+
+	[T31_CLK_CE_I2SR] = {
+		"ce_i2sr", CGU_CLK_GATE,
+		.parents = { T31_CLK_DIV_I2SR, -1, -1, -1 },
+		.gate = { CGU_REG_I2SRCDR, I2SCDR_CE_BIT },
 	},
 };
 

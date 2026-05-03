@@ -356,6 +356,49 @@
 		status = "disabled";
 	};
 
+	aic: audio-controller@10020000 {
+		compatible = "ingenic,t31-aic";
+		reg = <0x10020000 0x40>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <1>;
+
+		clocks = <&cgu T31_CLK_AIC>,
+			 <&cgu T31_CLK_DIV_I2ST>,
+			 <&cgu T31_CLK_DIV_I2SR>,
+			 <&cgu T31_CLK_CE_I2ST>,
+			 <&cgu T31_CLK_CE_I2SR>;
+		clock-names = "gate_aic", "div_i2st", "div_i2sr",
+			      "ce_i2st", "ce_i2sr";
+
+		dmas = <&pdma 0x07 0xffffffff>,
+		       <&pdma 0x06 0xffffffff>,
+		       <&pdma 0x05 0xffffffff>;
+		dma-names = "rx", "tx", "aec";
+
+		status = "disabled";
+	};
+
+	codec: audio-codec@10021000 {
+		compatible = "ingenic,t31-codec";
+		reg = <0x10021000 0x130>;
+
+		status = "disabled";
+	};
+
+	dmic: audio-controller@10034000 {
+		compatible = "ingenic,t31-dmic";
+		reg = <0x10034000 0x40>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <11>;
+
+		dmas = <&pdma 0x0d 0xffffffff>;
+		dma-names = "rx";
+
+		status = "disabled";
+	};
+
 	mac: ethernet@134b0000 {
 		compatible = "ingenic,t31-mac", "snps,dwmac";
 		reg = <0x134b0000 0x2000>;

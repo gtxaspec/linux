@@ -66,5 +66,9 @@
 #define T31_CLK_EXCLK_DIV512	51
 #define T31_CLK_RTC		52
 #define T31_CLK_USBPHY		53
+#define T31_CLK_DIV_I2ST	54
+#define T31_CLK_DIV_I2SR	55
+#define T31_CLK_CE_I2ST		56
+#define T31_CLK_CE_I2SR		57
 
 #endif /* __DT_BINDINGS_CLOCK_T31_CGU_H__ */
