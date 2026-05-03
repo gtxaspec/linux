@@ -131,6 +131,14 @@
 	pinctrl-0 = <&pins_mac>;
 };
 
+&aic {
+	status = "okay";
+};
+
+&codec {
+	status = "okay";
+};
+
 &mdio {
 	eth_phy: ethernet-phy@0 {
 		reg = <0>;
