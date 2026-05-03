@@ -31,6 +31,9 @@ properties:
       - items:
           - const: ingenic,jz4725b-intc
           - const: ingenic,jz4740-intc
+      - items:
+          - const: ingenic,t31-intc
+          - const: ingenic,jz4780-intc
 
   "#interrupt-cells":
     const: 1
