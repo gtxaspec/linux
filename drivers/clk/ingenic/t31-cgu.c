@@ -695,13 +695,14 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 	[T31_CLK_CE_I2ST] = {
 		"ce_i2st", CGU_CLK_GATE,
 		.parents = { T31_CLK_DIV_I2ST, -1, -1, -1 },
-		.gate = { CGU_REG_I2STCDR, I2SCDR_CE_BIT },
+		/* CE bit 29 is "set to enable", opposite of CLKGR semantics */
+		.gate = { CGU_REG_I2STCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
 	},
 
 	[T31_CLK_CE_I2SR] = {
 		"ce_i2sr", CGU_CLK_GATE,
 		.parents = { T31_CLK_DIV_I2SR, -1, -1, -1 },
-		.gate = { CGU_REG_I2SRCDR, I2SCDR_CE_BIT },
+		.gate = { CGU_REG_I2SRCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
 	},
 };
 
