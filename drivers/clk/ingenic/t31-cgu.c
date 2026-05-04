@@ -207,6 +207,10 @@ static int t31_i2s_div_set_rate(struct clk_hw *hw, unsigned long rate,
 	info = strstr(name, "div_i2sr") ? &t31_i2s_div_r : &t31_i2s_div_t;
 	t31_i2s_calc_mn(parent_rate, rate, &m, &n);
 
+	pr_info("t31-cgu: %s set_rate target=%lu parent=%lu -> M=%u N=%u rate=%llu\n",
+	         name, rate, parent_rate, m, n,
+	         div_u64((u64)parent_rate * m, n));
+
 	val = readl(cgu->base + info->reg);
 	val &= ~(I2SCDR_M_MASK | I2SCDR_N_MASK);
 	val |= (m << I2SCDR_M_SHIFT) | (n << I2SCDR_N_SHIFT);
@@ -254,13 +258,14 @@ static const struct clk_ops t31_i2s_div_ops = {
  * (bits 10:8). The effective output divider is OD1 * OD0. In practice,
  * the bootloader always sets OD0 = 1, so we model only OD1 here.
  *
- * The register value maps directly to the divider value (1-based):
- * The table maps divider index to register value. The CGU framework
- * searches for the register value in the table; the matching index
- * is the divider. Index 0 is unused (divide-by-0 is invalid).
+ * The OD register value maps directly to the divider value: reg=N
+ * means divider=N (for N >= 1). The CGU framework looks up the
+ * register value in this table to find an index, then adds 1 to get
+ * the effective divider. So encoding[i] = i+1 yields divider = i+1
+ * for register value i+1.
  */
-static const s8 t31_pll_od_encoding[8] = {
-	-1, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+static const s8 t31_pll_od_encoding[7] = {
+	0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
 };
 
 static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
@@ -286,7 +291,7 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 			.n_offset = 0,
 			.od_shift = 11,
 			.od_bits = 3,
-			.od_max = 8,
+			.od_max = 7,
 			.od_encoding = t31_pll_od_encoding,
 			.bypass_reg = CGU_REG_APLL,
 			.bypass_bit = -1,
@@ -309,7 +314,7 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 			.n_offset = 0,
 			.od_shift = 11,
 			.od_bits = 3,
-			.od_max = 8,
+			.od_max = 7,
 			.od_encoding = t31_pll_od_encoding,
 			.bypass_reg = CGU_REG_MPLL,
 			.bypass_bit = -1,
@@ -332,7 +337,7 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 			.n_offset = 0,
 			.od_shift = 11,
 			.od_bits = 3,
-			.od_max = 8,
+			.od_max = 7,
 			.od_encoding = t31_pll_od_encoding,
 			.bypass_reg = CGU_REG_VPLL,
 			.bypass_bit = -1,
