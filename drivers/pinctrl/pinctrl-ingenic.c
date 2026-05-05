@@ -2853,6 +2853,13 @@ static int t31_pwm_pwm1_pins[] = { 0x52, };
 static int t31_pwm_pwm2_pins[] = { 0x53, };
 static int t31_pwm_pwm3_pins[] = { 0x54, };
 
+/* CIM (camera) MCLK pin - sensor master clock output, needed for both
+ * MIPI and DVP cameras. PA15 = DVP_MCLK at FUNC0 per T31X pinout.
+ * DVP data/sync pins (PA6..PA11, PA14, PA16, PA17) are not added here
+ * since this board uses MIPI; the MIPI lanes (PA0..PA5) are analog IOs
+ * routed directly to the MIPI CSI PHY and don't need pinctrl muxing. */
+static int t31_cim_mclk_pins[]  = { 0x0f, };                 /* PA15 */
+
 static const struct group_desc t31_groups[] = {
 	INGENIC_PIN_GROUP("uart0-data-b", t31_uart0_data_b, 0),
 	INGENIC_PIN_GROUP("uart0-data-c", t31_uart0_data_c, 1),
@@ -2877,6 +2884,7 @@ static const struct group_desc t31_groups[] = {
 	INGENIC_PIN_GROUP("pwm1", t31_pwm_pwm1, 0),
 	INGENIC_PIN_GROUP("pwm2", t31_pwm_pwm2, 0),
 	INGENIC_PIN_GROUP("pwm3", t31_pwm_pwm3, 0),
+	INGENIC_PIN_GROUP("cim-mclk", t31_cim_mclk, 0),
 };
 
 static const char *t31_uart0_groups[] = {
@@ -2898,6 +2906,7 @@ static const char *t31_pwm0_groups[] = { "pwm0", };
 static const char *t31_pwm1_groups[] = { "pwm1", };
 static const char *t31_pwm2_groups[] = { "pwm2", };
 static const char *t31_pwm3_groups[] = { "pwm3", };
+static const char *t31_cim_groups[] = { "cim-mclk", };
 
 static const struct pinfunction t31_functions[] = {
 	INGENIC_PIN_FUNCTION("uart0", t31_uart0),
@@ -2913,6 +2922,7 @@ static const struct pinfunction t31_functions[] = {
 	INGENIC_PIN_FUNCTION("pwm1", t31_pwm1),
 	INGENIC_PIN_FUNCTION("pwm2", t31_pwm2),
 	INGENIC_PIN_FUNCTION("pwm3", t31_pwm3),
+	INGENIC_PIN_FUNCTION("cim", t31_cim),
 };
 
 static const u32 t31_pull_ups[3] = {
@@ -4526,6 +4536,7 @@ static const struct of_device_id ingenic_gpio_of_matches[] __initconst = {
 	{ .compatible = "ingenic,x1600-gpio" },
 	{ .compatible = "ingenic,x1830-gpio" },
 	{ .compatible = "ingenic,x2000-gpio" },
+	{ .compatible = "ingenic,t31-gpio" },
 	{ .compatible = "ingenic,x2100-gpio" },
 	{},
 };
