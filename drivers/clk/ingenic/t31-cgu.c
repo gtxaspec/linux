@@ -466,7 +466,10 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 		.parents = { T31_CLK_SCLKA, T31_CLK_MPLL,
 			     T31_CLK_VPLL, -1 },
 		.mux = { CGU_REG_ISPCDR, 30, 2 },
-		.div = { CGU_REG_ISPCDR, 0, 1, 4, -1, -1, -1 },
+		/* ISPCDR uses the same control bit layout as CIMCDR:
+		 * bit 29=CE, bit 28=BUSY, bit 27=STOP.  Field order is
+		 * ce_bit, busy_bit, stop_bit. */
+		.div = { CGU_REG_ISPCDR, 0, 1, 4, 29, 28, 27 },
 		.gate = { CGU_REG_CLKGR0, 23 },
 	},
 
@@ -475,7 +478,15 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 		.parents = { T31_CLK_SCLKA, T31_CLK_MPLL,
 			     T31_CLK_VPLL, -1 },
 		.mux = { CGU_REG_CIMCDR, 30, 2 },
-		.div = { CGU_REG_CIMCDR, 0, 1, 8, -1, -1, -1 },
+		/* CIMCDR control bits per BSP DIV() macro:
+		 *   bit 29 = CE (write 1 to apply new divider)
+		 *   bit 28 = BUSY (read-only, set while divider updates)
+		 *   bit 27 = STOP (1 = clock gated off internally)
+		 * Without these the framework never clears STOP, so the
+		 * clock stays off in hardware even when enable_count > 0.
+		 * Mainline cgu_div_info field order is ce_bit, busy_bit,
+		 * stop_bit. */
+		.div = { CGU_REG_CIMCDR, 0, 1, 8, 29, 28, 27 },
 	},
 
 	[T31_CLK_RSA] = {
