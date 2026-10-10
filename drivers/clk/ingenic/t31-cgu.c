@@ -494,7 +494,7 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 		.parents = { T31_CLK_SCLKA, T31_CLK_MPLL,
 			     T31_CLK_VPLL, -1 },
 		.mux = { CGU_REG_RSACDR, 30, 2 },
-		.div = { CGU_REG_RSACDR, 0, 1, 4, -1, -1, -1 },
+		.div = { CGU_REG_RSACDR, 0, 1, 4, 29, 28, 27 },
 		.gate = { CGU_REG_CLKGR0, 27 },
 	},
 
@@ -503,7 +503,7 @@ static const struct ingenic_cgu_clk_info t31_cgu_clocks[] = {
 		.parents = { T31_CLK_SCLKA, T31_CLK_MPLL,
 			     T31_CLK_VPLL, -1 },
 		.mux = { CGU_REG_EL150CDR, 30, 2 },
-		.div = { CGU_REG_EL150CDR, 0, 1, 4, -1, -1, -1 },
+		.div = { CGU_REG_EL150CDR, 0, 1, 4, 29, 28, 27 },
 		.gate = { CGU_REG_CLKGR1, 0 },
 	},
 
