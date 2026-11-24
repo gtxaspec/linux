@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0
 /dts-v1/;
 
+#include <dt-bindings/gpio/gpio.h>
+
 #include "t23.dtsi"
 
 / {
@@ -204,4 +206,14 @@
 		function = "i2c0";
 		groups = "i2c0-data";
 	};
+};
+
+&aic {
+	status = "okay";
+};
+
+&codec {
+	/* Galayou Y4: thingino.json gpio.speaker {"pin": 39, "active_low": true} = PB7 */
+	spk-gpios = <&gpb 7 GPIO_ACTIVE_LOW>;
+	status = "okay";
 };
