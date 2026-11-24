@@ -95,6 +95,16 @@ config INGENIC_CGU_T20
 
 	  If building for a T20 or T10 SoC, you want to say Y here.
 
+config INGENIC_CGU_T21
+	bool "Ingenic T21 CGU driver"
+	default MACH_T21
+	select INGENIC_CGU_COMMON
+	help
+	  Support the clocks provided by the CGU hardware on Ingenic T21
+	  and compatible SoCs.
+
+	  If building for a T21 SoC, you want to say Y here.
+
 config INGENIC_CGU_T31
 	bool "Ingenic T31 CGU driver"
 	default MACH_T31
