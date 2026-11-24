@@ -12,14 +12,25 @@ maintainers:
 description:
   The Ethernet Media Access Controller in Ingenic SoCs.
 
+allOf:
+  - $ref: snps,dwmac.yaml#
+
 properties:
   compatible:
-    enum:
-      - ingenic,jz4775-mac
-      - ingenic,x1000-mac
-      - ingenic,x1600-mac
-      - ingenic,x1830-mac
-      - ingenic,x2000-mac
+    oneOf:
+      - enum:
+          - ingenic,jz4775-mac
+          - ingenic,x1000-mac
+          - ingenic,x1600-mac
+          - ingenic,x1830-mac
+          - ingenic,x2000-mac
+      - items:
+          - const: ingenic,t32-mac
+          - const: snps,dwmac
+      - items:
+          - const: ingenic,t33-mac
+          - const: ingenic,t32-mac
+          - const: snps,dwmac
 
   reg:
     maxItems: 1
@@ -55,7 +66,7 @@ required:
   - clock-names
   - mode-reg
 
-additionalProperties: false
+unevaluatedProperties: false
 
 examples:
   - |
@@ -73,5 +84,7 @@ examples:
         clock-names = "stmmaceth";
 
         mode-reg = <&mac_phy_ctrl>;
+
+        phy-mode = "rmii";
     };
 ...
