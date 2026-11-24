@@ -1,0 +1,166 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+#include "t20.dtsi"
+
+/ {
+	compatible = "thingino,t20", "ingenic,t20";
+	model = "Thingino T20 Wyze Cam v2";
+
+	aliases {
+		serial1 = &uart1;
+	};
+
+	chosen {
+		stdout-path = "serial1:115200n8";
+	};
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x8000000>;
+	};
+
+	/* PB16, low = on; the Wi-Fi module shares it */
+	vmmc: regulator-vmmc {
+		compatible = "regulator-fixed";
+		regulator-name = "vmmc";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpb 16 GPIO_ACTIVE_LOW>;
+		startup-delay-us = <10000>;
+	};
+};
+
+&exclk {
+	clock-frequency = <24000000>;
+};
+
+&uart1 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_uart1>;
+};
+
+&tcu {
+	/* 750 kHz for the system timer and clocksource; SYSOST is sched_clock */
+	assigned-clocks = <&tcu TCU_CLK_TIMER0>, <&tcu TCU_CLK_TIMER1>;
+	assigned-clock-rates = <750000>, <750000>;
+};
+
+&sfc {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_sfc>;
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <25000000>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "boot";
+				reg = <0x0 0x40000>;
+				read-only;
+			};
+
+			partition@40000 {
+				label = "env";
+				reg = <0x40000 0x10000>;
+			};
+
+			partition@50000 {
+				label = "kernel";
+				reg = <0x50000 0x200000>;
+			};
+
+			partition@250000 {
+				label = "rootfs";
+				reg = <0x250000 0x500000>;
+			};
+
+			partition@750000 {
+				label = "rootfs_data";
+				reg = <0x750000 0xb0000>;
+			};
+
+			partition@0_all {
+				label = "all";
+				reg = <0x0 0x800000>;
+			};
+		};
+	};
+};
+
+&msc0 {
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <24000000>;
+	/* Wyze Cam v2: PB11, low with a card in */
+	cd-gpios = <&gpb 11 GPIO_ACTIVE_LOW>;
+	vmmc-supply = <&vmmc>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc0>;
+};
+
+/* The SDIO Wi-Fi sits on MSC1 (PC2 to PC7); enable it with its power sequence */
+&msc1 {
+	status = "disabled";
+	bus-width = <4>;
+	non-removable;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc1>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_i2c0>;
+};
+
+&efuse {
+	status = "okay";
+};
+
+&pinctrl {
+	pins_uart1: uart1 {
+		function = "uart1";
+		groups = "uart1-data";
+	};
+
+	pins_mmc0: mmc0 {
+		function = "mmc0";
+		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_mmc1: mmc1 {
+		function = "mmc1";
+		groups = "mmc1-4bit";
+	};
+
+	pins_sfc: sfc {
+		function = "sfc";
+		groups = "sfc-data";
+	};
+
+	pins_cim_mclk: cim-mclk {
+		function = "cim";
+		groups = "cim-mclk";
+	};
+
+	pins_i2c0: i2c0 {
+		function = "i2c0";
+		groups = "i2c0-data";
+	};
+};
