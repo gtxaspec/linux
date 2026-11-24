@@ -7,8 +7,7 @@
 
 #include <linux/bitfield.h>
 #include <linux/clk.h>
-#include <linux/io.h>
-#include <linux/iopoll.h>
+#include <linux/delay.h>
 #include <linux/kernel.h>
 #include <linux/mfd/syscon.h>
 #include <linux/module.h>
@@ -20,8 +19,6 @@
 #include <linux/slab.h>
 #include <linux/stmmac.h>
 
-#include "stmmac.h"
-#include "dwmac_dma.h"
 #include "stmmac_platform.h"
 
 #define MACPHYC_TXCLK_SEL_MASK		GENMASK(31, 31)
@@ -39,6 +36,20 @@
 #define MACPHYC_RX_DELAY_MASK		GENMASK(10, 4)
 #define MACPHYC_SOFT_RST_MASK		GENMASK(3, 3)
 #define MACPHYC_PHY_INFT_MASK		GENMASK(2, 0)
+
+/* T21 MACPHYC bits for its internal PHY */
+#define MACPHYC_T21_PHY_INTERNAL	BIT(23)
+#define MACPHYC_T21_PHY_ENABLE		BIT(22)
+#define MACPHYC_T21_CLK_MII		BIT(21)
+
+/*
+ * The internal PHY reports the identifier written to MACPHYP; this is the
+ * one the Ingenic boot loader and BSP use
+ */
+#define T21_EPHY_ID			0xc8007016
+
+#define T21_EPHY_CLK_SETTLE_MS		50
+#define T21_EPHY_RESET_US		1000
 
 #define MACPHYC_TX_DELAY_PS_MAX		2496
 #define MACPHYC_TX_DELAY_PS_MIN		20
@@ -59,7 +70,7 @@ struct ingenic_mac {
 	struct plat_stmmacenet_data *plat_dat;
 	struct device *dev;
 	struct regmap *regmap;
-	struct regmap *ephy_regmap;
+	struct regmap *id_regmap;
 
 	int rx_delay;
 	int tx_delay;
@@ -70,11 +81,10 @@ struct ingenic_soc_info {
 	u32 mask;
 
 	int (*set_mode)(struct ingenic_mac *mac, u8 phy_intf_sel);
+	int (*init)(struct ingenic_mac *mac);
+	void (*exit)(struct ingenic_mac *mac);
 
 	u8 valid_phy_intf_sel;
-
-	/* Power up and reset the SoC's internal PHY before the MAC probes */
-	int (*ephy_init)(struct ingenic_mac *mac, void __iomem *mac_base);
 };
 
 static int jz4775_mac_set_mode(struct ingenic_mac *mac, u8 phy_intf_sel)
@@ -142,87 +152,69 @@ static int x2000_mac_set_mode(struct ingenic_mac *mac, u8 phy_intf_sel)
 	return regmap_update_bits(mac->regmap, 0, mac->soc_info->mask, val);
 }
 
-/*
- * T21 internal ("OMNI") PHY. MACPHYC bits, as vendor jz4775-9161.c and the
- * T-series U-Boot set them: 21 first, 23:22 to enable the PHY, 3 pulses
- * its reset and 24 reports the reset. The PHY talks MII to the MAC, not
- * RMII, and takes a 25 MHz MAC clock.
- */
-#define T21_EPHY_BIT21		BIT(21)
-#define T21_EPHY_ENABLE		GENMASK(23, 22)
-#define T21_EPHY_RESET		BIT(3)
-#define T21_EPHY_RSTSTAT	BIT(24)
-
-/* The undocumented CPM word at 0x50 the vendor writes before enabling */
-#define T21_EPHY_SEED		0xc8007016
-
-#define T21_MII_ADDR		0x10
-#define T21_MII_DATA		0x14
-#define T21_MII_BUSY		BIT(0)
-#define T21_MII_WRITE		BIT(1)
-#define T21_MII_CR_150_250M	(0x4 << 2)
-
-static int t21_mdio_xfer(void __iomem *mac, int reg, bool write, u16 *val)
+static int t21_mac_init(struct ingenic_mac *mac)
 {
-	u32 v;
+	int ret;
 
-	if (write)
-		writel(*val, mac + T21_MII_DATA);
-	writel(((reg & 0x1f) << 6) | T21_MII_CR_150_250M | T21_MII_BUSY |
-	       (write ? T21_MII_WRITE : 0), mac + T21_MII_ADDR);
+	ret = regmap_set_bits(mac->regmap, 0, MACPHYC_T21_CLK_MII);
+	if (ret)
+		return ret;
 
-	if (readl_poll_timeout_atomic(mac + T21_MII_ADDR, v,
-				      !(v & T21_MII_BUSY), 10, 10000))
-		return -ETIMEDOUT;
-	if (!write)
-		*val = readl(mac + T21_MII_DATA);
-	return 0;
+	msleep(T21_EPHY_CLK_SETTLE_MS);
+
+	ret = regmap_write(mac->id_regmap, 0, T21_EPHY_ID);
+	if (ret)
+		return ret;
+
+	ret = regmap_set_bits(mac->regmap, 0, MACPHYC_T21_PHY_INTERNAL |
+			      MACPHYC_T21_PHY_ENABLE);
+	if (ret)
+		return ret;
+
+	ret = regmap_set_bits(mac->regmap, 0, MACPHYC_SOFT_RST_MASK);
+	if (ret)
+		return ret;
+
+	fsleep(T21_EPHY_RESET_US);
+
+	return regmap_clear_bits(mac->regmap, 0, MACPHYC_SOFT_RST_MASK);
 }
 
-static void t21_ephy_reset_pulse(struct ingenic_mac *mac)
+static void t21_mac_exit(struct ingenic_mac *mac)
 {
-	regmap_update_bits(mac->regmap, 0, T21_EPHY_RESET, T21_EPHY_RESET);
-	mdelay(1);
-	regmap_update_bits(mac->regmap, 0, T21_EPHY_RESET, 0);
+	regmap_clear_bits(mac->regmap, 0, MACPHYC_T21_PHY_INTERNAL |
+			  MACPHYC_T21_PHY_ENABLE);
 }
 
-static int t21_ephy_init(struct ingenic_mac *mac, void __iomem *mac_base)
+static int ingenic_mac_init(struct device *dev, void *bsp_priv)
 {
-	unsigned int v, rststat;
-	u16 val;
-	int i;
+	struct ingenic_mac *mac = bsp_priv;
 
-	regmap_update_bits(mac->regmap, 0, T21_EPHY_BIT21, T21_EPHY_BIT21);
-	mdelay(50);
+	return mac->soc_info->init(mac);
+}
 
-	if (mac->ephy_regmap)
-		regmap_write(mac->ephy_regmap, 0, T21_EPHY_SEED);
+static void ingenic_mac_exit(struct device *dev, void *bsp_priv)
+{
+	struct ingenic_mac *mac = bsp_priv;
 
-	regmap_update_bits(mac->regmap, 0, T21_EPHY_ENABLE, T21_EPHY_ENABLE);
+	mac->soc_info->exit(mac);
+}
 
-	t21_ephy_reset_pulse(mac);
+static int ingenic_set_phy_intf_sel(void *bsp_priv, u8 phy_intf_sel)
+{
+	struct ingenic_mac *mac = bsp_priv;
 
-	/* PHY register 0x18 bit 1 is a power control, as the vendor pokes it */
-	if (!t21_mdio_xfer(mac_base, 0x18, false, &val)) {
-		val |= BIT(1);
-		t21_mdio_xfer(mac_base, 0x18, true, &val);
-	}
+	if (!mac->soc_info->set_mode)
+		return 0;
 
-	/* the status bit flips once per reset pulse: compare across the last one */
-	regmap_read(mac->regmap, 0, &v);
-	rststat = v & T21_EPHY_RSTSTAT;
-	t21_ephy_reset_pulse(mac);
+	if (phy_intf_sel >= BITS_PER_BYTE ||
+	    ~mac->soc_info->valid_phy_intf_sel & BIT(phy_intf_sel))
+		return -EINVAL;
 
-	mdelay(1);
-	for (i = 0; i < 1000; i++) {
-		regmap_read(mac->regmap, 0, &v);
-		if ((v & T21_EPHY_RSTSTAT) ^ rststat)
-			return 0;
-		mdelay(1);
-	}
+	dev_dbg(mac->dev, "MAC PHY control register: interface %s\n",
+		phy_modes(mac->plat_dat->phy_interface));
 
-	dev_warn(mac->dev, "ePHY reset status did not toggle\n");
-	return 0;
+	return mac->soc_info->set_mode(mac, phy_intf_sel);
 }
 
 static int ingenic_mac_probe(struct platform_device *pdev)
@@ -279,56 +271,23 @@ static int ingenic_mac_probe(struct platform_device *pdev)
 		}
 	}
 
-	mac->ephy_regmap = syscon_regmap_lookup_by_phandle_optional(
-				pdev->dev.of_node, "ephy-seed-reg");
-	if (IS_ERR(mac->ephy_regmap))
-		return PTR_ERR(mac->ephy_regmap);
-
 	mac->soc_info = data;
 	mac->dev = &pdev->dev;
 	mac->plat_dat = plat_dat;
 
 	plat_dat->bsp_priv = mac;
+	plat_dat->set_phy_intf_sel = ingenic_set_phy_intf_sel;
 
-	/*
-	 * Configure MACPHYC in probe context rather than through the
-	 * set_phy_intf_sel callback. On T-series Ingenic SoCs writing
-	 * the CPM MACPHYC register from within the STMMAC probe call
-	 * chain deadlocks the GMAC AHB interface.
-	 */
-	if (mac->soc_info->ephy_init) {
-		/* The MAC clock is on: the platform config enabled it */
-		mac->soc_info->ephy_init(mac, stmmac_res.addr);
-	}
+	if (data->init) {
+		/* Holds the identifier the SoC's internal PHY reports */
+		mac->id_regmap = syscon_regmap_lookup_by_phandle(pdev->dev.of_node,
+								 "ingenic,phy-id-reg");
+		if (IS_ERR(mac->id_regmap))
+			return dev_err_probe(&pdev->dev, PTR_ERR(mac->id_regmap),
+					     "Failed to get PHY ID register\n");
 
-	if (mac->soc_info->set_mode) {
-		int phy_intf_sel = stmmac_get_phy_intf_sel(plat_dat->phy_interface);
-
-		if (phy_intf_sel >= 0) {
-			ret = mac->soc_info->set_mode(mac, phy_intf_sel);
-			if (ret)
-				return dev_err_probe(&pdev->dev, ret,
-						     "Failed to set MAC mode\n");
-		}
-	}
-
-	/*
-	 * Software-reset the DMA so MDIO starts from a known state.
-	 * The standard dwmac_dma_reset() helper uses readl_poll_timeout()
-	 * which sleeps via usleep_range(); on T31 this is reached before
-	 * the scheduler is ready and causes a hang. Open-code with the
-	 * atomic variant.
-	 */
-	writel(readl(stmmac_res.addr + DMA_BUS_MODE) | DMA_BUS_MODE_SFT_RESET,
-	       stmmac_res.addr + DMA_BUS_MODE);
-	{
-		u32 val;
-
-		ret = readl_poll_timeout_atomic(stmmac_res.addr + DMA_BUS_MODE,
-						val, !(val & DMA_BUS_MODE_SFT_RESET),
-						100, 20000);
-		if (ret)
-			dev_warn(&pdev->dev, "DMA soft reset timeout\n");
+		plat_dat->init = ingenic_mac_init;
+		plat_dat->exit = ingenic_mac_exit;
 	}
 
 	return devm_stmmac_pltfr_probe(pdev, plat_dat, &stmmac_res);
@@ -373,7 +332,8 @@ static struct ingenic_soc_info t21_soc_info = {
 	.mask = MACPHYC_MODE_SEL_MASK | MACPHYC_SOFT_RST_MASK | MACPHYC_PHY_INFT_MASK,
 
 	.set_mode = x1830_mac_set_mode,
-	.ephy_init = t21_ephy_init,
+	.init = t21_mac_init,
+	.exit = t21_mac_exit,
 	.valid_phy_intf_sel = BIT(PHY_INTF_SEL_GMII_MII),
 };
 
