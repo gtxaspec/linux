@@ -176,6 +176,18 @@ static inline int own_fpu(int restore)
 	return ret;
 }
 
+/*
+ * XBurst1 FCSRs read NAN2008 and ABS2008 as fixed 1 while the FPU runs the
+ * legacy encodings (see fpu-probe.c). Keep such bits out of a saved FCSR:
+ * __own_fpu() would refuse the context and leave the task on the emulator.
+ */
+static inline void fixup_saved_fcr31(struct task_struct *tsk)
+{
+	if (cpu_has_nan_legacy && !cpu_has_nan_2008)
+		tsk->thread.fpu.fcr31 &= ~(current_cpu_data.fpu_msk31 &
+					   (FPU_CSR_NAN2008 | FPU_CSR_ABS2008));
+}
+
 static inline void lose_fpu_inatomic(int save, struct task_struct *tsk)
 {
 	if (is_msa_enabled()) {
@@ -188,8 +200,10 @@ static inline void lose_fpu_inatomic(int save, struct task_struct *tsk)
 		clear_tsk_thread_flag(tsk, TIF_USEDMSA);
 		__disable_fpu();
 	} else if (is_fpu_owner()) {
-		if (save)
+		if (save) {
 			_save_fp(tsk);
+			fixup_saved_fcr31(tsk);
+		}
 		__disable_fpu();
 	} else {
 		/* FPU should not have been left enabled with no owner */
@@ -241,8 +255,10 @@ static inline bool init_fp_ctx(struct task_struct *target)
 
 static inline void save_fp(struct task_struct *tsk)
 {
-	if (cpu_has_fpu)
+	if (cpu_has_fpu) {
 		_save_fp(tsk);
+		fixup_saved_fcr31(tsk);
+	}
 }
 
 static inline void restore_fp(struct task_struct *tsk)
@@ -255,8 +271,10 @@ static inline union fpureg *get_fpu_regs(struct task_struct *tsk)
 {
 	if (tsk == current) {
 		preempt_disable();
-		if (is_fpu_owner())
+		if (is_fpu_owner()) {
 			_save_fp(current);
+			fixup_saved_fcr31(current);
+		}
 		preempt_enable();
 	}
 

@@ -92,7 +92,7 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
 	if (is_msa_enabled())
 		save_msa(current);
 	else if (is_fpu_owner())
-		_save_fp(current);
+		save_fp(current);
 
 	save_dsp(current);
 
