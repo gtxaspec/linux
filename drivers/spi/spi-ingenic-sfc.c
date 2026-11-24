@@ -537,7 +537,7 @@ static int ingenic_sfc_probe(struct platform_device *pdev)
 	ctlr->setup = ingenic_sfc_setup;
 	ctlr->mode_bits = SPI_CPHA | SPI_CPOL |
 			SPI_RX_DUAL | SPI_RX_QUAD | SPI_TX_DUAL | SPI_TX_QUAD;
-	if (sfc->soc_info->version >= ID_X2000)
+	if (sfc->soc_info->max_bus_width >= 8)
 		ctlr->mode_bits |= SPI_RX_OCTAL | SPI_TX_OCTAL;
 
 	return devm_spi_register_controller(dev, ctlr);
@@ -567,6 +567,15 @@ static const struct ingenic_soc_info x2000_soc_info = {
 	.tran_mode_mask = TRAN_CFG1_TRAN_MODE_MASK,
 };
 
+/* The X2000's transfer mode field, but four data lines */
+static const struct ingenic_soc_info t32_soc_info = {
+	.version = ID_X2000,
+
+	.max_bus_width = 4,
+
+	.tran_mode_mask = TRAN_CFG1_TRAN_MODE_MASK,
+};
+
 static const struct of_device_id ingenic_sfc_of_matches[] = {
 	{ .compatible = "ingenic,x1000-sfc", .data = &x1000_soc_info },
 	{ .compatible = "ingenic,x1600-sfc", .data = &x1600_soc_info },
@@ -578,6 +587,7 @@ static const struct of_device_id ingenic_sfc_of_matches[] = {
 	{ .compatible = "ingenic,t23-sfc", .data = &x1000_soc_info },
 	{ .compatible = "ingenic,t30-sfc", .data = &x1000_soc_info },
 	{ .compatible = "ingenic,t31-sfc", .data = &x1000_soc_info },
+	{ .compatible = "ingenic,t32-sfc", .data = &t32_soc_info },
 	{ .compatible = "ingenic,x2000-sfc", .data = &x2000_soc_info },
 	{ .compatible = "ingenic,x2500-sfc", .data = &x2000_soc_info },
 	{ /* sentinel */ }
