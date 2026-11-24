@@ -79,4 +79,5 @@
 #define T32_CLK_SLV		59
 #define T32_CLK_LZMA1		60
 
+#define T32_CLK_AHB2_MUX	61
 #endif /* __DT_BINDINGS_CLOCK_T32_CGU_H__ */

@@ -71,4 +71,6 @@
 #define T31_CLK_CE_I2ST		56
 #define T31_CLK_CE_I2SR		57
 
+#define T31_CLK_AHB2_MUX	58
+#define T31_CLK_I2S_MUX		59
 #endif /* __DT_BINDINGS_CLOCK_T31_CGU_H__ */

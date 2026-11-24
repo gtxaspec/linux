@@ -60,4 +60,5 @@
 #define T20_CLK_DIV_I2S		45
 #define T20_CLK_CE_I2S		46
 
+#define T20_CLK_AHB2_MUX	47
 #endif /* __DT_BINDINGS_CLOCK_T20_CGU_H__ */

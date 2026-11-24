@@ -70,4 +70,5 @@
 #define T30_CLK_DIV_I2S		55
 #define T30_CLK_CE_I2S		56
 
+#define T30_CLK_AHB2_MUX	57
 #endif /* __DT_BINDINGS_CLOCK_T30_CGU_H__ */

@@ -66,4 +66,5 @@
 #define T21_CLK_DIV_I2S		51
 #define T21_CLK_CE_I2S		52
 
+#define T21_CLK_AHB2_MUX	53
 #endif /* __DT_BINDINGS_CLOCK_T21_CGU_H__ */
