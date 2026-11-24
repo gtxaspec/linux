@@ -436,6 +436,61 @@
 		};
 	};
 
+	ipu: ipu@13080000 {
+		compatible = "ingenic,t31-ipu";
+		reg = <0x13080000 0x8000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <6>;
+
+		clocks = <&cgu T31_CLK_IPU>, <&cgu T31_CLK_AHB1>;
+		clock-names = "ipu", "ahb1";
+
+		status = "disabled";
+	};
+
+	avpu: video-codec@13200000 {
+		compatible = "ingenic,t31-avpu";
+		reg = <0x13200000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <62>;
+
+		clocks = <&cgu T31_CLK_EL150>, <&cgu T31_CLK_AHB1>;
+		clock-names = "avpu", "ahb1";
+
+		status = "disabled";
+	};
+
+	isp: isp@13300000 {
+		compatible = "ingenic,t31-isp";
+		reg = <0x13300000 0xe0000>, <0x133e0000 0x20000>;
+		reg-names = "isp", "vic";
+
+		interrupt-parent = <&intc>;
+		interrupts = <29>, <30>;
+		interrupt-names = "isp", "vic";
+
+		clocks = <&cgu T31_CLK_ISP>, <&cgu T31_CLK_CIM>;
+		clock-names = "isp", "cim";
+
+		status = "disabled";
+	};
+
+	csi: csi@10023000 {
+		compatible = "ingenic,t31-csi";
+		reg = <0x10023000 0x1000>, <0x10022000 0x1000>;
+		reg-names = "csi", "phy";
+
+		interrupt-parent = <&intc>;
+		interrupts = <5>;
+
+		clocks = <&cgu T31_CLK_MIPI_CSI>;
+		clock-names = "csi";
+
+		status = "disabled";
+	};
+
 
 
 };

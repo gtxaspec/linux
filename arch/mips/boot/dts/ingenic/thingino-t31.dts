@@ -97,6 +97,12 @@
 	pinctrl-0 = <&pins_mmc0>;
 };
 
+&isp {
+	/* consumed by the out-of-tree ISP modules, not bound by a driver */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_cim_mclk>;
+};
+
 &i2c0 {
 	status = "okay";
 	clock-frequency = <100000>;
@@ -172,6 +178,11 @@
 	pins_mmc0: mmc0 {
 		function = "mmc0";
 		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_cim_mclk: cim-mclk {
+		function = "cim";
+		groups = "cim-mclk";
 	};
 
 	pins_i2c0: i2c0 {
