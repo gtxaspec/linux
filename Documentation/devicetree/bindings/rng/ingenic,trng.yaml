@@ -18,6 +18,9 @@ properties:
       - const: ingenic,x1830-dtrng
       - items:
           - enum:
+              - ingenic,t21-dtrng
+              - ingenic,t23-dtrng
+              - ingenic,t31-dtrng
               - ingenic,t32-dtrng
               - ingenic,t33-dtrng
           - const: ingenic,x1830-dtrng
