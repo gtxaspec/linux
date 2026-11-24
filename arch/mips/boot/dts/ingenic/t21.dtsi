@@ -426,6 +426,23 @@
 		};
 	};
 
+/*
+	 * The IPU libimp draws its OSD with, through the out-of-tree ipu module
+	 * (/dev/ipu). Disabled: the module makes its device from this node.
+	 */
+	ipu: ipu@13080000 {
+		compatible = "ingenic,t21-ipu";
+		reg = <0x13080000 0x8000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <6>;
+
+		clocks = <&cgu T21_CLK_IPU>, <&cgu T21_CLK_AHB1>;
+		clock-names = "ipu", "ahb1";
+
+		status = "disabled";
+	};
+
 	isp: isp@13300000 {
 		compatible = "ingenic,t21-isp";
 		reg = <0x13300000 0x10000>, <0x13310000 0x10000>;
