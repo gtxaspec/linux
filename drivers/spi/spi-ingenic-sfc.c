@@ -490,82 +490,57 @@ static int ingenic_sfc_setup(struct spi_device *spi)
 
 static int ingenic_sfc_probe(struct platform_device *pdev)
 {
+	struct device *dev = &pdev->dev;
 	struct ingenic_sfc *sfc;
 	struct spi_controller *ctlr;
 	int ret;
 
-	ctlr = spi_alloc_host(&pdev->dev, sizeof(*sfc));
+	ctlr = devm_spi_alloc_host(dev, sizeof(*sfc));
 	if (!ctlr)
 		return -ENOMEM;
 
 	sfc = spi_controller_get_devdata(ctlr);
+	sfc->dev = dev;
+	init_completion(&sfc->completion);
 
-	sfc->soc_info = of_device_get_match_data(&pdev->dev);
-	if (!sfc->soc_info) {
-		dev_err(&pdev->dev, "No of match data provided\n");
-		ret = -ENODEV;
-		goto err_put_master;
-	}
+	sfc->soc_info = of_device_get_match_data(dev);
+	if (!sfc->soc_info)
+		return dev_err_probe(dev, -ENODEV, "no match data\n");
 
 	sfc->base = devm_platform_ioremap_resource(pdev, 0);
-	if (IS_ERR(sfc->base)) {
-		ret = PTR_ERR(sfc->base);
-		goto err_put_master;
-	}
+	if (IS_ERR(sfc->base))
+		return PTR_ERR(sfc->base);
 
-	sfc->clk = devm_clk_get(&pdev->dev, "sfc");
-	if (IS_ERR(sfc->clk)) {
-		ret = IS_ERR(sfc->clk);
-		goto err_put_master;
-	}
-
-	ret = clk_prepare_enable(sfc->clk);
-	if (ret)
-		goto err_put_master;
+	sfc->clk = devm_clk_get_enabled(dev, "sfc");
+	if (IS_ERR(sfc->clk))
+		return dev_err_probe(dev, PTR_ERR(sfc->clk), "failed to enable the clock\n");
 
 	sfc->irq = platform_get_irq(pdev, 0);
-	if (sfc->irq < 0) {
-		ret = sfc->irq;
-		goto err_put_master;
-	}
-
-	sfc->dev = &pdev->dev;
+	if (sfc->irq < 0)
+		return sfc->irq;
 
 	platform_set_drvdata(pdev, sfc);
 
-	/* Clear any pending interrupts from U-Boot */
+	/* The boot loader may leave transfer interrupts pending. */
 	writel(0x1f, sfc->base + SFC_REG_SCR);
 	writel(0x1f, sfc->base + SFC_REG_INTC);
 
-	ret = devm_request_irq(&pdev->dev, sfc->irq, ingenic_sfc_irq_handler, 0,
-			dev_name(&pdev->dev), sfc);
-	if (ret) {
-		dev_err(&pdev->dev, "Failed to request irq%d, ret = %d\n", sfc->irq, ret);
-		goto err_put_master;
-	}
-
-	init_completion(&sfc->completion);
+	ret = devm_request_irq(dev, sfc->irq, ingenic_sfc_irq_handler, 0,
+			       dev_name(dev), sfc);
+	if (ret)
+		return dev_err_probe(dev, ret, "failed to request IRQ %d\n", sfc->irq);
 
 	ctlr->bus_num = -1;
 	ctlr->num_chipselect = 1;
 	ctlr->mem_ops = &ingenic_sfc_mem_ops;
-	ctlr->dev.of_node = pdev->dev.of_node;
+	ctlr->dev.of_node = dev->of_node;
 	ctlr->setup = ingenic_sfc_setup;
 	ctlr->mode_bits = SPI_CPHA | SPI_CPOL |
 			SPI_RX_DUAL | SPI_RX_QUAD | SPI_TX_DUAL | SPI_TX_QUAD;
 	if (sfc->soc_info->version >= ID_X2000)
 		ctlr->mode_bits |= SPI_RX_OCTAL | SPI_TX_OCTAL;
 
-	ret = devm_spi_register_controller(&pdev->dev, ctlr);
-	if (ret)
-		goto err_put_master;
-
-	return 0;
-
-err_put_master:
-	spi_controller_put(ctlr);
-
-	return ret;
+	return devm_spi_register_controller(dev, ctlr);
 }
 
 static const struct ingenic_soc_info x1000_soc_info = {
