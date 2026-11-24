@@ -11,14 +11,10 @@
 #include <linux/interrupt.h>
 #include <linux/iopoll.h>
 #include <linux/module.h>
-#include <linux/mtd/mtd.h>
-#include <linux/of_device.h>
 #include <linux/platform_device.h>
-#include <linux/slab.h>
+#include <linux/property.h>
 #include <linux/spi/spi.h>
 #include <linux/spi/spi-mem.h>
-#include <linux/dmaengine.h>
-#include <linux/dma-mapping.h>
 
 /* SFC register offsets */
 #define SFC_REG_GLB						0x0000
@@ -26,11 +22,11 @@
 #define	SFC_REG_DEV_STA_EXP				0x0008
 #define	SFC_REG_DEV_STA_RT				0x000c
 #define	SFC_REG_DEV_STA_MSK				0x0010
-#define	SFC_REG_TRAN_CONF(n)			0x0014 + n * 4
-#define	SFC_REG_TRAN_CFG0(n)			0x0014 + n * 4
+#define	SFC_REG_TRAN_CONF(n)			(0x0014 + (n) * 4)
+#define	SFC_REG_TRAN_CFG0(n)			(0x0014 + (n) * 4)
 #define	SFC_REG_TRAN_LEN				0x002c
-#define	SFC_REG_DEV_ADDR(n)				0x0030 + n * 4
-#define	SFC_REG_DEV_ADDR_PLUS(n)		0x0048 + n * 4
+#define	SFC_REG_DEV_ADDR(n)				(0x0030 + (n) * 4)
+#define	SFC_REG_DEV_ADDR_PLUS(n)		(0x0048 + (n) * 4)
 #define	SFC_REG_MEM_ADDR				0x0060
 #define	SFC_REG_TRIG					0x0064
 #define	SFC_REG_SR						0x0068
@@ -38,7 +34,7 @@
 #define	SFC_REG_INTC					0x0070
 #define	SFC_REG_FSM						0x0074
 #define	SFC_REG_CGE						0x0078
-#define SFC_REG_TRAN_CFG1(n)			0x009c + n * 4
+#define SFC_REG_TRAN_CFG1(n)			(0x009c + (n) * 4)
 #define	SFC_REG_DR						0x1000
 
 /* bits within the GLB register */
@@ -503,7 +499,7 @@ static int ingenic_sfc_probe(struct platform_device *pdev)
 	sfc->dev = dev;
 	init_completion(&sfc->completion);
 
-	sfc->soc_info = of_device_get_match_data(dev);
+	sfc->soc_info = device_get_match_data(dev);
 	if (!sfc->soc_info)
 		return dev_err_probe(dev, -ENODEV, "no match data\n");
 
