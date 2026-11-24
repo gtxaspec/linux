@@ -308,7 +308,7 @@
 	};
 
 	dtrng: trng@10072000 {
-		compatible = "ingenic,t23-dtrng";
+		compatible = "ingenic,t23-dtrng", "ingenic,x1830-dtrng";
 		reg = <0x10072000 0xc>;
 
 		clocks = <&cgu T23_CLK_DTRNG>;
