@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 /dts-v1/;
 
+#include <dt-bindings/gpio/gpio.h>
 #include "t21.dtsi"
 
 / {
@@ -195,4 +196,14 @@
 		function = "i2c0";
 		groups = "i2c0-data";
 	};
+};
+
+&aic {
+	status = "okay";
+};
+
+/* Speaker amp enable: PB31 */
+&codec {
+	spk-gpios = <&gpb 31 GPIO_ACTIVE_LOW>;
+	status = "okay";
 };
