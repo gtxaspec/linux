@@ -16,6 +16,7 @@
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
+#include <linux/iopoll.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of.h>
@@ -121,6 +122,14 @@
 
 #define JZ4780_I2C_TIMEOUT	300
 
+/*
+ * The controller only reports itself disabled once the transfer in progress
+ * has ended. The T-series parts take longer than the 25-75 ms the JZ4780
+ * once allowed; half a second bounds a bus held by a stuck target.
+ */
+#define JZ4780_I2C_DISABLE_POLL_US	1000
+#define JZ4780_I2C_DISABLE_TIMEOUT_US	(500 * USEC_PER_MSEC)
+
 #define BUFSIZE 200
 
 enum ingenic_i2c_version {
@@ -169,46 +178,44 @@ struct jz4780_i2c {
 	struct completion	trans_waitq;
 };
 
-static inline unsigned short jz4780_i2c_readw(struct jz4780_i2c *i2c,
-					      unsigned long offset)
+static inline u32 jz4780_i2c_readl(struct jz4780_i2c *i2c,
+				   unsigned long offset)
 {
 	return readl(i2c->iomem + offset);
 }
 
-static inline void jz4780_i2c_writew(struct jz4780_i2c *i2c,
-				     unsigned long offset, unsigned short val)
+static inline void jz4780_i2c_writel(struct jz4780_i2c *i2c,
+				     unsigned long offset, u32 val)
 {
 	writel(val, i2c->iomem + offset);
 }
 
 static int jz4780_i2c_disable(struct jz4780_i2c *i2c)
 {
-	unsigned short regval;
-	unsigned long loops = 255;
+	u32 regval;
+	int ret;
 
-	jz4780_i2c_writew(i2c, JZ4780_I2C_ENB, 0);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_ENB, 0);
 
-	do {
-		regval = jz4780_i2c_readw(i2c, JZ4780_I2C_ENSTA);
-		if (!(regval & JZ4780_I2C_ENB_I2C))
-			return 0;
+	ret = readl_poll_timeout(i2c->iomem + JZ4780_I2C_ENSTA, regval,
+				 !(regval & JZ4780_I2C_ENB_I2C),
+				 JZ4780_I2C_DISABLE_POLL_US,
+				 JZ4780_I2C_DISABLE_TIMEOUT_US);
+	if (ret)
+		dev_err(&i2c->adap.dev, "disable failed: ENSTA=0x%04x\n", regval);
 
-		msleep(1);
-	} while (--loops);
-
-	dev_err(&i2c->adap.dev, "disable failed: ENSTA=0x%04x\n", regval);
-	return -ETIMEDOUT;
+	return ret;
 }
 
 static int jz4780_i2c_enable(struct jz4780_i2c *i2c)
 {
-	unsigned short regval;
+	u32 regval;
 	unsigned long loops = 5;
 
-	jz4780_i2c_writew(i2c, JZ4780_I2C_ENB, 1);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_ENB, 1);
 
 	do {
-		regval = jz4780_i2c_readw(i2c, JZ4780_I2C_ENSTA);
+		regval = jz4780_i2c_readl(i2c, JZ4780_I2C_ENSTA);
 		if (regval & JZ4780_I2C_ENB_I2C)
 			return 0;
 
@@ -221,11 +228,11 @@ static int jz4780_i2c_enable(struct jz4780_i2c *i2c)
 
 static int jz4780_i2c_set_target(struct jz4780_i2c *i2c, unsigned char address)
 {
-	unsigned short regval;
+	u32 regval;
 	unsigned long loops = 5;
 
 	do {
-		regval = jz4780_i2c_readw(i2c, JZ4780_I2C_STA);
+		regval = jz4780_i2c_readl(i2c, JZ4780_I2C_STA);
 		if ((regval & JZ4780_I2C_STA_TFE) &&
 		    !(regval & JZ4780_I2C_STA_MSTACT))
 			break;
@@ -234,7 +241,7 @@ static int jz4780_i2c_set_target(struct jz4780_i2c *i2c, unsigned char address)
 	} while (--loops);
 
 	if (loops) {
-		jz4780_i2c_writew(i2c, JZ4780_I2C_TAR, address);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_TAR, address);
 		return 0;
 	}
 
@@ -253,7 +260,7 @@ static int jz4780_i2c_set_speed(struct jz4780_i2c *i2c)
 	int cnt_period = 0;	/* period count of the SCL clock */
 	int setup_time = 0;
 	int hold_time = 0;
-	unsigned short tmp = 0;
+	u32 tmp = 0;
 	int i2c_clk = i2c->speed;
 
 	if (jz4780_i2c_disable(i2c))
@@ -283,20 +290,20 @@ static int jz4780_i2c_set_speed(struct jz4780_i2c *i2c)
 	if (i2c_clk <= 100) {
 		tmp = JZ4780_I2C_CTRL_SPDS | JZ4780_I2C_CTRL_REST
 		      | JZ4780_I2C_CTRL_SLVDIS | JZ4780_I2C_CTRL_MD;
-		jz4780_i2c_writew(i2c, JZ4780_I2C_CTRL, tmp);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_CTRL, tmp);
 
-		jz4780_i2c_writew(i2c, JZ4780_I2C_SHCNT,
+		jz4780_i2c_writel(i2c, JZ4780_I2C_SHCNT,
 				  JZ4780_I2CSHCNT_ADJUST(cnt_high));
-		jz4780_i2c_writew(i2c, JZ4780_I2C_SLCNT,
+		jz4780_i2c_writel(i2c, JZ4780_I2C_SLCNT,
 				  JZ4780_I2CSLCNT_ADJUST(cnt_low));
 	} else {
 		tmp = JZ4780_I2C_CTRL_SPDF | JZ4780_I2C_CTRL_REST
 		      | JZ4780_I2C_CTRL_SLVDIS | JZ4780_I2C_CTRL_MD;
-		jz4780_i2c_writew(i2c, JZ4780_I2C_CTRL, tmp);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_CTRL, tmp);
 
-		jz4780_i2c_writew(i2c, JZ4780_I2C_FHCNT,
+		jz4780_i2c_writel(i2c, JZ4780_I2C_FHCNT,
 				  JZ4780_I2CFHCNT_ADJUST(cnt_high));
-		jz4780_i2c_writew(i2c, JZ4780_I2C_FLCNT,
+		jz4780_i2c_writel(i2c, JZ4780_I2C_FLCNT,
 				  JZ4780_I2CFLCNT_ADJUST(cnt_low));
 	}
 
@@ -335,7 +342,7 @@ static int jz4780_i2c_set_speed(struct jz4780_i2c *i2c)
 	if (setup_time <= 0)
 		setup_time = 1;
 
-	jz4780_i2c_writew(i2c, JZ4780_I2C_SDASU, setup_time);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_SDASU, setup_time);
 
 	if (hold_time > 255)
 		hold_time = 255;
@@ -343,17 +350,17 @@ static int jz4780_i2c_set_speed(struct jz4780_i2c *i2c)
 	if (hold_time >= 0) {
 		/*i2c hold time enable */
 		if (i2c->cdata->version >= ID_X1000) {
-			jz4780_i2c_writew(i2c, X1000_I2C_SDAHD, hold_time);
+			jz4780_i2c_writel(i2c, X1000_I2C_SDAHD, hold_time);
 		} else {
 			hold_time |= JZ4780_I2C_SDAHD_HDENB;
-			jz4780_i2c_writew(i2c, JZ4780_I2C_SDAHD, hold_time);
+			jz4780_i2c_writel(i2c, JZ4780_I2C_SDAHD, hold_time);
 		}
 	} else {
 		/* disable hold time */
 		if (i2c->cdata->version >= ID_X1000)
-			jz4780_i2c_writew(i2c, X1000_I2C_SDAHD, 0);
+			jz4780_i2c_writel(i2c, X1000_I2C_SDAHD, 0);
 		else
-			jz4780_i2c_writew(i2c, JZ4780_I2C_SDAHD, 0);
+			jz4780_i2c_writel(i2c, JZ4780_I2C_SDAHD, 0);
 	}
 
 	return 0;
@@ -363,31 +370,31 @@ static int jz4780_i2c_cleanup(struct jz4780_i2c *i2c)
 {
 	int ret;
 	unsigned long flags;
-	unsigned short tmp;
+	u32 tmp;
 
 	spin_lock_irqsave(&i2c->lock, flags);
 
 	/* can send stop now if need */
 	if (i2c->cdata->version < ID_X1000) {
-		tmp = jz4780_i2c_readw(i2c, JZ4780_I2C_CTRL);
+		tmp = jz4780_i2c_readl(i2c, JZ4780_I2C_CTRL);
 		tmp &= ~JZ4780_I2C_CTRL_STPHLD;
-		jz4780_i2c_writew(i2c, JZ4780_I2C_CTRL, tmp);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_CTRL, tmp);
 	}
 
 	/* disable all interrupts first */
-	jz4780_i2c_writew(i2c, JZ4780_I2C_INTM, 0);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_INTM, 0);
 
 	/* then clear all interrupts */
-	jz4780_i2c_readw(i2c, JZ4780_I2C_CTXABRT);
-	jz4780_i2c_readw(i2c, JZ4780_I2C_CINTR);
+	jz4780_i2c_readl(i2c, JZ4780_I2C_CTXABRT);
+	jz4780_i2c_readl(i2c, JZ4780_I2C_CINTR);
 
 	/* then disable the controller */
-	tmp = jz4780_i2c_readw(i2c, JZ4780_I2C_CTRL);
+	tmp = jz4780_i2c_readl(i2c, JZ4780_I2C_CTRL);
 	tmp &= ~JZ4780_I2C_ENB_I2C;
-	jz4780_i2c_writew(i2c, JZ4780_I2C_CTRL, tmp);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_CTRL, tmp);
 	udelay(10);
 	tmp |= JZ4780_I2C_ENB_I2C;
-	jz4780_i2c_writew(i2c, JZ4780_I2C_CTRL, tmp);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_CTRL, tmp);
 
 	spin_unlock_irqrestore(&i2c->lock, flags);
 
@@ -396,8 +403,8 @@ static int jz4780_i2c_cleanup(struct jz4780_i2c *i2c)
 		dev_err(&i2c->adap.dev,
 			"unable to disable device during cleanup!\n");
 
-	if (unlikely(jz4780_i2c_readw(i2c, JZ4780_I2C_INTM)
-		     & jz4780_i2c_readw(i2c, JZ4780_I2C_INTST)))
+	if (unlikely(jz4780_i2c_readl(i2c, JZ4780_I2C_INTM)
+		     & jz4780_i2c_readl(i2c, JZ4780_I2C_INTST)))
 		dev_err(&i2c->adap.dev,
 			"device has interrupts after a complete cleanup!\n");
 
@@ -417,31 +424,31 @@ static void jz4780_i2c_send_rcmd(struct jz4780_i2c *i2c,
 	int i;
 
 	for (i = 0; i < cmd_count - 1; i++)
-		jz4780_i2c_writew(i2c, JZ4780_I2C_DC, JZ4780_I2C_DC_READ);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_DC, JZ4780_I2C_DC_READ);
 
 	if ((cmd_left == 0) && (i2c->cdata->version >= ID_X1000))
-		jz4780_i2c_writew(i2c, JZ4780_I2C_DC,
+		jz4780_i2c_writel(i2c, JZ4780_I2C_DC,
 				JZ4780_I2C_DC_READ | X1000_I2C_DC_STOP);
 	else
-		jz4780_i2c_writew(i2c, JZ4780_I2C_DC, JZ4780_I2C_DC_READ);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_DC, JZ4780_I2C_DC_READ);
 }
 
 static void jz4780_i2c_trans_done(struct jz4780_i2c *i2c)
 {
-	jz4780_i2c_writew(i2c, JZ4780_I2C_INTM, 0);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_INTM, 0);
 	complete(&i2c->trans_waitq);
 }
 
 static irqreturn_t jz4780_i2c_irq(int irqno, void *dev_id)
 {
-	unsigned short tmp;
-	unsigned short intst;
-	unsigned short intmsk;
+	u32 tmp;
+	u32 intst;
+	u32 intmsk;
 	struct jz4780_i2c *i2c = dev_id;
 
 	spin_lock(&i2c->lock);
-	intmsk = jz4780_i2c_readw(i2c, JZ4780_I2C_INTM);
-	intst = jz4780_i2c_readw(i2c, JZ4780_I2C_INTST);
+	intmsk = jz4780_i2c_readl(i2c, JZ4780_I2C_INTM);
+	intst = jz4780_i2c_readl(i2c, JZ4780_I2C_INTST);
 
 	intst &= intmsk;
 
@@ -463,9 +470,9 @@ static irqreturn_t jz4780_i2c_irq(int irqno, void *dev_id)
 	if (i2c->is_write == 0) {
 		int rd_left;
 
-		while ((jz4780_i2c_readw(i2c, JZ4780_I2C_STA)
+		while ((jz4780_i2c_readl(i2c, JZ4780_I2C_STA)
 				  & JZ4780_I2C_STA_RFNE)) {
-			*(i2c->rbuf++) = jz4780_i2c_readw(i2c, JZ4780_I2C_DC)
+			*(i2c->rbuf++) = jz4780_i2c_readl(i2c, JZ4780_I2C_DC)
 					 & 0xff;
 			i2c->rd_data_xfered++;
 			if (i2c->rd_data_xfered == i2c->rd_total_len) {
@@ -477,7 +484,7 @@ static irqreturn_t jz4780_i2c_irq(int irqno, void *dev_id)
 		rd_left = i2c->rd_total_len - i2c->rd_data_xfered;
 
 		if (rd_left <= i2c->cdata->fifosize)
-			jz4780_i2c_writew(i2c, JZ4780_I2C_RXTL, rd_left - 1);
+			jz4780_i2c_writel(i2c, JZ4780_I2C_RXTL, rd_left - 1);
 	}
 
 	if (intst & JZ4780_I2C_INTST_TXEMP) {
@@ -503,33 +510,33 @@ static irqreturn_t jz4780_i2c_irq(int irqno, void *dev_id)
 			}
 
 			if (cmd_left == 0) {
-				intmsk = jz4780_i2c_readw(i2c, JZ4780_I2C_INTM);
+				intmsk = jz4780_i2c_readl(i2c, JZ4780_I2C_INTM);
 				intmsk &= ~JZ4780_I2C_INTM_MTXEMP;
-				jz4780_i2c_writew(i2c, JZ4780_I2C_INTM, intmsk);
+				jz4780_i2c_writel(i2c, JZ4780_I2C_INTM, intmsk);
 
 				if (i2c->cdata->version < ID_X1000) {
-					tmp = jz4780_i2c_readw(i2c,
+					tmp = jz4780_i2c_readl(i2c,
 							JZ4780_I2C_CTRL);
 					tmp &= ~JZ4780_I2C_CTRL_STPHLD;
-					jz4780_i2c_writew(i2c,
+					jz4780_i2c_writel(i2c,
 							JZ4780_I2C_CTRL, tmp);
 				}
 			}
 		} else {
-			unsigned short data;
-			unsigned short i2c_sta;
+			u32 data;
+			u32 i2c_sta;
 
-			i2c_sta = jz4780_i2c_readw(i2c, JZ4780_I2C_STA);
+			i2c_sta = jz4780_i2c_readl(i2c, JZ4780_I2C_STA);
 
 			while ((i2c_sta & JZ4780_I2C_STA_TFNF) &&
 					(i2c->wt_len > 0)) {
-				i2c_sta = jz4780_i2c_readw(i2c, JZ4780_I2C_STA);
+				i2c_sta = jz4780_i2c_readl(i2c, JZ4780_I2C_STA);
 				data = *i2c->wbuf;
 				data &= ~JZ4780_I2C_DC_READ;
 				if ((i2c->wt_len == 1) && (!i2c->stop_hold) &&
 						(i2c->cdata->version >= ID_X1000))
 					data |= X1000_I2C_DC_STOP;
-				jz4780_i2c_writew(i2c, JZ4780_I2C_DC, data);
+				jz4780_i2c_writel(i2c, JZ4780_I2C_DC, data);
 				i2c->wbuf++;
 				i2c->wt_len--;
 			}
@@ -537,10 +544,10 @@ static irqreturn_t jz4780_i2c_irq(int irqno, void *dev_id)
 			if (i2c->wt_len == 0) {
 				if ((!i2c->stop_hold) && (i2c->cdata->version <
 						ID_X1000)) {
-					tmp = jz4780_i2c_readw(i2c,
+					tmp = jz4780_i2c_readl(i2c,
 							JZ4780_I2C_CTRL);
 					tmp &= ~JZ4780_I2C_CTRL_STPHLD;
-					jz4780_i2c_writew(i2c,
+					jz4780_i2c_writel(i2c,
 							JZ4780_I2C_CTRL, tmp);
 				}
 
@@ -568,7 +575,7 @@ static inline int jz4780_i2c_xfer_read(struct jz4780_i2c *i2c,
 	int ret = 0;
 	unsigned long time_left;
 	int wait_time = JZ4780_I2C_TIMEOUT * (len + 5);
-	unsigned short tmp;
+	u32 tmp;
 	unsigned long flags;
 
 	memset(buf, 0, len);
@@ -583,20 +590,20 @@ static inline int jz4780_i2c_xfer_read(struct jz4780_i2c *i2c,
 	i2c->rd_cmd_xfered = 0;
 
 	if (len <= i2c->cdata->fifosize)
-		jz4780_i2c_writew(i2c, JZ4780_I2C_RXTL, len - 1);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_RXTL, len - 1);
 	else
-		jz4780_i2c_writew(i2c, JZ4780_I2C_RXTL, i2c->cdata->rx_level);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_RXTL, i2c->cdata->rx_level);
 
-	jz4780_i2c_writew(i2c, JZ4780_I2C_TXTL, i2c->cdata->tx_level);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_TXTL, i2c->cdata->tx_level);
 
-	jz4780_i2c_writew(i2c, JZ4780_I2C_INTM,
+	jz4780_i2c_writel(i2c, JZ4780_I2C_INTM,
 			  JZ4780_I2C_INTM_MRXFL | JZ4780_I2C_INTM_MTXEMP
 			  | JZ4780_I2C_INTM_MTXABT | JZ4780_I2C_INTM_MRXOF);
 
 	if (i2c->cdata->version < ID_X1000) {
-		tmp = jz4780_i2c_readw(i2c, JZ4780_I2C_CTRL);
+		tmp = jz4780_i2c_readl(i2c, JZ4780_I2C_CTRL);
 		tmp |= JZ4780_I2C_CTRL_STPHLD;
-		jz4780_i2c_writew(i2c, JZ4780_I2C_CTRL, tmp);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_CTRL, tmp);
 	}
 
 	spin_unlock_irqrestore(&i2c->lock, flags);
@@ -613,7 +620,7 @@ static inline int jz4780_i2c_xfer_read(struct jz4780_i2c *i2c,
 		ret = -EIO;
 	}
 
-	tmp = jz4780_i2c_readw(i2c, JZ4780_I2C_TXABRT);
+	tmp = jz4780_i2c_readl(i2c, JZ4780_I2C_TXABRT);
 	if (tmp) {
 		jz4780_i2c_txabrt(i2c, tmp);
 		ret = -EIO;
@@ -629,7 +636,7 @@ static inline int jz4780_i2c_xfer_write(struct jz4780_i2c *i2c,
 	int ret = 0;
 	int wait_time = JZ4780_I2C_TIMEOUT * (len + 5);
 	unsigned long time_left;
-	unsigned short tmp;
+	u32 tmp;
 	unsigned long flags;
 
 	spin_lock_irqsave(&i2c->lock, flags);
@@ -643,15 +650,15 @@ static inline int jz4780_i2c_xfer_write(struct jz4780_i2c *i2c,
 	i2c->wbuf = buf;
 	i2c->wt_len = len;
 
-	jz4780_i2c_writew(i2c, JZ4780_I2C_TXTL, i2c->cdata->tx_level);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_TXTL, i2c->cdata->tx_level);
 
-	jz4780_i2c_writew(i2c, JZ4780_I2C_INTM, JZ4780_I2C_INTM_MTXEMP
+	jz4780_i2c_writel(i2c, JZ4780_I2C_INTM, JZ4780_I2C_INTM_MTXEMP
 					| JZ4780_I2C_INTM_MTXABT);
 
 	if (i2c->cdata->version < ID_X1000) {
-		tmp = jz4780_i2c_readw(i2c, JZ4780_I2C_CTRL);
+		tmp = jz4780_i2c_readl(i2c, JZ4780_I2C_CTRL);
 		tmp |= JZ4780_I2C_CTRL_STPHLD;
-		jz4780_i2c_writew(i2c, JZ4780_I2C_CTRL, tmp);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_CTRL, tmp);
 	}
 
 	spin_unlock_irqrestore(&i2c->lock, flags);
@@ -659,12 +666,12 @@ static inline int jz4780_i2c_xfer_write(struct jz4780_i2c *i2c,
 	time_left = wait_for_completion_timeout(&i2c->trans_waitq,
 						msecs_to_jiffies(wait_time));
 	if (time_left && !i2c->stop_hold) {
-		unsigned short i2c_sta;
+		u32 i2c_sta;
 		int write_in_process;
 
 		time_left = JZ4780_I2C_TIMEOUT * 100;
 		for (; time_left > 0; time_left--) {
-			i2c_sta = jz4780_i2c_readw(i2c, JZ4780_I2C_STA);
+			i2c_sta = jz4780_i2c_readl(i2c, JZ4780_I2C_STA);
 
 			write_in_process = (i2c_sta & JZ4780_I2C_STA_MSTACT) ||
 				!(i2c_sta & JZ4780_I2C_STA_TFE);
@@ -679,7 +686,7 @@ static inline int jz4780_i2c_xfer_write(struct jz4780_i2c *i2c,
 		ret = -EIO;
 	}
 
-	tmp = jz4780_i2c_readw(i2c, JZ4780_I2C_TXABRT);
+	tmp = jz4780_i2c_readl(i2c, JZ4780_I2C_TXABRT);
 	if (tmp) {
 		jz4780_i2c_txabrt(i2c, tmp);
 		ret = -EIO;
@@ -701,7 +708,7 @@ static int jz4780_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg *msg,
 		goto out;
 	}
 
-	if (msg->addr != jz4780_i2c_readw(i2c, JZ4780_I2C_TAR)) {
+	if (msg->addr != jz4780_i2c_readl(i2c, JZ4780_I2C_TAR)) {
 		ret = jz4780_i2c_set_target(i2c, msg->addr);
 		if (ret)
 			goto out;
@@ -763,7 +770,7 @@ static int jz4780_i2c_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	unsigned int clk_freq = 0;
-	unsigned short tmp;
+	u32 tmp;
 	struct jz4780_i2c *i2c;
 
 	i2c = devm_kzalloc_obj(&pdev->dev, struct jz4780_i2c);
@@ -817,12 +824,12 @@ static int jz4780_i2c_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "Bus frequency is %d KHz\n", i2c->speed);
 
 	if (i2c->cdata->version < ID_X1000) {
-		tmp = jz4780_i2c_readw(i2c, JZ4780_I2C_CTRL);
+		tmp = jz4780_i2c_readl(i2c, JZ4780_I2C_CTRL);
 		tmp &= ~JZ4780_I2C_CTRL_STPHLD;
-		jz4780_i2c_writew(i2c, JZ4780_I2C_CTRL, tmp);
+		jz4780_i2c_writel(i2c, JZ4780_I2C_CTRL, tmp);
 	}
 
-	jz4780_i2c_writew(i2c, JZ4780_I2C_INTM, 0x0);
+	jz4780_i2c_writel(i2c, JZ4780_I2C_INTM, 0x0);
 
 	ret = platform_get_irq(pdev, 0);
 	if (ret < 0)
