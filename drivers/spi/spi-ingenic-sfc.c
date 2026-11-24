@@ -380,8 +380,6 @@ static int ingenic_sfc_poll_status(struct spi_mem *mem, const struct spi_mem_op 
 	struct ingenic_sfc *sfc = spi_controller_get_devdata(spi->controller);
 	int ret, val;
 
-	//init_completion(&sfc->completion);
-
 	val = readl(sfc->base + SFC_REG_GLB);
 	u32p_replace_bits(&val, GLB_TRAN_DIR_READ, GLB_TRAN_DIR_MASK);
 	u32p_replace_bits(&val, GLB_OP_MODE_SLAVE, GLB_OP_MODE_MASK);
@@ -411,6 +409,7 @@ static int ingenic_sfc_poll_status(struct spi_mem *mem, const struct spi_mem_op 
 	ingenic_sfc_set_transfer_mode(sfc, op);
 
 	writel(0x1f, sfc->base + SFC_REG_SCR);
+	reinit_completion(&sfc->completion);
 	writel(~INTC_MASK_END, sfc->base + SFC_REG_INTC);
 
 	writel(0, sfc->base + SFC_REG_MEM_ADDR);
