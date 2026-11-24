@@ -16,6 +16,12 @@ properties:
   compatible:
     enum:
       - ingenic,jz4780-efuse
+      - ingenic,t10-efuse
+      - ingenic,t20-efuse
+      - ingenic,t21-efuse
+      - ingenic,t23-efuse
+      - ingenic,t30-efuse
+      - ingenic,t31-efuse
       - ingenic,t32-efuse
       - ingenic,t33-efuse
 
