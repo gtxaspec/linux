@@ -13,6 +13,7 @@
 #include <linux/of_fdt.h>
 #include <linux/pm.h>
 #include <linux/sizes.h>
+#include <linux/soc/ingenic/rmem.h>
 #include <linux/suspend.h>
 #include <linux/types.h>
 
@@ -20,6 +21,40 @@
 #include <asm/io.h>
 #include <asm/machine.h>
 #include <asm/reboot.h>
+
+static phys_addr_t ingenic_rmem_base, ingenic_rmem_size;
+
+/*
+ * rmem=<size>@<base>: memory kept out of the kernel's map (with mem=) for
+ * the vendor media stack. libimp reads the same keyword from /proc/cmdline.
+ */
+static int __init ingenic_rmem_param(char *p)
+{
+	phys_addr_t size, base;
+
+	if (!p)
+		return -EINVAL;
+	size = memparse(p, &p);
+	if (*p != '@' || !size)
+		return -EINVAL;
+	base = memparse(p + 1, &p);
+	if (!PAGE_ALIGNED(base) || !PAGE_ALIGNED(size))
+		return -EINVAL;
+	ingenic_rmem_base = base;
+	ingenic_rmem_size = size;
+	return 0;
+}
+early_param("rmem", ingenic_rmem_param);
+
+int ingenic_rmem_region(phys_addr_t *base, phys_addr_t *size)
+{
+	if (!ingenic_rmem_size)
+		return -ENODEV;
+	*base = ingenic_rmem_base;
+	*size = ingenic_rmem_size;
+	return 0;
+}
+EXPORT_SYMBOL_GPL(ingenic_rmem_region);
 
 static __init char *ingenic_get_system_type(unsigned long machtype)
 {
