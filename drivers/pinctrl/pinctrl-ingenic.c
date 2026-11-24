@@ -3013,6 +3013,12 @@ static int t31_i2c1_b_pins[] = { 0x39, 0x3a, };
 static int t31_i2c1_c_pins[] = { 0x48, 0x49, };
 static int t31_mmc0_1bit_pins[] = { 0x20, 0x21, 0x22, };
 static int t31_mmc0_4bit_pins[] = { 0x23, 0x24, 0x25, };
+static int t31_mmc1_1bit_a_pins[] = { 0x10, 0x11, 0x08, };
+static int t31_mmc1_4bit_a_pins[] = { 0x09, 0x0a, 0x0b, };
+static int t31_mmc1_1bit_b_pins[] = { 0x28, 0x29, 0x2a, };
+static int t31_mmc1_4bit_b_pins[] = { 0x2b, 0x2d, 0x2e, };
+static int t31_mmc1_1bit_c_pins[] = { 0x42, 0x43, 0x44, };
+static int t31_mmc1_4bit_c_pins[] = { 0x45, 0x46, 0x47, };
 static int t31_sfc_data_pins[] = { 0x17, 0x18, 0x1b, 0x1c, };
 static int t31_ssi0_dt_pins[] = { 0x4b, };
 static int t31_ssi0_dr_pins[] = { 0x4c, };
@@ -3047,6 +3053,12 @@ static const struct group_desc t31_groups[] = {
 	INGENIC_PIN_GROUP("i2c1-data-c", t31_i2c1_c, 3),
 	INGENIC_PIN_GROUP("mmc0-1bit", t31_mmc0_1bit, 0),
 	INGENIC_PIN_GROUP("mmc0-4bit", t31_mmc0_4bit, 0),
+	INGENIC_PIN_GROUP("mmc1-1bit-a", t31_mmc1_1bit_a, 3),
+	INGENIC_PIN_GROUP("mmc1-4bit-a", t31_mmc1_4bit_a, 3),
+	INGENIC_PIN_GROUP("mmc1-1bit-b", t31_mmc1_1bit_b, 1),
+	INGENIC_PIN_GROUP("mmc1-4bit-b", t31_mmc1_4bit_b, 1),
+	INGENIC_PIN_GROUP("mmc1-1bit-c", t31_mmc1_1bit_c, 0),
+	INGENIC_PIN_GROUP("mmc1-4bit-c", t31_mmc1_4bit_c, 0),
 	INGENIC_PIN_GROUP("sfc-data", t31_sfc_data, 1),
 	INGENIC_PIN_GROUP("ssi0-dt", t31_ssi0_dt, 0),
 	INGENIC_PIN_GROUP("ssi0-dr", t31_ssi0_dr, 0),
@@ -3070,6 +3082,11 @@ static const char *t31_i2c1_groups[] = {
 	"i2c1-data-a", "i2c1-data-b", "i2c1-data-c",
 };
 static const char *t31_mmc0_groups[] = { "mmc0-1bit", "mmc0-4bit", };
+static const char *t31_mmc1_groups[] = {
+	"mmc1-1bit-a", "mmc1-4bit-a",
+	"mmc1-1bit-b", "mmc1-4bit-b",
+	"mmc1-1bit-c", "mmc1-4bit-c",
+};
 static const char *t31_sfc_groups[] = { "sfc-data", };
 static const char *t31_ssi0_groups[] = {
 	"ssi0-dt", "ssi0-dr", "ssi0-clk", "ssi0-ce",
@@ -3088,6 +3105,7 @@ static const struct pinfunction t31_functions[] = {
 	INGENIC_PIN_FUNCTION("i2c0", t31_i2c0),
 	INGENIC_PIN_FUNCTION("i2c1", t31_i2c1),
 	INGENIC_PIN_FUNCTION("mmc0", t31_mmc0),
+	INGENIC_PIN_FUNCTION("mmc1", t31_mmc1),
 	INGENIC_PIN_FUNCTION("sfc", t31_sfc),
 	INGENIC_PIN_FUNCTION("ssi0", t31_ssi0),
 	INGENIC_PIN_FUNCTION("mac", t31_mac),
