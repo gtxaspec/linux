@@ -12,6 +12,7 @@ config MACH_INGENIC_GENERIC
 	select MACH_T10
 	select MACH_T20
 	select MACH_T21
+	select MACH_T23
 	select MACH_T30
 	select MACH_T31
 
@@ -105,6 +106,12 @@ config MACH_T20
 	select SYS_SUPPORTS_HIGHMEM
 
 config MACH_T21
+	bool
+	select MIPS_CPU_SCACHE
+	select SYS_HAS_CPU_MIPS32_R2
+	select SYS_SUPPORTS_HIGHMEM
+
+config MACH_T23
 	bool
 	select MIPS_CPU_SCACHE
 	select SYS_HAS_CPU_MIPS32_R2
