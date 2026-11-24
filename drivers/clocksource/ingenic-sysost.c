@@ -265,6 +265,7 @@ static irqreturn_t ingenic_ost_cevt_cb(int irq, void *dev_id)
 	struct ingenic_ost *ost = to_ingenic_ost(evt);
 
 	writel(OSTECR_OST1ENC, ost->base + OST_REG_OSTECR);
+	writel((u32)~OSTFR_FFLAG, ost->base + OST_REG_OSTFR);
 
 	if (evt->event_handler)
 		evt->event_handler(evt);
