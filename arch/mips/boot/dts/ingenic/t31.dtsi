@@ -335,7 +335,7 @@
 	};
 
 	sfc: spi@13440000 {
-		compatible = "ingenic,t31-sfc";
+		compatible = "ingenic,t31-sfc", "ingenic,x1000-sfc";
 		reg = <0x13440000 0x10000>;
 
 		interrupt-parent = <&intc>;
