@@ -169,6 +169,19 @@ OF_EARLYCON_DECLARE(jz4780_uart, "ingenic,jz4780-uart",
 OF_EARLYCON_DECLARE(x1000_uart, "ingenic,x1000-uart",
 		    ingenic_early_console_setup);
 
+OF_EARLYCON_DECLARE(t10_uart, "ingenic,t10-uart",
+		    ingenic_early_console_setup);
+OF_EARLYCON_DECLARE(t20_uart, "ingenic,t20-uart",
+		    ingenic_early_console_setup);
+OF_EARLYCON_DECLARE(t21_uart, "ingenic,t21-uart",
+		    ingenic_early_console_setup);
+OF_EARLYCON_DECLARE(t23_uart, "ingenic,t23-uart",
+		    ingenic_early_console_setup);
+OF_EARLYCON_DECLARE(t30_uart, "ingenic,t30-uart",
+		    ingenic_early_console_setup);
+OF_EARLYCON_DECLARE(t31_uart, "ingenic,t31-uart",
+		    ingenic_early_console_setup);
+
 static void ingenic_uart_serial_out(struct uart_port *p, unsigned int offset, u32 value)
 {
 	u32 ier;
@@ -352,6 +365,12 @@ static const struct of_device_id of_match[] = {
 	{ .compatible = "ingenic,jz4775-uart", .data = &jz4760_uart_config },
 	{ .compatible = "ingenic,jz4780-uart", .data = &jz4780_uart_config },
 	{ .compatible = "ingenic,x1000-uart", .data = &x1000_uart_config },
+	{ .compatible = "ingenic,t10-uart", .data = &x1000_uart_config },
+	{ .compatible = "ingenic,t20-uart", .data = &x1000_uart_config },
+	{ .compatible = "ingenic,t21-uart", .data = &x1000_uart_config },
+	{ .compatible = "ingenic,t23-uart", .data = &x1000_uart_config },
+	{ .compatible = "ingenic,t30-uart", .data = &x1000_uart_config },
+	{ .compatible = "ingenic,t31-uart", .data = &x1000_uart_config },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, of_match);
