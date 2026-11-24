@@ -34,6 +34,9 @@
 #define JZ_EFUCFG		(0x4)	/* Configure Register*/
 #define JZ_EFUSTATE		(0x8)	/* Status Register */
 #define JZ_EFUDATA(n)		(0xC + (n) * 4)
+/* Read-only mirror of the fuse array on the T33 */
+#define JZ_EFUWINDOW		0x200
+#define JZ_EFUWINDOW_SIZE	0x80
 
 /* We read fixed size chunks to avoid complexity in the driver. */
 #define JZ_EFU_READ_SIZE_MAX 32
@@ -63,6 +66,7 @@ struct jz4780_efuse_soc_data {
 	size_t size;
 	size_t read_size;
 	bool word_addr;
+	unsigned int window;
 };
 
 struct jz4780_efuse {
@@ -71,6 +75,7 @@ struct jz4780_efuse {
 	struct clk *clk;
 	size_t read_size;
 	bool word_addr;
+	unsigned int window;
 };
 
 static const struct jz4780_efuse_soc_data jz4780_efuse_soc_data = {
@@ -96,11 +101,54 @@ static const struct jz4780_efuse_soc_data t21_efuse_soc_data = {
 	.word_addr = true,
 };
 
+/* The T32's: the T21's controller over 48 words */
+static const struct jz4780_efuse_soc_data t32_efuse_soc_data = {
+	.size = 192,
+	.read_size = 4,
+	.word_addr = true,
+};
+
+/* The T33's: 32 words, read from the mirror rather than the controller */
+static const struct jz4780_efuse_soc_data t33_efuse_soc_data = {
+	.size = JZ_EFUWINDOW_SIZE,
+	.read_size = 4,
+	.window = JZ_EFUWINDOW,
+};
+
+static int jz4780_efuse_read_window(struct jz4780_efuse *efuse,
+				    unsigned int offset, void *val,
+				    size_t bytes)
+{
+	while (bytes > 0) {
+		unsigned int start = offset & ~3;
+		size_t chunk = min_t(size_t, bytes, start + 4 - offset);
+		__le32 word;
+		unsigned int tmp;
+		int ret;
+
+		ret = regmap_read(efuse->map, efuse->window + start, &tmp);
+		if (ret < 0)
+			return ret;
+
+		word = cpu_to_le32(tmp);
+		memcpy(val, (u8 *)&word + offset - start, chunk);
+
+		val += chunk;
+		offset += chunk;
+		bytes -= chunk;
+	}
+
+	return 0;
+}
+
 /* main entry point */
 static int jz4780_efuse_read(void *context, unsigned int offset,
 			     void *val, size_t bytes)
 {
 	struct jz4780_efuse *efuse = context;
+
+	if (efuse->window)
+		return jz4780_efuse_read_window(efuse, offset, val, bytes);
 
 	while (bytes > 0) {
 		size_t start = offset & ~(efuse->read_size - 1);
@@ -162,57 +210,22 @@ static const struct regmap_config jz4780_efuse_regmap_config = {
 	.max_register = JZ_EFUDATA(7),
 };
 
+static const struct regmap_config jz4780_efuse_window_regmap_config = {
+	.reg_bits = 32,
+	.val_bits = 32,
+	.reg_stride = 4,
+	.max_register = JZ_EFUWINDOW + JZ_EFUWINDOW_SIZE - 4,
+};
+
 static void clk_disable_unprepare_helper(void *clock)
 {
 	clk_disable_unprepare(clock);
 }
 
-static int jz4780_efuse_probe(struct platform_device *pdev)
+static int jz4780_efuse_set_timing(struct jz4780_efuse *efuse,
+				   unsigned long clk_rate)
 {
-	struct nvmem_device *nvmem;
-	const struct jz4780_efuse_soc_data *soc_data;
-	struct jz4780_efuse *efuse;
-	struct nvmem_config cfg;
-	unsigned long clk_rate;
-	unsigned long rd_adj;
-	unsigned long rd_strobe;
-	struct device *dev = &pdev->dev;
-	void __iomem *regs;
-	int ret;
-
-	efuse = devm_kzalloc_obj(dev, *efuse);
-	if (!efuse)
-		return -ENOMEM;
-
-	regs = devm_platform_ioremap_resource(pdev, 0);
-	if (IS_ERR(regs))
-		return PTR_ERR(regs);
-
-	efuse->map = devm_regmap_init_mmio(dev, regs,
-					   &jz4780_efuse_regmap_config);
-	if (IS_ERR(efuse->map))
-		return PTR_ERR(efuse->map);
-
-	efuse->clk = devm_clk_get(&pdev->dev, NULL);
-	if (IS_ERR(efuse->clk))
-		return PTR_ERR(efuse->clk);
-
-	ret = clk_prepare_enable(efuse->clk);
-	if (ret < 0)
-		return ret;
-
-	ret = devm_add_action_or_reset(&pdev->dev,
-				       clk_disable_unprepare_helper,
-				       efuse->clk);
-	if (ret < 0)
-		return ret;
-
-	clk_rate = clk_get_rate(efuse->clk);
-
-	efuse->dev = dev;
-	soc_data = of_device_get_match_data(dev);
-	efuse->read_size = soc_data->read_size;
-	efuse->word_addr = soc_data->word_addr;
+	unsigned long rd_adj, rd_strobe;
 
 	/*
 	 * rd_adj and rd_strobe are 4 bit values
@@ -231,7 +244,7 @@ static int jz4780_efuse_probe(struct platform_device *pdev)
 
 	if (rd_adj > EFUCFG_RD_ADJ_MASK ||
 	    rd_strobe > EFUCFG_RD_STR_MASK) {
-		dev_err(&pdev->dev, "Cannot set clock configuration\n");
+		dev_err(efuse->dev, "Cannot set clock configuration\n");
 		return -EINVAL;
 	}
 
@@ -240,6 +253,60 @@ static int jz4780_efuse_probe(struct platform_device *pdev)
 			   (EFUCFG_RD_STR_MASK << EFUCFG_RD_STR_SHIFT),
 			   (rd_adj << EFUCFG_RD_ADJ_SHIFT) |
 			   (rd_strobe << EFUCFG_RD_STR_SHIFT));
+
+	return 0;
+}
+
+static int jz4780_efuse_probe(struct platform_device *pdev)
+{
+	struct nvmem_device *nvmem;
+	const struct jz4780_efuse_soc_data *soc_data;
+	struct jz4780_efuse *efuse;
+	struct nvmem_config cfg;
+	struct device *dev = &pdev->dev;
+	void __iomem *regs;
+	int ret;
+
+	efuse = devm_kzalloc_obj(dev, *efuse);
+	if (!efuse)
+		return -ENOMEM;
+
+	regs = devm_platform_ioremap_resource(pdev, 0);
+	if (IS_ERR(regs))
+		return PTR_ERR(regs);
+
+	soc_data = of_device_get_match_data(dev);
+
+	efuse->map = devm_regmap_init_mmio(dev, regs, soc_data->window ?
+					   &jz4780_efuse_window_regmap_config :
+					   &jz4780_efuse_regmap_config);
+	if (IS_ERR(efuse->map))
+		return PTR_ERR(efuse->map);
+
+	efuse->clk = devm_clk_get(&pdev->dev, NULL);
+	if (IS_ERR(efuse->clk))
+		return PTR_ERR(efuse->clk);
+
+	ret = clk_prepare_enable(efuse->clk);
+	if (ret < 0)
+		return ret;
+
+	ret = devm_add_action_or_reset(&pdev->dev,
+				       clk_disable_unprepare_helper,
+				       efuse->clk);
+	if (ret < 0)
+		return ret;
+
+	efuse->dev = dev;
+	efuse->read_size = soc_data->read_size;
+	efuse->word_addr = soc_data->word_addr;
+	efuse->window = soc_data->window;
+
+	if (!efuse->window) {
+		ret = jz4780_efuse_set_timing(efuse, clk_get_rate(efuse->clk));
+		if (ret)
+			return ret;
+	}
 
 	cfg = jz4780_efuse_nvmem_config;
 	cfg.dev = &pdev->dev;
@@ -259,6 +326,8 @@ static const struct of_device_id jz4780_efuse_match[] = {
 	{ .compatible = "ingenic,t23-efuse",    .data = &t21_efuse_soc_data    },
 	{ .compatible = "ingenic,t30-efuse",    .data = &t21_efuse_soc_data    },
 	{ .compatible = "ingenic,t31-efuse",    .data = &t31_efuse_soc_data    },
+	{ .compatible = "ingenic,t32-efuse",    .data = &t32_efuse_soc_data    },
+	{ .compatible = "ingenic,t33-efuse",    .data = &t33_efuse_soc_data    },
 	{ /* sentinel */ },
 };
 MODULE_DEVICE_TABLE(of, jz4780_efuse_match);
