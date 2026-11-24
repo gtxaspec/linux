@@ -44,6 +44,12 @@ properties:
           - ingenic,x1500-pinctrl
           - ingenic,x1600-pinctrl
           - ingenic,x1830-pinctrl
+          - ingenic,t10-pinctrl
+          - ingenic,t20-pinctrl
+          - ingenic,t21-pinctrl
+          - ingenic,t23-pinctrl
+          - ingenic,t30-pinctrl
+          - ingenic,t31-pinctrl
           - ingenic,x2000-pinctrl
           - ingenic,x2100-pinctrl
       - items:
@@ -84,6 +90,12 @@ patternProperties:
           - ingenic,x1500-gpio
           - ingenic,x1600-gpio
           - ingenic,x1830-gpio
+          - ingenic,t10-gpio
+          - ingenic,t20-gpio
+          - ingenic,t21-gpio
+          - ingenic,t23-gpio
+          - ingenic,t30-gpio
+          - ingenic,t31-gpio
           - ingenic,x2000-gpio
           - ingenic,x2100-gpio
 
