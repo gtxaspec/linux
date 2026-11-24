@@ -141,6 +141,15 @@ patternProperties:
                   - ingenic,jz4760-watchdog
                   - ingenic,jz4725b-watchdog
               - const: ingenic,jz4740-watchdog
+          - items:
+              - enum:
+                  - ingenic,t10-watchdog
+                  - ingenic,t20-watchdog
+                  - ingenic,t21-watchdog
+                  - ingenic,t23-watchdog
+                  - ingenic,t30-watchdog
+                  - ingenic,t31-watchdog
+              - const: ingenic,jz4780-watchdog
 
       reg:
         maxItems: 1
@@ -175,6 +184,12 @@ patternProperties:
                   - ingenic,jz4760b-pwm
                   - ingenic,jz4770-pwm
                   - ingenic,jz4780-pwm
+                  - ingenic,t10-pwm
+                  - ingenic,t20-pwm
+                  - ingenic,t21-pwm
+                  - ingenic,t23-pwm
+                  - ingenic,t30-pwm
+                  - ingenic,t31-pwm
               - const: ingenic,jz4740-pwm
 
       reg:
