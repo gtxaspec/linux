@@ -569,6 +569,10 @@ ingenic_clk_set_rate(struct clk_hw *hw, unsigned long req_rate,
 		if (clk_info->div.busy_bit != -1)
 			ret = ingenic_clk_check_stable(cgu, clk_info);
 
+		if (cgu->clear_ce && clk_info->div.ce_bit != -1)
+			writel(reg & ~BIT(clk_info->div.ce_bit),
+			       cgu->base + clk_info->div.reg);
+
 		spin_unlock_irqrestore(&cgu->lock, flags);
 		return ret;
 	}
