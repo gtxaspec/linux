@@ -128,3 +128,16 @@ config MACH_T31
 	select MIPS_CPU_SCACHE
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
+
+config INGENIC_TX_ISP_DEPS
+	tristate "Kernel support for the out-of-tree Ingenic tx-isp driver"
+	depends on MEDIA_CONTROLLER && VIDEO_DEV
+	select VIDEO_V4L2_SUBDEV_API
+	select VIDEOBUF2_CORE
+	select VIDEOBUF2_V4L2
+	select VIDEOBUF2_MEMOPS
+	help
+	  The T10/T20 tx-isp driver and its helix encoder client are built out
+	  of tree against this kernel and use videobuf2, which no in-tree
+	  driver selects on these SoCs. Say M to build the videobuf2 modules
+	  they load.
