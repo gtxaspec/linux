@@ -10,11 +10,14 @@
 #include <linux/clk.h>
 #include <linux/delay.h>
 #include <linux/io.h>
+#include <linux/mfd/syscon.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/phy/phy.h>
 #include <linux/platform_device.h>
+#include <linux/regmap.h>
 #include <linux/regulator/consumer.h>
+#include <linux/reset.h>
 
 /* OTGPHY register offsets */
 #define REG_USBPCR_OFFSET			0x00
@@ -66,6 +69,7 @@
 #define USBPCR_TXVREFTUNE_INC_75PPT	0xb
 #define USBPCR_TXVREFTUNE_INC_25PPT	0x7
 #define USBPCR_TXVREFTUNE_DFT		0x5
+#define USBPCR_TXVREFTUNE_T21		0xa
 
 /* bits within the USBRDTR register */
 #define USBRDT_UTMI_RST				BIT(27)
@@ -74,6 +78,7 @@
 #define USBRDT_IDDIG_EN				BIT(24)
 #define USBRDT_IDDIG_REG			BIT(23)
 #define USBRDT_VBFIL_EN				BIT(2)
+#define USBRDT_RDT_T21				0x96
 
 /* bits within the USBPCR1 register */
 #define USBPCR1_BVLD_REG			BIT(31)
@@ -82,10 +87,27 @@
 #define USBPCR1_USB_SEL				BIT(28)
 #define USBPCR1_PORT_RST			BIT(21)
 #define USBPCR1_WORD_IF_16BIT		BIT(19)
+#define USBPCR1_REFCLKDIV_MASK		GENMASK(25, 23)
+#define USBPCR1_REFCLKDIV_24M		0x5
+/* Undocumented (reserved in the T21 manual); set by every T-series BSP */
+#define USBPCR1_T21_OTG_SEL		(BIT(30) | BIT(9) | BIT(8))
+
+/* T-series USB PHY registers */
+#define REG_PHY_DETECT_OFFSET		0x70
+#define REG_PHY_OTG_SESSION_OFFSET	0x78
+
+#define PHY_DETECT_T21_BIT3		BIT(3)
+#define PHY_OTG_SESSION_T21_BIT5	BIT(5)
+
+/* SRBC is held from PHY power-on reset until the UTMI reset is released */
+#define T21_POR_US			5
+#define T21_SPENDN_US			10
+#define T21_PHY_SETTLE_US		550
+#define T21_UTMI_RST_US			10
 
 struct ingenic_soc_info {
 	void (*usb_phy_init)(struct phy *phy);
-	bool handles_por;
+	const struct phy_ops *ops;
 };
 
 struct ingenic_usb_phy {
@@ -93,6 +115,8 @@ struct ingenic_usb_phy {
 
 	struct phy *phy;
 	void __iomem *base;
+	struct regmap *regmap;
+	struct reset_control *reset;
 	struct clk *clk;
 	struct regulator *vcc_supply;
 };
@@ -102,15 +126,6 @@ static int ingenic_usb_phy_init(struct phy *phy)
 	struct ingenic_usb_phy *priv = phy_get_drvdata(phy);
 	int err;
 	u32 reg;
-
-	/*
-	 * On T-series SoCs the PHY is fully initialised from the probe
-	 * context (see ingenic_usb_phy_probe) because writing CPM
-	 * registers from inside the DWC2 probe call chain deadlocks the
-	 * DWC2 AHB. Nothing left to do here.
-	 */
-	if (priv->soc_info->handles_por)
-		return 0;
 
 	err = clk_prepare_enable(priv->clk);
 	if (err) {
@@ -286,24 +301,6 @@ static void x1830_usb_phy_init(struct phy *phy)
 	writel(reg, priv->base + REG_USBPCR_OFFSET);
 }
 
-/*
- * T-series (T10/T20/T21/T23/T30/T31) USB PHY.
- *
- * On T-series SoCs, writing to CPM USB registers (USBPCR, OPCR) from
- * within the DWC2 probe call chain deadlocks the DWC2 AHB interface.
- * The PHY must be configured during the PHY driver's own probe, which
- * runs as a separate device probe before DWC2.  The phy_init callback
- * is therefore a no-op.
- */
-static void t_series_usb_phy_init(struct phy *phy)
-{
-}
-
-static const struct ingenic_soc_info t_series_soc_info = {
-	.usb_phy_init = t_series_usb_phy_init,
-	.handles_por = true,
-};
-
 static void x2000_usb_phy_init(struct phy *phy)
 {
 	struct ingenic_usb_phy *priv = phy_get_drvdata(phy);
@@ -338,6 +335,80 @@ static const struct ingenic_soc_info x1830_soc_info = {
 
 static const struct ingenic_soc_info x2000_soc_info = {
 	.usb_phy_init = x2000_usb_phy_init,
+};
+
+static int t21_usb_phy_init(struct phy *phy)
+{
+	struct ingenic_usb_phy *priv = phy_get_drvdata(phy);
+	struct regmap *map = priv->regmap;
+	u32 reg;
+	int err;
+
+	regmap_update_bits(map, REG_USBPCR1_OFFSET,
+			   USBPCR1_T21_OTG_SEL | USBPCR1_DPPD | USBPCR1_DMPD |
+			   USBPCR1_REFCLKDIV_MASK | USBPCR1_WORD_IF_16BIT,
+			   USBPCR1_T21_OTG_SEL | USBPCR1_DPPD | USBPCR1_DMPD |
+			   FIELD_PREP(USBPCR1_REFCLKDIV_MASK,
+				      USBPCR1_REFCLKDIV_24M));
+	regmap_write(map, REG_USBVBFIL_OFFSET, 0);
+
+	/* The UTMI interface stays in reset until the PHY has settled */
+	regmap_write(map, REG_USBRDT_OFFSET,
+		     USBRDT_RDT_T21 | USBRDT_VBFIL_LD_EN);
+
+	reg = USBPCR_USB_MODE | USBPCR_COMMONONN | USBPCR_TXPREEMPHTUNE |
+	      FIELD_PREP(USBPCR_IDPULLUP_MASK, USBPCR_IDPULLUP_OTG) |
+	      FIELD_PREP(USBPCR_SQRXTUNE_MASK, USBPCR_SQRXTUNE_DCR_20PCT) |
+	      FIELD_PREP(USBPCR_TXHSXVTUNE_MASK, USBPCR_TXHSXVTUNE_DCR_15MV) |
+	      FIELD_PREP(USBPCR_TXVREFTUNE_MASK, USBPCR_TXVREFTUNE_T21);
+	regmap_write(map, REG_USBPCR_OFFSET, reg | USBPCR_POR);
+
+	err = reset_control_assert(priv->reset);
+	if (err)
+		return err;
+
+	udelay(T21_POR_US);
+	regmap_write(map, REG_USBPCR_OFFSET, reg);
+	udelay(T21_SPENDN_US);
+
+	/* The PHY clock takes the PHY out of suspend */
+	err = clk_prepare_enable(priv->clk);
+	if (err) {
+		dev_err(&phy->dev, "Unable to start clock: %d\n", err);
+		reset_control_deassert(priv->reset);
+		return err;
+	}
+
+	usleep_range(T21_PHY_SETTLE_US, 2 * T21_PHY_SETTLE_US);
+	regmap_set_bits(map, REG_USBRDT_OFFSET, USBRDT_UTMI_RST);
+	udelay(T21_UTMI_RST_US);
+
+	err = reset_control_deassert(priv->reset);
+	if (err) {
+		clk_disable_unprepare(priv->clk);
+		return err;
+	}
+
+	/* Without these a host does not see a device attach */
+	writel(readl(priv->base + REG_PHY_OTG_SESSION_OFFSET) |
+	       PHY_OTG_SESSION_T21_BIT5,
+	       priv->base + REG_PHY_OTG_SESSION_OFFSET);
+	writel(readl(priv->base + REG_PHY_DETECT_OFFSET) & ~PHY_DETECT_T21_BIT3,
+	       priv->base + REG_PHY_DETECT_OFFSET);
+
+	return 0;
+}
+
+static const struct phy_ops t21_usb_phy_ops = {
+	.init		= t21_usb_phy_init,
+	.exit		= ingenic_usb_phy_exit,
+	.power_on	= ingenic_usb_phy_power_on,
+	.power_off	= ingenic_usb_phy_power_off,
+	.owner		= THIS_MODULE,
+};
+
+static const struct ingenic_soc_info t21_soc_info = {
+	.ops = &t21_usb_phy_ops,
 };
 
 static int ingenic_usb_phy_probe(struct platform_device *pdev)
@@ -375,86 +446,25 @@ static int ingenic_usb_phy_probe(struct platform_device *pdev)
 		return dev_err_probe(dev, err, "Failed to get regulator\n");
 	}
 
-	priv->phy = devm_phy_create(dev, NULL, &ingenic_usb_phy_ops);
+	if (priv->soc_info->ops) {
+		priv->regmap = syscon_regmap_lookup_by_phandle(dev->of_node,
+							       "ingenic,usb-phy-ctrl");
+		if (IS_ERR(priv->regmap))
+			return dev_err_probe(dev, PTR_ERR(priv->regmap),
+					     "Failed to get USB PHY control registers\n");
+
+		priv->reset = devm_reset_control_get_exclusive(dev, NULL);
+		if (IS_ERR(priv->reset))
+			return dev_err_probe(dev, PTR_ERR(priv->reset),
+					     "Failed to get OTG reset\n");
+	}
+
+	priv->phy = devm_phy_create(dev, NULL,
+				    priv->soc_info->ops ?: &ingenic_usb_phy_ops);
 	if (IS_ERR(priv->phy))
 		return PTR_ERR(priv->phy);
 
 	phy_set_drvdata(priv->phy, priv);
-
-	/*
-	 * T-series: configure PHY during probe rather than phy_init.
-	 * Writing CPM USB registers from within the DWC2 probe call
-	 * chain deadlocks the DWC2 AHB interface.  Doing it here
-	 * (separate probe context) gives the bus time to settle.
-	 */
-	if (priv->soc_info->handles_por) {
-		void __iomem *reg_opcr = priv->base - 0x18;
-		void __iomem *reg_srbc = priv->base - 0x08;
-		u32 reg;
-
-		err = clk_prepare_enable(priv->clk);
-		if (err) {
-			dev_err(dev, "Failed to enable PHY clock: %d\n", err);
-			return err;
-		}
-
-		/*
-		 * Full BSP PHY init using __raw_writel (no barriers).
-		 * The MIPS sync instruction in mainline writel deadlocks
-		 * the DWC2 AHB on T-series Ingenic SoCs.
-		 */
-		__raw_writel(__raw_readl(priv->base - 0x1c) & ~BIT(3),
-			     priv->base - 0x1c);
-
-		reg = __raw_readl(priv->base + REG_USBPCR1_OFFSET);
-		reg |= BIT(8) | BIT(9) | BIT(28) | BIT(29) | BIT(30);
-		reg &= ~BIT(19);
-		reg &= ~(0x7 << 23);
-		reg |= (5 << 23);
-		__raw_writel(reg, priv->base + REG_USBPCR1_OFFSET);
-
-		__raw_writel(0, priv->base + REG_USBVBFIL_OFFSET);
-		__raw_writel(0x96 | BIT(25), priv->base + REG_USBRDT_OFFSET);
-
-		__raw_writel(0x8380385a, priv->base + REG_USBPCR_OFFSET);
-
-		reg = __raw_readl(priv->base + REG_USBPCR_OFFSET);
-		reg |= USBPCR_USB_MODE | USBPCR_COMMONONN;
-		reg &= ~(USBPCR_SIDDQ | USBPCR_OTG_DISABLE |
-			 USBPCR_VBUSVLDEXT | USBPCR_VBUSVLDEXTSEL |
-			 FIELD_PREP(USBPCR_IDPULLUP_MASK, 3));
-		__raw_writel(reg, priv->base + REG_USBPCR_OFFSET);
-
-		__raw_writel(__raw_readl(priv->base + REG_USBPCR_OFFSET) |
-			     USBPCR_POR, priv->base + REG_USBPCR_OFFSET);
-		__raw_writel(__raw_readl(priv->base + REG_USBRDT_OFFSET) &
-			     ~BIT(27), priv->base + REG_USBRDT_OFFSET);
-		__raw_writel(__raw_readl(reg_srbc) | BIT(12), reg_srbc);
-		udelay(5);
-		__raw_writel(__raw_readl(priv->base + REG_USBPCR_OFFSET) &
-			     ~USBPCR_POR, priv->base + REG_USBPCR_OFFSET);
-
-		udelay(10);
-		__raw_writel(__raw_readl(reg_opcr) | BIT(7), reg_opcr);
-
-		udelay(550);
-		__raw_writel(__raw_readl(priv->base + REG_USBRDT_OFFSET) |
-			     BIT(27), priv->base + REG_USBRDT_OFFSET);
-
-		udelay(10);
-		__raw_writel(__raw_readl(reg_srbc) & ~BIT(12), reg_srbc);
-
-		{
-			void __iomem *utmi = ioremap(0x10060000, 0x100);
-			if (utmi) {
-				__raw_writel(__raw_readl(utmi + 0x78) | 0x20,
-					     utmi + 0x78);
-				__raw_writel(__raw_readl(utmi + 0x70) & ~0x8,
-					     utmi + 0x70);
-				iounmap(utmi);
-			}
-		}
-	}
 
 	provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
 
@@ -465,11 +475,8 @@ static const struct of_device_id ingenic_usb_phy_of_matches[] = {
 	{ .compatible = "ingenic,jz4770-phy", .data = &jz4770_soc_info },
 	{ .compatible = "ingenic,jz4775-phy", .data = &jz4775_soc_info },
 	{ .compatible = "ingenic,jz4780-phy", .data = &jz4780_soc_info },
+	{ .compatible = "ingenic,t21-phy", .data = &t21_soc_info },
 	{ .compatible = "ingenic,x1000-phy", .data = &x1000_soc_info },
-	{ .compatible = "ingenic,t21-phy", .data = &t_series_soc_info },
-	{ .compatible = "ingenic,t23-phy", .data = &t_series_soc_info },
-	{ .compatible = "ingenic,t30-phy", .data = &t_series_soc_info },
-	{ .compatible = "ingenic,t31-phy", .data = &t_series_soc_info },
 	{ .compatible = "ingenic,x1830-phy", .data = &x1830_soc_info },
 	{ .compatible = "ingenic,x2000-phy", .data = &x2000_soc_info },
 	{ /* sentinel */ }
