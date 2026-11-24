@@ -56,6 +56,7 @@
 #define JZ4770_GPIO_PAT0			0x40
 #define JZ4770_GPIO_FLAG			0x50
 #define JZ4770_GPIO_PEN				0x70
+#define T20_GPIO_PEN				0x60
 
 #define X1600_GPIO_PU				0x80
 
@@ -108,6 +109,7 @@ enum jz_version {
 	ID_JZ4770,
 	ID_JZ4775,
 	ID_JZ4780,
+	ID_T20,
 	ID_X1000,
 	ID_X1500,
 	ID_X1600,
@@ -160,6 +162,7 @@ static const unsigned long enabled_socs =
 	IS_ENABLED(CONFIG_MACH_JZ4770) << ID_JZ4770 |
 	IS_ENABLED(CONFIG_MACH_JZ4775) << ID_JZ4775 |
 	IS_ENABLED(CONFIG_MACH_JZ4780) << ID_JZ4780 |
+	IS_ENABLED(CONFIG_MACH_T20) << ID_T20 |
 	IS_ENABLED(CONFIG_MACH_X1000) << ID_X1000 |
 	IS_ENABLED(CONFIG_MACH_X1500) << ID_X1500 |
 	IS_ENABLED(CONFIG_MACH_X1600) << ID_X1600 |
@@ -174,6 +177,12 @@ is_soc_or_above(const struct ingenic_pinctrl *jzpc, enum jz_version version)
 	return (enabled_socs >> version) &&
 		(!(enabled_socs & GENMASK(version - 1, 0))
 		 || jzpc->info->version >= version);
+}
+
+/* The T20's pull disable register sits below the JZ4770 family's */
+static inline unsigned int ingenic_pen_reg(const struct ingenic_pinctrl *jzpc)
+{
+	return jzpc->info->version == ID_T20 ? T20_GPIO_PEN : JZ4770_GPIO_PEN;
 }
 
 static const u32 jz4730_pull_ups[4] = {
@@ -2825,6 +2834,131 @@ static const struct ingenic_chip_info x1830_chip_info = {
 	.access_table = &x1830_access_table,
 };
 
+/* T20 */
+static int t20_uart0_data_pins[] = { 0x33, 0x36, };
+static int t20_uart0_hwflow_pins[] = { 0x34, 0x35, };
+static int t20_uart1_data_pins[] = { 0x37, 0x38, };
+static int t20_i2c0_pins[] = { 0x0c, 0x0d, };
+static int t20_i2c1_pins[] = { 0x39, 0x3a, };
+static int t20_mmc0_1bit_pins[] = { 0x20, 0x21, 0x22, };
+static int t20_mmc0_4bit_pins[] = { 0x23, 0x24, 0x25, };
+static int t20_mmc1_4bit_pins[] = { 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, };
+static int t20_sfc_data_pins[] = { 0x17, 0x18, 0x1b, 0x1c, };
+static int t20_sfc_quad_pins[] = { 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, };
+static int t20_ssi0_dt_pins[] = { 0x4b, };
+static int t20_ssi0_dr_pins[] = { 0x4c, };
+static int t20_ssi0_clk_pins[] = { 0x4d, };
+static int t20_ssi0_ce_pins[] = { 0x4e, };
+static int t20_mac_rmii_pins[] = {
+	0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2d, 0x2e, 0x2f, 0x30,
+};
+static int t20_pwm0_pins[] = { 0x31, };
+static int t20_pwm1_pins[] = { 0x32, };
+static int t20_pwm2_pins[] = { 0x48, };
+static int t20_pwm3_pins[] = { 0x49, };
+static int t20_dmic_pins[] = { 0x4b, 0x4c, 0x4f, };
+/* The sensor clock, which stays a GPIO unless this group muxes it */
+static int t20_cim_pclk_pins[] = { 0x0e, };
+static int t20_cim_mclk_pins[] = { 0x0f, };
+static int t20_cim_sync_pins[] = { 0x10, 0x11, };
+static int t20_cim_data_10bit_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+};
+static int t20_cim_data_10bit_high_pins[] = {
+	0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+};
+static int t20_cim_data_12bit_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+};
+
+static const struct group_desc t20_groups[] = {
+	INGENIC_PIN_GROUP("uart0-data", t20_uart0_data, 0),
+	INGENIC_PIN_GROUP("uart0-hwflow", t20_uart0_hwflow, 0),
+	INGENIC_PIN_GROUP("uart1-data", t20_uart1_data, 0),
+	INGENIC_PIN_GROUP("i2c0-data", t20_i2c0, 1),
+	INGENIC_PIN_GROUP("i2c1-data", t20_i2c1, 0),
+	INGENIC_PIN_GROUP("mmc0-1bit", t20_mmc0_1bit, 0),
+	INGENIC_PIN_GROUP("mmc0-4bit", t20_mmc0_4bit, 0),
+	INGENIC_PIN_GROUP("mmc1-4bit", t20_mmc1_4bit, 0),
+	INGENIC_PIN_GROUP("sfc-data", t20_sfc_data, 1),
+	INGENIC_PIN_GROUP("sfc-quad", t20_sfc_quad, 1),
+	INGENIC_PIN_GROUP("ssi0-dt", t20_ssi0_dt, 0),
+	INGENIC_PIN_GROUP("ssi0-dr", t20_ssi0_dr, 0),
+	INGENIC_PIN_GROUP("ssi0-clk", t20_ssi0_clk, 0),
+	INGENIC_PIN_GROUP("ssi0-ce", t20_ssi0_ce, 0),
+	INGENIC_PIN_GROUP("mac-rmii", t20_mac_rmii, 0),
+	INGENIC_PIN_GROUP("pwm0", t20_pwm0, 0),
+	INGENIC_PIN_GROUP("pwm1", t20_pwm1, 0),
+	INGENIC_PIN_GROUP("pwm2", t20_pwm2, 0),
+	INGENIC_PIN_GROUP("pwm3", t20_pwm3, 0),
+	INGENIC_PIN_GROUP("dmic", t20_dmic, 1),
+	INGENIC_PIN_GROUP("cim-pclk", t20_cim_pclk, 1),
+	INGENIC_PIN_GROUP("cim-mclk", t20_cim_mclk, 1),
+	INGENIC_PIN_GROUP("cim-sync", t20_cim_sync, 1),
+	INGENIC_PIN_GROUP("cim-data-10bit", t20_cim_data_10bit, 1),
+	INGENIC_PIN_GROUP("cim-data-10bit-high", t20_cim_data_10bit_high, 1),
+	INGENIC_PIN_GROUP("cim-data-12bit", t20_cim_data_12bit, 1),
+};
+
+static const char *t20_uart0_groups[] = { "uart0-data", "uart0-hwflow", };
+static const char *t20_uart1_groups[] = { "uart1-data", };
+static const char *t20_i2c0_groups[] = { "i2c0-data", };
+static const char *t20_i2c1_groups[] = { "i2c1-data", };
+static const char *t20_mmc0_groups[] = { "mmc0-1bit", "mmc0-4bit", };
+static const char *t20_mmc1_groups[] = { "mmc1-4bit", };
+static const char *t20_sfc_groups[] = { "sfc-data", "sfc-quad", };
+static const char *t20_ssi0_groups[] = {
+	"ssi0-dt", "ssi0-dr", "ssi0-clk", "ssi0-ce",
+};
+static const char *t20_mac_groups[] = { "mac-rmii", };
+static const char *t20_pwm0_groups[] = { "pwm0", };
+static const char *t20_pwm1_groups[] = { "pwm1", };
+static const char *t20_pwm2_groups[] = { "pwm2", };
+static const char *t20_pwm3_groups[] = { "pwm3", };
+static const char *t20_dmic_groups[] = { "dmic", };
+static const char *t20_cim_groups[] = {
+	"cim-pclk", "cim-mclk", "cim-sync", "cim-data-10bit",
+	"cim-data-10bit-high", "cim-data-12bit",
+};
+
+static const struct pinfunction t20_functions[] = {
+	INGENIC_PIN_FUNCTION("uart0", t20_uart0),
+	INGENIC_PIN_FUNCTION("uart1", t20_uart1),
+	INGENIC_PIN_FUNCTION("i2c0", t20_i2c0),
+	INGENIC_PIN_FUNCTION("i2c1", t20_i2c1),
+	INGENIC_PIN_FUNCTION("mmc0", t20_mmc0),
+	INGENIC_PIN_FUNCTION("mmc1", t20_mmc1),
+	INGENIC_PIN_FUNCTION("sfc", t20_sfc),
+	INGENIC_PIN_FUNCTION("ssi0", t20_ssi0),
+	INGENIC_PIN_FUNCTION("mac", t20_mac),
+	INGENIC_PIN_FUNCTION("pwm0", t20_pwm0),
+	INGENIC_PIN_FUNCTION("pwm1", t20_pwm1),
+	INGENIC_PIN_FUNCTION("pwm2", t20_pwm2),
+	INGENIC_PIN_FUNCTION("pwm3", t20_pwm3),
+	INGENIC_PIN_FUNCTION("dmic", t20_dmic),
+	INGENIC_PIN_FUNCTION("cim", t20_cim),
+};
+
+static const u32 t20_pull_ups[6] = {
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+};
+
+static const u32 t20_pull_downs[6] = {
+	0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+};
+
+static const struct ingenic_chip_info t20_chip_info = {
+	.num_chips = 6,
+	.reg_offset = 0x100,
+	.version = ID_T20,
+	.groups = t20_groups,
+	.num_groups = ARRAY_SIZE(t20_groups),
+	.functions = t20_functions,
+	.num_functions = ARRAY_SIZE(t20_functions),
+	.pull_ups = t20_pull_ups,
+	.pull_downs = t20_pull_downs,
+};
+
 /* T31 */
 static int t31_uart0_data_b_pins[] = { 0x33, 0x36, };
 static int t31_uart0_data_c_pins[] = { 0x48, 0x49, };
@@ -4242,7 +4376,7 @@ static int ingenic_pinconf_get(struct pinctrl_dev *pctldev,
 		if (is_soc_or_above(jzpc, ID_X1600))
 			pull = ingenic_get_pin_config(jzpc, pin, X1600_GPIO_PU);
 		else if (is_soc_or_above(jzpc, ID_JZ4770))
-			pull = !ingenic_get_pin_config(jzpc, pin, JZ4770_GPIO_PEN);
+			pull = !ingenic_get_pin_config(jzpc, pin, ingenic_pen_reg(jzpc));
 		else if (is_soc_or_above(jzpc, ID_JZ4740))
 			pull = !ingenic_get_pin_config(jzpc, pin, JZ4740_GPIO_PULL_DIS);
 		else
@@ -4343,7 +4477,7 @@ static void ingenic_set_bias(struct ingenic_pinctrl *jzpc,
 	} else if (is_soc_or_above(jzpc, ID_X1600)) {
 		ingenic_config_pin(jzpc, pin, X1600_GPIO_PU, bias);
 	} else if (is_soc_or_above(jzpc, ID_JZ4770)) {
-		ingenic_config_pin(jzpc, pin, JZ4770_GPIO_PEN, !bias);
+		ingenic_config_pin(jzpc, pin, ingenic_pen_reg(jzpc), !bias);
 	} else if (is_soc_or_above(jzpc, ID_JZ4740)) {
 		ingenic_config_pin(jzpc, pin, JZ4740_GPIO_PULL_DIS, !bias);
 	} else {
@@ -4537,6 +4671,7 @@ static const struct of_device_id ingenic_gpio_of_matches[] __initconst = {
 	{ .compatible = "ingenic,x1600-gpio" },
 	{ .compatible = "ingenic,x1830-gpio" },
 	{ .compatible = "ingenic,x2000-gpio" },
+	{ .compatible = "ingenic,t20-gpio" },
 	{ .compatible = "ingenic,t31-gpio" },
 	{ .compatible = "ingenic,x2100-gpio" },
 	{},
@@ -4787,6 +4922,10 @@ static const struct of_device_id ingenic_pinctrl_of_matches[] = {
 	{
 		.compatible = "ingenic,x1830-pinctrl",
 		.data = IF_ENABLED(CONFIG_MACH_X1830, &x1830_chip_info)
+	},
+	{
+		.compatible = "ingenic,t20-pinctrl",
+		.data = IF_ENABLED(CONFIG_MACH_T20, &t20_chip_info)
 	},
 	{
 		.compatible = "ingenic,t31-pinctrl",
