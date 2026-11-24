@@ -349,6 +349,32 @@
 		#dma-cells = <2>;
 	};
 
+	aic: audio-controller@10020000 {
+		compatible = "ingenic,t10-aic";
+		reg = <0x10020000 0x40>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <1>;
+
+		clocks = <&cgu T20_CLK_AIC>,
+			 <&cgu T20_CLK_DIV_I2S>,
+			 <&cgu T20_CLK_CE_I2S>;
+		clock-names = "gate_aic", "div_i2s", "ce_i2s";
+
+		dmas = <&pdma 0x07 0xffffffff>,
+		       <&pdma 0x06 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	codec: audio-codec@10021000 {
+		compatible = "ingenic,t10-codec";
+		reg = <0x10021000 0x100>;
+
+		status = "disabled";
+	};
+
 	msc0: mmc@13450000 {
 		compatible = "ingenic,x1000-mmc";
 		reg = <0x13450000 0x1000>;
