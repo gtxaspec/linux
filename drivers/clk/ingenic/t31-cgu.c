@@ -37,7 +37,7 @@
 #define CGU_REG_MSC0CDR		0x68
 #define CGU_REG_SSICDR		0x74
 #define CGU_REG_T23_SSICDR	0x60
-#define CGU_REG_SFCCDR		0x74
+#define CGU_REG_T23_SFCCDR	0x74	/* the T31 SSICDR offset */
 #define CGU_REG_VPUCDR		0x30
 #define CGU_REG_CIMCDR		0x7c
 #define CGU_REG_ISPCDR		0x80
@@ -793,8 +793,8 @@ static const struct ingenic_cgu_clk_info t23_cgu_clocks[] = {
 	[T23_CLK_SFCDIV] = {
 		"sfc_div", CGU_CLK_MUX | CGU_CLK_DIV,
 		.parents = { T23_CLK_SCLKA, T23_CLK_MPLL, -1, -1 },
-		.mux = { CGU_REG_SFCCDR, 30, 2 },
-		.div = { CGU_REG_SFCCDR, 0, 1, 8, 28, 27, 26 },
+		.mux = { CGU_REG_T23_SFCCDR, 30, 2 },
+		.div = { CGU_REG_T23_SFCCDR, 0, 1, 8, 28, 27, 26 },
 	},
 
 	[T23_CLK_ISP] = {
