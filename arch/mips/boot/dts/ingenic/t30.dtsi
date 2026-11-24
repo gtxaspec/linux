@@ -333,6 +333,24 @@
 		status = "disabled";
 	};
 
+	/*
+	 * The radix H.265 encoder behind the vendor soc_vpu driver; the second
+	 * window is the CPM, whose SRBC register resets the engine.
+	 */
+	radix: radix@13600000 {
+		compatible = "ingenic,t30-radix";
+		reg = <0x13600000 0x100000>, <0x10000000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <45>;
+
+		clocks = <&cgu T30_CLK_AHB1>, <&cgu T30_CLK_RADIX>,
+			 <&cgu T30_CLK_VPU>;
+		clock-names = "ahb1", "radix0", "cgu_vpu";
+
+		status = "disabled";
+	};
+
 	efuse: efuse@13540000 {
 		compatible = "ingenic,t30-efuse";
 		reg = <0x13540000 0x10>;

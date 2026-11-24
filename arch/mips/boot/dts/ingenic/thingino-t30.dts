@@ -143,6 +143,10 @@
 	status = "okay";
 };
 
+&radix {
+	status = "okay";
+};
+
 &efuse {
 	status = "okay";
 };
