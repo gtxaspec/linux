@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/reset/ingenic,t21-reset.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic T-series soft reset controller
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description: |
+  The Soft Reset and Bus Control register (SRBC) of the clock and power
+  controller in the Ingenic T21, T23, T30 and T31. Setting a reset bit holds
+  the block (OTG controller, VPU, ISP) in reset; clearing it releases the
+  block. The other bits of the register request bus stops and are not
+  resets. The reset specifier is the bit number in SRBC, for example 12 for
+  the OTG controller.
+
+properties:
+  compatible:
+    oneOf:
+      - const: ingenic,t21-reset
+      - items:
+          - enum:
+              - ingenic,t23-reset
+              - ingenic,t30-reset
+              - ingenic,t31-reset
+          - const: ingenic,t21-reset
+
+  reg:
+    maxItems: 1
+
+  '#reset-cells':
+    const: 1
+
+required:
+  - compatible
+  - reg
+  - '#reset-cells'
+
+additionalProperties: false
+
+examples:
+  - |
+    reset-controller@c4 {
+        compatible = "ingenic,t31-reset", "ingenic,t21-reset";
+        reg = <0xc4 0x4>;
+        #reset-cells = <1>;
+    };
