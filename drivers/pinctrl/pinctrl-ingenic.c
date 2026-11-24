@@ -116,6 +116,7 @@ enum jz_version {
 	ID_X1600,
 	ID_X1830,
 	ID_T21,
+	ID_T23,
 	ID_T30,
 	ID_T31,
 	ID_X2000,
@@ -172,6 +173,7 @@ static const unsigned long enabled_socs =
 	IS_ENABLED(CONFIG_MACH_X1600) << ID_X1600 |
 	IS_ENABLED(CONFIG_MACH_X1830) << ID_X1830 |
 	IS_ENABLED(CONFIG_MACH_T21) << ID_T21 |
+	IS_ENABLED(CONFIG_MACH_T23) << ID_T23 |
 	IS_ENABLED(CONFIG_MACH_T30) << ID_T30 |
 	IS_ENABLED(CONFIG_MACH_T31) << ID_T31 |
 	IS_ENABLED(CONFIG_MACH_X2000) << ID_X2000 |
@@ -3254,6 +3256,134 @@ static const struct ingenic_chip_info t21_chip_info = {
 };
 
 /*
+ * T23: the T31's registers (ports 0x1000 apart, the shadow window at 0x7000,
+ * pulls in PEL and PEH) and its three ports; PB12 and PC18 up have no pads.
+ * The pin map is from the vendor t23-pinctrl.dtsi: three UARTs, three I2C
+ * with two pad sets each on I2C1 and I2C2, MSC0 and MSC1, the SFC, SSI0 on
+ * PB, the RMII MAC, one PWM, DMIC and the CIM with its DVP pads (the MIPI
+ * lanes are analog).
+ */
+static int t23_uart0_data_pins[] = { 0x33, 0x36, };
+static int t23_uart0_hwflow_pins[] = { 0x34, 0x35, };
+static int t23_uart1_data_b_pins[] = { 0x37, 0x38, };
+static int t23_uart1_data_a_pins[] = { 0x06, 0x07, };
+static int t23_uart2_data_pins[] = { 0x31, 0x32, };
+static int t23_i2c0_pins[] = { 0x0c, 0x0d, };
+static int t23_i2c1_a_pins[] = { 0x10, 0x11, };
+static int t23_i2c1_b_pins[] = { 0x39, 0x3a, };
+static int t23_i2c2_b1_pins[] = { 0x34, 0x35, };
+static int t23_i2c2_b2_pins[] = { 0x3b, 0x3c, };
+static int t23_mmc0_1bit_pins[] = { 0x20, 0x21, 0x22, };
+static int t23_mmc0_4bit_pins[] = { 0x23, 0x24, 0x25, };
+static int t23_mmc1_4bit_b_pins[] = { 0x28, 0x29, 0x2a, 0x2b, 0x2d, 0x2e, };
+static int t23_mmc1_4bit_a_pins[] = { 0x06, 0x07, 0x0e, 0x10, 0x11, 0x12, };
+static int t23_sfc_data_pins[] = { 0x17, 0x18, 0x1b, 0x1c, };
+/* The vendor names four pads for each SSI0 set, not their roles */
+static int t23_ssi0_b1_pins[] = { 0x2f, 0x30, 0x31, 0x32, };
+static int t23_ssi0_b2_pins[] = { 0x3b, 0x3c, 0x3d, 0x3e, };
+static int t23_mac_rmii_pins[] = {
+	0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2d, 0x2e, 0x2f, 0x30,
+};
+static int t23_pwm0_pins[] = { 0x0e, };
+static int t23_dmic_pins[] = { 0x3c, 0x3d, 0x3e, };
+static int t23_cim_mclk_pins[] = { 0x0f, };
+static int t23_cim_data_10bit_low_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+	0x0c, 0x0d, 0x0e,
+};
+static int t23_cim_data_10bit_high_pins[] = {
+	0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+	0x0c, 0x0d, 0x0e,
+};
+static int t23_cim_data_12bit_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+	0x0c, 0x0d, 0x0e,
+};
+
+static const struct group_desc t23_groups[] = {
+	INGENIC_PIN_GROUP("uart0-data", t23_uart0_data, 0),
+	INGENIC_PIN_GROUP("uart0-hwflow", t23_uart0_hwflow, 0),
+	INGENIC_PIN_GROUP("uart1-data-b", t23_uart1_data_b, 0),
+	INGENIC_PIN_GROUP("uart1-data-a", t23_uart1_data_a, 2),
+	INGENIC_PIN_GROUP("uart2-data", t23_uart2_data, 2),
+	INGENIC_PIN_GROUP("i2c0-data", t23_i2c0, 1),
+	INGENIC_PIN_GROUP("i2c1-data-a", t23_i2c1_a, 2),
+	INGENIC_PIN_GROUP("i2c1-data-b", t23_i2c1_b, 0),
+	INGENIC_PIN_GROUP("i2c2-data-b1", t23_i2c2_b1, 2),
+	INGENIC_PIN_GROUP("i2c2-data-b2", t23_i2c2_b2, 3),
+	INGENIC_PIN_GROUP("mmc0-1bit", t23_mmc0_1bit, 0),
+	INGENIC_PIN_GROUP("mmc0-4bit", t23_mmc0_4bit, 0),
+	INGENIC_PIN_GROUP("mmc1-4bit-b", t23_mmc1_4bit_b, 1),
+	INGENIC_PIN_GROUP("mmc1-4bit-a", t23_mmc1_4bit_a, 3),
+	INGENIC_PIN_GROUP("sfc-data", t23_sfc_data, 1),
+	INGENIC_PIN_GROUP("ssi0-b1", t23_ssi0_b1, 1),
+	INGENIC_PIN_GROUP("ssi0-b2", t23_ssi0_b2, 2),
+	INGENIC_PIN_GROUP("mac-rmii", t23_mac_rmii, 0),
+	INGENIC_PIN_GROUP("pwm0", t23_pwm0, 2),
+	INGENIC_PIN_GROUP("dmic", t23_dmic, 3),
+	INGENIC_PIN_GROUP("cim-mclk", t23_cim_mclk, 1),
+	INGENIC_PIN_GROUP("cim-data-10bit-low", t23_cim_data_10bit_low, 0),
+	INGENIC_PIN_GROUP("cim-data-10bit-high", t23_cim_data_10bit_high, 0),
+	INGENIC_PIN_GROUP("cim-data-12bit", t23_cim_data_12bit, 0),
+};
+
+static const char *t23_uart0_groups[] = { "uart0-data", "uart0-hwflow", };
+static const char *t23_uart1_groups[] = { "uart1-data-b", "uart1-data-a", };
+static const char *t23_uart2_groups[] = { "uart2-data", };
+static const char *t23_i2c0_groups[] = { "i2c0-data", };
+static const char *t23_i2c1_groups[] = { "i2c1-data-a", "i2c1-data-b", };
+static const char *t23_i2c2_groups[] = { "i2c2-data-b1", "i2c2-data-b2", };
+static const char *t23_mmc0_groups[] = { "mmc0-1bit", "mmc0-4bit", };
+static const char *t23_mmc1_groups[] = { "mmc1-4bit-b", "mmc1-4bit-a", };
+static const char *t23_sfc_groups[] = { "sfc-data", };
+static const char *t23_ssi0_groups[] = { "ssi0-b1", "ssi0-b2", };
+static const char *t23_mac_groups[] = { "mac-rmii", };
+static const char *t23_pwm0_groups[] = { "pwm0", };
+static const char *t23_dmic_groups[] = { "dmic", };
+static const char *t23_cim_groups[] = {
+	"cim-mclk", "cim-data-10bit-low", "cim-data-10bit-high",
+	"cim-data-12bit",
+};
+
+static const struct pinfunction t23_functions[] = {
+	INGENIC_PIN_FUNCTION("uart0", t23_uart0),
+	INGENIC_PIN_FUNCTION("uart1", t23_uart1),
+	INGENIC_PIN_FUNCTION("uart2", t23_uart2),
+	INGENIC_PIN_FUNCTION("i2c0", t23_i2c0),
+	INGENIC_PIN_FUNCTION("i2c1", t23_i2c1),
+	INGENIC_PIN_FUNCTION("i2c2", t23_i2c2),
+	INGENIC_PIN_FUNCTION("mmc0", t23_mmc0),
+	INGENIC_PIN_FUNCTION("mmc1", t23_mmc1),
+	INGENIC_PIN_FUNCTION("sfc", t23_sfc),
+	INGENIC_PIN_FUNCTION("ssi0", t23_ssi0),
+	INGENIC_PIN_FUNCTION("mac", t23_mac),
+	INGENIC_PIN_FUNCTION("pwm0", t23_pwm0),
+	INGENIC_PIN_FUNCTION("dmic", t23_dmic),
+	INGENIC_PIN_FUNCTION("cim", t23_cim),
+};
+
+static const u32 t23_pull_ups[3] = {
+	0xffffffff, 0xffffffff, 0xffffffff,
+};
+
+static const u32 t23_pull_downs[3] = {
+	0xffffffff, 0xffffffff, 0xffffffff,
+};
+
+static const struct ingenic_chip_info t23_chip_info = {
+	.num_chips = 3,
+	.reg_offset = 0x1000,
+	.version = ID_T23,
+	.groups = t23_groups,
+	.num_groups = ARRAY_SIZE(t23_groups),
+	.functions = t23_functions,
+	.num_functions = ARRAY_SIZE(t23_functions),
+	.pull_ups = t23_pull_ups,
+	.pull_downs = t23_pull_downs,
+	.access_table = &t31_access_table,
+};
+
+/*
  * T30: the T21's and T31's registers (ports 0x1000 apart, the shadow window
  * at 0x7000, pulls in PEL and PEH) with a fourth port (PD, the ISP and DVP
  * pads). The pin map is from the vendor mach/platform.h: no UART2, a third
@@ -4971,6 +5101,7 @@ static const struct of_device_id ingenic_gpio_of_matches[] __initconst = {
 	{ .compatible = "ingenic,t10-gpio" },
 	{ .compatible = "ingenic,t20-gpio" },
 	{ .compatible = "ingenic,t21-gpio" },
+	{ .compatible = "ingenic,t23-gpio" },
 	{ .compatible = "ingenic,t30-gpio" },
 	{ .compatible = "ingenic,t31-gpio" },
 	{ .compatible = "ingenic,x2100-gpio" },
@@ -5234,6 +5365,10 @@ static const struct of_device_id ingenic_pinctrl_of_matches[] = {
 	{
 		.compatible = "ingenic,t21-pinctrl",
 		.data = IF_ENABLED(CONFIG_MACH_T21, &t21_chip_info)
+	},
+	{
+		.compatible = "ingenic,t23-pinctrl",
+		.data = IF_ENABLED(CONFIG_MACH_T23, &t23_chip_info)
 	},
 	{
 		.compatible = "ingenic,t30-pinctrl",
