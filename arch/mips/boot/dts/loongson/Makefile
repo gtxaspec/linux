@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: GPL-2.0
 
-ifneq ($(CONFIG_BUILTIN_DTB_NAME),)
+ifneq ($(and $(CONFIG_MACH_LOONGSON32),$(CONFIG_BUILTIN_DTB_NAME)),)
 dtb-y	:= $(addsuffix .dtb, $(CONFIG_BUILTIN_DTB_NAME))
 else
 dtb-$(CONFIG_MACH_LOONGSON64)	+= loongson64_2core_2k1000.dtb

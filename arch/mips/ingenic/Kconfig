@@ -46,6 +46,16 @@ config X1830_CU1830_NEO
 
 endchoice
 
+config BUILTIN_DTB_NAME
+	string "Source file for built-in DTB"
+	depends on MACH_INGENIC_SOC && BUILTIN_DTB
+	help
+	  Base name (without suffix, relative to arch/mips/boot/dts) of the
+	  DTS file to link into the kernel. The kernel boots the first
+	  built-in DTB, so a kernel that supports several SoCs names the one
+	  it boots here. Leave empty to link every DTB the configuration
+	  builds.
+
 config MACH_JZ4725B
 	bool
 	select SYS_HAS_CPU_MIPS32_R1
