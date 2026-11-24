@@ -51,14 +51,10 @@
 #define I2SCDR_PCS_SHIFT	30
 #define I2SCDR_CE_BIT		29
 #define I2SCDR_M_SHIFT		13
-#define I2SCDR_M_MASK		GENMASK(21, 13)
-#define I2SCDR_N_MASK		GENMASK(12, 0)
+#define I2SCDR_M_BITS		9
+#define I2SCDR_N_BITS		13
 
 static struct ingenic_cgu *cgu;
-
-/* The T10 selects the I2S source with bit 31 alone, the T20 with 31:30 */
-static unsigned int i2s_pcs_shift = I2SCDR_PCS_SHIFT;
-static u32 i2s_pcs_mask = GENMASK(31, 30);
 
 /*
  * The PLLs have two output dividers, OD1 and OD0, whose fields hold the
@@ -93,117 +89,6 @@ static unsigned long t20_pll_recalc_rate(struct clk_hw *hw,
 
 static const struct clk_ops t20_pll_ops = {
 	.recalc_rate	= t20_pll_recalc_rate,
-};
-
-/*
- * I2S fractional divider: the output is parent * M / N. The CE bit is
- * exposed as a separate gate clock.
- */
-#define I2S_M_MAX		((1 << 9) - 1)
-#define I2S_N_MAX		((1 << 13) - 1)
-
-static void t20_i2s_calc_mn(unsigned long parent_rate, unsigned long target,
-			    unsigned int *out_m, unsigned int *out_n)
-{
-	unsigned long best_err = ULONG_MAX;
-	unsigned int best_m = 1, best_n = 1;
-	unsigned int m;
-
-	if (!target || !parent_rate) {
-		*out_m = 1;
-		*out_n = 1;
-		return;
-	}
-
-	for (m = I2S_M_MAX; m >= 1; m--) {
-		u64 nq = div_u64((u64)parent_rate * m + target / 2, target);
-		unsigned long got, err;
-
-		if (nq < 1 || nq > I2S_N_MAX)
-			continue;
-
-		got = div_u64((u64)parent_rate * m, nq);
-		err = got > target ? got - target : target - got;
-		if (err < best_err) {
-			best_err = err;
-			best_m = m;
-			best_n = nq;
-			if (!err)
-				break;
-		}
-	}
-
-	*out_m = best_m;
-	*out_n = best_n;
-}
-
-static unsigned long t20_i2s_div_recalc_rate(struct clk_hw *hw,
-					     unsigned long parent_rate)
-{
-	u32 reg = readl(cgu->base + CGU_REG_I2SCDR);
-	u32 m = (reg & I2SCDR_M_MASK) >> I2SCDR_M_SHIFT;
-	u32 n = reg & I2SCDR_N_MASK;
-
-	if (!n)
-		return 0;
-	return div_u64((u64)parent_rate * m, n);
-}
-
-static int t20_i2s_div_determine_rate(struct clk_hw *hw,
-				      struct clk_rate_request *req)
-{
-	unsigned int m, n;
-
-	t20_i2s_calc_mn(req->best_parent_rate, req->rate, &m, &n);
-	req->rate = div_u64((u64)req->best_parent_rate * m, n);
-	return 0;
-}
-
-static int t20_i2s_div_set_rate(struct clk_hw *hw, unsigned long rate,
-				unsigned long parent_rate)
-{
-	unsigned long flags;
-	unsigned int m, n;
-	u32 val;
-
-	t20_i2s_calc_mn(parent_rate, rate, &m, &n);
-
-	spin_lock_irqsave(&cgu->lock, flags);
-	val = readl(cgu->base + CGU_REG_I2SCDR);
-	val &= ~(I2SCDR_M_MASK | I2SCDR_N_MASK);
-	val |= (m << I2SCDR_M_SHIFT) | n;
-	writel(val, cgu->base + CGU_REG_I2SCDR);
-	spin_unlock_irqrestore(&cgu->lock, flags);
-	return 0;
-}
-
-static u8 t20_i2s_div_get_parent(struct clk_hw *hw)
-{
-	u32 reg = readl(cgu->base + CGU_REG_I2SCDR);
-
-	return (reg & i2s_pcs_mask) >> i2s_pcs_shift;
-}
-
-static int t20_i2s_div_set_parent(struct clk_hw *hw, u8 index)
-{
-	unsigned long flags;
-	u32 val;
-
-	spin_lock_irqsave(&cgu->lock, flags);
-	val = readl(cgu->base + CGU_REG_I2SCDR);
-	val &= ~i2s_pcs_mask;
-	val |= (u32)index << i2s_pcs_shift;
-	writel(val, cgu->base + CGU_REG_I2SCDR);
-	spin_unlock_irqrestore(&cgu->lock, flags);
-	return 0;
-}
-
-static const struct clk_ops t20_i2s_div_ops = {
-	.recalc_rate	= t20_i2s_div_recalc_rate,
-	.determine_rate	= t20_i2s_div_determine_rate,
-	.set_rate	= t20_i2s_div_set_rate,
-	.get_parent	= t20_i2s_div_get_parent,
-	.set_parent	= t20_i2s_div_set_parent,
 };
 
 static const struct ingenic_cgu_clk_info t20_cgu_clocks[] = {
@@ -524,10 +409,12 @@ static const struct ingenic_cgu_clk_info t20_cgu_clocks[] = {
 	/* I2S fractional divider, M/N from SCLK_A, MPLL or VPLL */
 
 	[T20_CLK_DIV_I2S] = {
-		"div_i2s", CGU_CLK_CUSTOM,
+		"div_i2s", CGU_CLK_MUX | CGU_CLK_FRAC,
 		.parents = { T20_CLK_SCLKA, T20_CLK_MPLL,
 			     T20_CLK_VPLL, T20_CLK_VPLL },
-		.custom = { &t20_i2s_div_ops },
+		.mux = { CGU_REG_I2SCDR, I2SCDR_PCS_SHIFT, 2 },
+		.frac = { CGU_REG_I2SCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  0, I2SCDR_N_BITS },
 	},
 
 	/* CE (clock enable) gate inside I2SCDR, set to enable */
@@ -571,9 +458,6 @@ static void __init t10_cgu_clocks_init(void)
 			info->mux.bits = 1;
 		}
 	}
-
-	i2s_pcs_shift = 31;
-	i2s_pcs_mask = BIT(31);
 }
 
 static void __init t20_cgu_register(struct device_node *np,
