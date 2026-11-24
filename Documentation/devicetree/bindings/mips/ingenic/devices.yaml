@@ -53,6 +53,36 @@ properties:
           - const: yna,cu2000-neo
           - const: ingenic,x2000e
 
+      - description: Thingino board for the Ingenic T10
+        items:
+          - const: thingino,t10
+          - const: ingenic,t10
+
+      - description: Thingino board for the Ingenic T20
+        items:
+          - const: thingino,t20
+          - const: ingenic,t20
+
+      - description: Thingino board for the Ingenic T21
+        items:
+          - const: thingino,t21
+          - const: ingenic,t21
+
+      - description: Thingino board for the Ingenic T23
+        items:
+          - const: thingino,t23
+          - const: ingenic,t23
+
+      - description: Thingino board for the Ingenic T30
+        items:
+          - const: thingino,t30
+          - const: ingenic,t30
+
+      - description: Thingino generic board for the Ingenic T31
+        items:
+          - const: thingino,t31
+          - const: ingenic,t31
+
       - description: Thingino generic board for the Ingenic T32
         items:
           - const: thingino,t32
