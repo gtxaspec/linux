@@ -109,6 +109,7 @@ enum jz_version {
 	ID_JZ4770,
 	ID_JZ4775,
 	ID_JZ4780,
+	ID_T10,
 	ID_T20,
 	ID_X1000,
 	ID_X1500,
@@ -162,6 +163,7 @@ static const unsigned long enabled_socs =
 	IS_ENABLED(CONFIG_MACH_JZ4770) << ID_JZ4770 |
 	IS_ENABLED(CONFIG_MACH_JZ4775) << ID_JZ4775 |
 	IS_ENABLED(CONFIG_MACH_JZ4780) << ID_JZ4780 |
+	IS_ENABLED(CONFIG_MACH_T10) << ID_T10 |
 	IS_ENABLED(CONFIG_MACH_T20) << ID_T20 |
 	IS_ENABLED(CONFIG_MACH_X1000) << ID_X1000 |
 	IS_ENABLED(CONFIG_MACH_X1500) << ID_X1500 |
@@ -179,10 +181,10 @@ is_soc_or_above(const struct ingenic_pinctrl *jzpc, enum jz_version version)
 		 || jzpc->info->version >= version);
 }
 
-/* The T20's pull disable register sits below the JZ4770 family's */
+/* The T10's and T20's pull disable register sits below the JZ4770 family's */
 static inline unsigned int ingenic_pen_reg(const struct ingenic_pinctrl *jzpc)
 {
-	return jzpc->info->version == ID_T20 ? T20_GPIO_PEN : JZ4770_GPIO_PEN;
+	return jzpc->info->version == ID_T10 || jzpc->info->version == ID_T20 ? T20_GPIO_PEN : JZ4770_GPIO_PEN;
 }
 
 static const u32 jz4730_pull_ups[4] = {
@@ -2959,6 +2961,22 @@ static const struct ingenic_chip_info t20_chip_info = {
 	.pull_downs = t20_pull_downs,
 };
 
+/*
+ * T10: the pin map is the T20's (vendor mach/platform.h, T10 and T20, differ
+ * only in the OTG DRVVBUS pin, which has no group here).
+ */
+static const struct ingenic_chip_info t10_chip_info = {
+	.num_chips = 6,
+	.reg_offset = 0x100,
+	.version = ID_T10,
+	.groups = t20_groups,
+	.num_groups = ARRAY_SIZE(t20_groups),
+	.functions = t20_functions,
+	.num_functions = ARRAY_SIZE(t20_functions),
+	.pull_ups = t20_pull_ups,
+	.pull_downs = t20_pull_downs,
+};
+
 /* T31 */
 static int t31_uart0_data_b_pins[] = { 0x33, 0x36, };
 static int t31_uart0_data_c_pins[] = { 0x48, 0x49, };
@@ -4671,6 +4689,7 @@ static const struct of_device_id ingenic_gpio_of_matches[] __initconst = {
 	{ .compatible = "ingenic,x1600-gpio" },
 	{ .compatible = "ingenic,x1830-gpio" },
 	{ .compatible = "ingenic,x2000-gpio" },
+	{ .compatible = "ingenic,t10-gpio" },
 	{ .compatible = "ingenic,t20-gpio" },
 	{ .compatible = "ingenic,t31-gpio" },
 	{ .compatible = "ingenic,x2100-gpio" },
@@ -4922,6 +4941,10 @@ static const struct of_device_id ingenic_pinctrl_of_matches[] = {
 	{
 		.compatible = "ingenic,x1830-pinctrl",
 		.data = IF_ENABLED(CONFIG_MACH_X1830, &x1830_chip_info)
+	},
+	{
+		.compatible = "ingenic,t10-pinctrl",
+		.data = IF_ENABLED(CONFIG_MACH_T10, &t10_chip_info)
 	},
 	{
 		.compatible = "ingenic,t20-pinctrl",
