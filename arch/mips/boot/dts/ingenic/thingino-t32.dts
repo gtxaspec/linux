@@ -161,3 +161,11 @@
 		groups = "mac-rmii", "mac-mdio";
 	};
 };
+
+&aic {
+	status = "okay";
+};
+
+&codec {
+	status = "okay";
+};
