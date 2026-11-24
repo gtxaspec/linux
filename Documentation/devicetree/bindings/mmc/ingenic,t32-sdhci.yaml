@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/mmc/ingenic,t32-sdhci.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic T32 and T33 SDHCI controller
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description:
+  The MSC controllers of the Ingenic T32 and T33 are SDHCI hosts whose card
+  clock comes from the CGU's MSC clock rather than the SDHCI divider.
+
+allOf:
+  - $ref: sdhci-common.yaml#
+
+properties:
+  compatible:
+    oneOf:
+      - const: ingenic,t32-sdhci
+      - items:
+          - const: ingenic,t33-sdhci
+          - const: ingenic,t32-sdhci
+
+  reg:
+    maxItems: 1
+
+  interrupts:
+    maxItems: 1
+
+  clocks:
+    items:
+      - description: MSC clock from the CGU, the card clock
+      - description: external crystal, the MSC clock's source for the
+          identification rates
+
+  clock-names:
+    items:
+      - const: mmc
+      - const: ext
+
+required:
+  - compatible
+  - reg
+  - interrupts
+  - clocks
+  - clock-names
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/ingenic,t32-cgu.h>
+
+    mmc@13060000 {
+      compatible = "ingenic,t32-sdhci";
+      reg = <0x13060000 0x10000>;
+
+      interrupt-parent = <&intc>;
+      interrupts = <37>;
+
+      clocks = <&cgu T32_CLK_MSC0>, <&cgu T32_CLK_EXCLK>;
+      clock-names = "mmc", "ext";
+
+      bus-width = <4>;
+      no-1-8-v;
+    };
