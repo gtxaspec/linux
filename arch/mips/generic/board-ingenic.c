@@ -365,33 +365,3 @@ static int __init ingenic_pm_init(void)
 
 }
 late_initcall(ingenic_pm_init);
-
-#define INGENIC_CPM_CPSPR	0x34
-#define INGENIC_CPM_CPSPPR	0x38
-
-/*
- * The T10, T20, T21 and T30 libimps read the low byte of the CPM scratch pad
- * as the MXU licence grade (0x01 full, 0x10 Lite) and skip frame source init
- * without it. The vendor kernels' MXU licence module wrote 0x101 at boot; the
- * pad powers on with garbage and only takes writes while CPSPPR is unlocked.
- */
-static int __init ingenic_mxu_grade_init(void)
-{
-	void __iomem *cpm;
-
-	if (!of_machine_is_compatible("ingenic,t10") &&
-	    !of_machine_is_compatible("ingenic,t20") &&
-	    !of_machine_is_compatible("ingenic,t21") &&
-	    !of_machine_is_compatible("ingenic,t30"))
-		return 0;
-
-	cpm = ioremap(INGENIC_CGU_BASE, 0x40);
-	if (!cpm)
-		return -ENOMEM;
-	writel(0x5a5a, cpm + INGENIC_CPM_CPSPPR);
-	writel(0x101, cpm + INGENIC_CPM_CPSPR);
-	writel(0, cpm + INGENIC_CPM_CPSPPR);
-	iounmap(cpm);
-	return 0;
-}
-arch_initcall(ingenic_mxu_grade_init);
