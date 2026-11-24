@@ -115,6 +115,7 @@ enum jz_version {
 	ID_X1500,
 	ID_X1600,
 	ID_X1830,
+	ID_T21,
 	ID_T31,
 	ID_X2000,
 	ID_X2100,
@@ -169,6 +170,7 @@ static const unsigned long enabled_socs =
 	IS_ENABLED(CONFIG_MACH_X1500) << ID_X1500 |
 	IS_ENABLED(CONFIG_MACH_X1600) << ID_X1600 |
 	IS_ENABLED(CONFIG_MACH_X1830) << ID_X1830 |
+	IS_ENABLED(CONFIG_MACH_T21) << ID_T21 |
 	IS_ENABLED(CONFIG_MACH_T31) << ID_T31 |
 	IS_ENABLED(CONFIG_MACH_X2000) << ID_X2000 |
 	IS_ENABLED(CONFIG_MACH_X2100) << ID_X2100;
@@ -3107,6 +3109,148 @@ static const struct ingenic_chip_info t31_chip_info = {
 	.access_table = &t31_access_table,
 };
 
+/*
+ * T21: the registers are the T31's (ports 0x1000 apart, the shadow window at
+ * 0x7000, pulls in PEL and PEH). The vendor tree names six ports, but only
+ * the first three have pads on the packages we know (PD, PE and PF carry
+ * the external MII PHY of the vendor reference board). Pin map from the
+ * vendor mach/platform.h.
+ */
+static int t21_uart0_data_pins[] = { 0x33, 0x36, };
+static int t21_uart0_hwflow_pins[] = { 0x34, 0x35, };
+static int t21_uart1_data_pins[] = { 0x37, 0x38, };
+static int t21_uart2_data_pins[] = { 0x4d, 0x4e, };
+static int t21_i2c0_pins[] = { 0x0c, 0x0d, };
+static int t21_i2c1_b_pins[] = { 0x39, 0x3a, };
+static int t21_i2c1_c_pins[] = { 0x48, 0x49, };
+static int t21_mmc0_1bit_pins[] = { 0x20, 0x21, 0x22, };
+static int t21_mmc0_4bit_pins[] = { 0x23, 0x24, 0x25, };
+static int t21_mmc1_4bit_pins[] = { 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, };
+static int t21_sfc_data_pins[] = { 0x17, 0x18, 0x1b, 0x1c, };
+static int t21_sfc_quad_pins[] = { 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, };
+static int t21_ssi0_dt_pins[] = { 0x4b, };
+static int t21_ssi0_dr_pins[] = { 0x4c, };
+static int t21_ssi0_clk_pins[] = { 0x4d, };
+static int t21_ssi0_ce_pins[] = { 0x4e, };
+/* The pads of the external RMII PHY; the internal PHY needs none */
+static int t21_mac_rmii_pins[] = {
+	0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2d, 0x2e, 0x2f, 0x30,
+};
+/* The internal PHY's LED pads (the vendor's "no act LED" board uses PB6) */
+static int t21_mac_ephy_led_pins[] = { 0x27, 0x2f, };
+static int t21_mac_ephy_led_link_pins[] = { 0x26, };
+static int t21_pwm0_pins[] = { 0x31, };
+static int t21_pwm1_pins[] = { 0x32, };
+static int t21_pwm2_pins[] = { 0x48, };
+static int t21_pwm3_pins[] = { 0x49, };
+/* The sensor clock, which stays a GPIO unless this group muxes it */
+static int t21_cim_pclk_pins[] = { 0x0e, };
+static int t21_cim_mclk_pins[] = { 0x0f, };
+static int t21_cim_sync_pins[] = { 0x10, 0x11, };
+static int t21_cim_data_10bit_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+};
+static int t21_cim_data_10bit_high_pins[] = {
+	0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+};
+static int t21_cim_data_12bit_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+};
+
+static const struct group_desc t21_groups[] = {
+	INGENIC_PIN_GROUP("uart0-data", t21_uart0_data, 0),
+	INGENIC_PIN_GROUP("uart0-hwflow", t21_uart0_hwflow, 0),
+	INGENIC_PIN_GROUP("uart1-data", t21_uart1_data, 0),
+	INGENIC_PIN_GROUP("uart2-data", t21_uart2_data, 2),
+	INGENIC_PIN_GROUP("i2c0-data", t21_i2c0, 1),
+	INGENIC_PIN_GROUP("i2c1-data-b", t21_i2c1_b, 0),
+	INGENIC_PIN_GROUP("i2c1-data-c", t21_i2c1_c, 2),
+	INGENIC_PIN_GROUP("mmc0-1bit", t21_mmc0_1bit, 0),
+	INGENIC_PIN_GROUP("mmc0-4bit", t21_mmc0_4bit, 0),
+	INGENIC_PIN_GROUP("mmc1-4bit", t21_mmc1_4bit, 0),
+	INGENIC_PIN_GROUP("sfc-data", t21_sfc_data, 1),
+	INGENIC_PIN_GROUP("sfc-quad", t21_sfc_quad, 1),
+	INGENIC_PIN_GROUP("ssi0-dt", t21_ssi0_dt, 0),
+	INGENIC_PIN_GROUP("ssi0-dr", t21_ssi0_dr, 0),
+	INGENIC_PIN_GROUP("ssi0-clk", t21_ssi0_clk, 0),
+	INGENIC_PIN_GROUP("ssi0-ce", t21_ssi0_ce, 0),
+	INGENIC_PIN_GROUP("mac-rmii", t21_mac_rmii, 0),
+	INGENIC_PIN_GROUP("mac-ephy-led", t21_mac_ephy_led, 2),
+	INGENIC_PIN_GROUP("mac-ephy-led-link", t21_mac_ephy_led_link, 2),
+	INGENIC_PIN_GROUP("pwm0", t21_pwm0, 0),
+	INGENIC_PIN_GROUP("pwm1", t21_pwm1, 0),
+	INGENIC_PIN_GROUP("pwm2", t21_pwm2, 0),
+	INGENIC_PIN_GROUP("pwm3", t21_pwm3, 0),
+	INGENIC_PIN_GROUP("cim-pclk", t21_cim_pclk, 1),
+	INGENIC_PIN_GROUP("cim-mclk", t21_cim_mclk, 1),
+	INGENIC_PIN_GROUP("cim-sync", t21_cim_sync, 1),
+	INGENIC_PIN_GROUP("cim-data-10bit", t21_cim_data_10bit, 1),
+	INGENIC_PIN_GROUP("cim-data-10bit-high", t21_cim_data_10bit_high, 1),
+	INGENIC_PIN_GROUP("cim-data-12bit", t21_cim_data_12bit, 1),
+};
+
+static const char *t21_uart0_groups[] = { "uart0-data", "uart0-hwflow", };
+static const char *t21_uart1_groups[] = { "uart1-data", };
+static const char *t21_uart2_groups[] = { "uart2-data", };
+static const char *t21_i2c0_groups[] = { "i2c0-data", };
+static const char *t21_i2c1_groups[] = { "i2c1-data-b", "i2c1-data-c", };
+static const char *t21_mmc0_groups[] = { "mmc0-1bit", "mmc0-4bit", };
+static const char *t21_mmc1_groups[] = { "mmc1-4bit", };
+static const char *t21_sfc_groups[] = { "sfc-data", "sfc-quad", };
+static const char *t21_ssi0_groups[] = {
+	"ssi0-dt", "ssi0-dr", "ssi0-clk", "ssi0-ce",
+};
+static const char *t21_mac_groups[] = {
+	"mac-rmii", "mac-ephy-led", "mac-ephy-led-link",
+};
+static const char *t21_pwm0_groups[] = { "pwm0", };
+static const char *t21_pwm1_groups[] = { "pwm1", };
+static const char *t21_pwm2_groups[] = { "pwm2", };
+static const char *t21_pwm3_groups[] = { "pwm3", };
+static const char *t21_cim_groups[] = {
+	"cim-pclk", "cim-mclk", "cim-sync", "cim-data-10bit",
+	"cim-data-10bit-high", "cim-data-12bit",
+};
+
+static const struct pinfunction t21_functions[] = {
+	INGENIC_PIN_FUNCTION("uart0", t21_uart0),
+	INGENIC_PIN_FUNCTION("uart1", t21_uart1),
+	INGENIC_PIN_FUNCTION("uart2", t21_uart2),
+	INGENIC_PIN_FUNCTION("i2c0", t21_i2c0),
+	INGENIC_PIN_FUNCTION("i2c1", t21_i2c1),
+	INGENIC_PIN_FUNCTION("mmc0", t21_mmc0),
+	INGENIC_PIN_FUNCTION("mmc1", t21_mmc1),
+	INGENIC_PIN_FUNCTION("sfc", t21_sfc),
+	INGENIC_PIN_FUNCTION("ssi0", t21_ssi0),
+	INGENIC_PIN_FUNCTION("mac", t21_mac),
+	INGENIC_PIN_FUNCTION("pwm0", t21_pwm0),
+	INGENIC_PIN_FUNCTION("pwm1", t21_pwm1),
+	INGENIC_PIN_FUNCTION("pwm2", t21_pwm2),
+	INGENIC_PIN_FUNCTION("pwm3", t21_pwm3),
+	INGENIC_PIN_FUNCTION("cim", t21_cim),
+};
+
+static const u32 t21_pull_ups[3] = {
+	0xffffffff, 0xffffffff, 0xffffffff,
+};
+
+static const u32 t21_pull_downs[3] = {
+	0xffffffff, 0xffffffff, 0xffffffff,
+};
+
+static const struct ingenic_chip_info t21_chip_info = {
+	.num_chips = 3,
+	.reg_offset = 0x1000,
+	.version = ID_T21,
+	.groups = t21_groups,
+	.num_groups = ARRAY_SIZE(t21_groups),
+	.functions = t21_functions,
+	.num_functions = ARRAY_SIZE(t21_functions),
+	.pull_ups = t21_pull_ups,
+	.pull_downs = t21_pull_downs,
+	.access_table = &t31_access_table,
+};
+
 static const u32 x2000_pull_ups[5] = {
 	0x0003ffff, 0xffffffff, 0x1ff0ffff, 0xc7fe3f3f, 0x8fff003f,
 };
@@ -4691,6 +4835,7 @@ static const struct of_device_id ingenic_gpio_of_matches[] __initconst = {
 	{ .compatible = "ingenic,x2000-gpio" },
 	{ .compatible = "ingenic,t10-gpio" },
 	{ .compatible = "ingenic,t20-gpio" },
+	{ .compatible = "ingenic,t21-gpio" },
 	{ .compatible = "ingenic,t31-gpio" },
 	{ .compatible = "ingenic,x2100-gpio" },
 	{},
@@ -4949,6 +5094,10 @@ static const struct of_device_id ingenic_pinctrl_of_matches[] = {
 	{
 		.compatible = "ingenic,t20-pinctrl",
 		.data = IF_ENABLED(CONFIG_MACH_T20, &t20_chip_info)
+	},
+	{
+		.compatible = "ingenic,t21-pinctrl",
+		.data = IF_ENABLED(CONFIG_MACH_T21, &t21_chip_info)
 	},
 	{
 		.compatible = "ingenic,t31-pinctrl",
