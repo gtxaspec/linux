@@ -157,7 +157,7 @@
 		};
 	};
 
-	pinctrl: pin-controller@10010000 {
+	pinctrl: pinctrl@10010000 {
 		compatible = "ingenic,t21-pinctrl";
 		reg = <0x10010000 0x8000>;
 
