@@ -24,6 +24,12 @@ select:
           - ingenic,jz4760b-tcu
           - ingenic,jz4770-tcu
           - ingenic,jz4780-tcu
+          - ingenic,t10-tcu
+          - ingenic,t20-tcu
+          - ingenic,t21-tcu
+          - ingenic,t23-tcu
+          - ingenic,t30-tcu
+          - ingenic,t31-tcu
           - ingenic,x1000-tcu
   required:
     - compatible
@@ -62,6 +68,12 @@ properties:
               - ingenic,jz4780-tcu
               - ingenic,jz4770-tcu
               - ingenic,jz4760b-tcu
+              - ingenic,t10-tcu
+              - ingenic,t20-tcu
+              - ingenic,t21-tcu
+              - ingenic,t23-tcu
+              - ingenic,t30-tcu
+              - ingenic,t31-tcu
           - const: ingenic,jz4760-tcu
           - const: simple-mfd
 
@@ -205,6 +217,12 @@ patternProperties:
               - enum:
                   - ingenic,jz4780-ost
                   - ingenic,jz4770-ost
+                  - ingenic,t10-ost
+                  - ingenic,t20-ost
+                  - ingenic,t21-ost
+                  - ingenic,t23-ost
+                  - ingenic,t30-ost
+                  - ingenic,t31-ost
               - const: ingenic,jz4760b-ost
 
       reg:
