@@ -230,6 +230,9 @@
 		clocks = <&exclk>, <&cgu T30_CLK_UART0>;
 		clock-names = "baud", "module";
 
+		dmas = <&pdma 0x15 0xffffffff>, <&pdma 0x14 0xffffffff>;
+		dma-names = "rx", "tx";
+
 		status = "disabled";
 	};
 
@@ -243,6 +246,9 @@
 		clocks = <&exclk>, <&cgu T30_CLK_UART1>;
 		clock-names = "baud", "module";
 
+		dmas = <&pdma 0x13 0xffffffff>, <&pdma 0x12 0xffffffff>;
+		dma-names = "rx", "tx";
+
 		status = "disabled";
 	};
 
@@ -254,6 +260,9 @@
 		interrupts = <60>;
 
 		clocks = <&cgu T30_CLK_SMB0>;
+
+		dmas = <&pdma 0x25 0xffffffff>, <&pdma 0x24 0xffffffff>;
+		dma-names = "rx", "tx";
 
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -270,6 +279,9 @@
 
 		clocks = <&cgu T30_CLK_SMB1>;
 
+		dmas = <&pdma 0x27 0xffffffff>, <&pdma 0x26 0xffffffff>;
+		dma-names = "rx", "tx";
+
 		#address-cells = <1>;
 		#size-cells = <0>;
 
@@ -284,6 +296,9 @@
 		interrupts = <58>;
 
 		clocks = <&cgu T30_CLK_SMB2>;
+
+		dmas = <&pdma 0x29 0xffffffff>, <&pdma 0x28 0xffffffff>;
+		dma-names = "rx", "tx";
 
 		#address-cells = <1>;
 		#size-cells = <0>;
