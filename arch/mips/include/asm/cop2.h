@@ -29,6 +29,10 @@ struct xburst_cop2_state;
 extern void xburst_cop2_save(struct xburst_cop2_state *st);
 extern void xburst_cop2_restore(struct xburst_cop2_state *st);
 
+/* SIMD sections in kernel code; the user task's registers survive them */
+void kernel_mxu_begin_partial(unsigned int mask);
+void kernel_mxu_end(void);
+
 #define cop2_save(r)		xburst_cop2_save(&(r)->thread.cp2)
 #define cop2_restore(r)		xburst_cop2_restore(&(r)->thread.cp2)
 
