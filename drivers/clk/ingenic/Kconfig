@@ -4,6 +4,7 @@ menu "Ingenic SoCs drivers"
 
 config INGENIC_CGU_COMMON
 	bool
+	select RATIONAL
 
 config INGENIC_CGU_JZ4740
 	bool "Ingenic JZ4740 CGU driver"

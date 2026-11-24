@@ -16,6 +16,7 @@
 #include <linux/math64.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/rational.h>
 #include <linux/slab.h>
 #include <linux/spinlock.h>
 #include <linux/time.h>
@@ -431,9 +432,41 @@ ingenic_clk_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
 		}
 	} else if (clk_info->type & CGU_CLK_FIXDIV) {
 		rate /= clk_info->fixdiv.div;
+	} else if (clk_info->type & CGU_CLK_FRAC) {
+		const struct ingenic_cgu_frac_info *frac = &clk_info->frac;
+		u32 m, n;
+
+		div_reg = readl(cgu->base + frac->reg);
+		m = (div_reg >> frac->m_shift) & GENMASK(frac->m_bits - 1, 0);
+		n = (div_reg >> frac->n_shift) & GENMASK(frac->n_bits - 1, 0);
+		if (!n)
+			return 0;
+
+		rate = div_u64((u64)parent_rate * m, n);
 	}
 
 	return rate;
+}
+
+static void ingenic_clk_calc_frac(const struct ingenic_cgu_frac_info *frac,
+				  unsigned long parent_rate, unsigned long rate,
+				  unsigned long *m, unsigned long *n)
+{
+	if (!rate || rate >= parent_rate) {
+		*m = 1;
+		*n = 1;
+		return;
+	}
+
+	rational_best_approximation(rate, parent_rate,
+				    GENMASK(frac->m_bits - 1, 0),
+				    GENMASK(frac->n_bits - 1, 0), m, n);
+
+	/* below the smallest ratio the fields can hold */
+	if (!*m) {
+		*m = 1;
+		*n = GENMASK(frac->n_bits - 1, 0);
+	}
 }
 
 static unsigned int
@@ -499,6 +532,15 @@ static int ingenic_clk_determine_rate(struct clk_hw *hw,
 	struct ingenic_clk *ingenic_clk = to_ingenic_clk(hw);
 	const struct ingenic_cgu_clk_info *clk_info = to_clk_info(ingenic_clk);
 	unsigned int div = 1;
+
+	if (clk_info->type & CGU_CLK_FRAC) {
+		unsigned long m, n;
+
+		ingenic_clk_calc_frac(&clk_info->frac, req->best_parent_rate,
+				      req->rate, &m, &n);
+		req->rate = div_u64((u64)req->best_parent_rate * m, n);
+		return 0;
+	}
 
 	if (clk_info->type & CGU_CLK_DIV)
 		div = ingenic_clk_calc_div(hw, clk_info, req->best_parent_rate,
@@ -575,6 +617,23 @@ ingenic_clk_set_rate(struct clk_hw *hw, unsigned long req_rate,
 
 		spin_unlock_irqrestore(&cgu->lock, flags);
 		return ret;
+	}
+
+	if (clk_info->type & CGU_CLK_FRAC) {
+		const struct ingenic_cgu_frac_info *frac = &clk_info->frac;
+		unsigned long m, n;
+
+		ingenic_clk_calc_frac(frac, parent_rate, req_rate, &m, &n);
+
+		mask = GENMASK(frac->m_bits - 1, 0) << frac->m_shift |
+		       GENMASK(frac->n_bits - 1, 0) << frac->n_shift;
+
+		spin_lock_irqsave(&cgu->lock, flags);
+		reg = readl(cgu->base + frac->reg) & ~mask;
+		reg |= m << frac->m_shift | n << frac->n_shift;
+		writel(reg, cgu->base + frac->reg);
+		spin_unlock_irqrestore(&cgu->lock, flags);
+		return 0;
 	}
 
 	return -EINVAL;
@@ -700,8 +759,8 @@ static int ingenic_register_clock(struct ingenic_cgu *cgu, unsigned idx)
 
 	caps = clk_info->type;
 
-	if (caps & CGU_CLK_DIV) {
-		caps &= ~CGU_CLK_DIV;
+	if (caps & (CGU_CLK_DIV | CGU_CLK_FRAC)) {
+		caps &= ~(CGU_CLK_DIV | CGU_CLK_FRAC);
 	} else if (!(caps & CGU_CLK_CUSTOM)) {
 		/* pass rate changes to the parent clock */
 		clk_init.flags |= CLK_SET_RATE_PARENT;

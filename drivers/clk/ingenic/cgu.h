@@ -110,6 +110,24 @@ struct ingenic_cgu_div_info {
 };
 
 /**
+ * struct ingenic_cgu_frac_info - information about a fractional divider
+ * @reg: offset of the divider control register within the CGU
+ * @m_shift: index of the lowest bit of the numerator M within reg
+ * @m_bits: size of the numerator field in bits
+ * @n_shift: index of the lowest bit of the denominator N within reg
+ * @n_bits: size of the denominator field in bits
+ *
+ * The output is parent_rate * M / N.
+ */
+struct ingenic_cgu_frac_info {
+	unsigned int reg;
+	u8 m_shift;
+	u8 m_bits;
+	u8 n_shift;
+	u8 n_bits;
+};
+
+/**
  * struct ingenic_cgu_fixdiv_info - information about a fixed divider
  * @div: the divider applied to the parent clock
  */
@@ -152,6 +170,7 @@ struct ingenic_cgu_custom_info {
  * @mux: information valid if type includes CGU_CLK_MUX
  * @div: information valid if type includes CGU_CLK_DIV
  * @fixdiv: information valid if type includes CGU_CLK_FIXDIV
+ * @frac: information valid if type includes CGU_CLK_FRAC
  * @custom: information valid if type includes CGU_CLK_CUSTOM
  */
 struct ingenic_cgu_clk_info {
@@ -167,6 +186,7 @@ struct ingenic_cgu_clk_info {
 		CGU_CLK_DIV		= BIT(5),
 		CGU_CLK_FIXDIV		= BIT(6),
 		CGU_CLK_CUSTOM		= BIT(7),
+		CGU_CLK_FRAC		= BIT(8),
 	} type;
 
 	unsigned long flags;
@@ -181,6 +201,7 @@ struct ingenic_cgu_clk_info {
 			struct ingenic_cgu_mux_info mux;
 			struct ingenic_cgu_div_info div;
 			struct ingenic_cgu_fixdiv_info fixdiv;
+			struct ingenic_cgu_frac_info frac;
 		};
 
 		struct ingenic_cgu_custom_info custom;
