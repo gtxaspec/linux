@@ -134,6 +134,18 @@ static void cpu_set_fpu_2008(struct cpuinfo_mips *c)
 			c->options |= MIPS_CPU_NAN_LEGACY;
 		}
 
+		/*
+		 * XBurst1 FPUs report Has2008 and read NAN2008/ABS2008 as
+		 * fixed 1, but operate with the legacy encodings.
+		 */
+		if (c->cputype == CPU_XBURST &&
+		    (c->processor_id & PRID_IMP_MASK) != PRID_IMP_XBURST2) {
+			c->options &= ~MIPS_CPU_NAN_2008;
+			c->options |= MIPS_CPU_NAN_LEGACY;
+			c->fpu_csr31 &= ~(FPU_CSR_ABS2008 | FPU_CSR_NAN2008);
+			c->fpu_msk31 |= FPU_CSR_ABS2008 | FPU_CSR_NAN2008;
+		}
+
 		write_c0_status(sr);
 	} else {
 		c->options |= MIPS_CPU_NAN_LEGACY;
