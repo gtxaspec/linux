@@ -291,6 +291,43 @@
 		status = "disabled";
 	};
 
+	/*
+	 * The tx-isp out-of-tree driver registers its own VIC, ISP core, CSI and
+	 * video-in platform devices; this node gives them the clocks, the INTC
+	 * source and the CIM MCLK pad. The T10 has no CSI gate (and no MIPI
+	 * receiver), so no "csi" clock.
+	 */
+	isp: isp@13300000 {
+		compatible = "ingenic,t10-isp";
+		reg = <0x13300000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <29>;
+
+		clocks = <&cgu T20_CLK_ISP>, <&cgu T20_CLK_ISP>,
+			 <&cgu T20_CLK_CIM>;
+		clock-names = "cgu_isp", "isp", "cgu_cim";
+
+		status = "disabled";
+	};
+
+	/*
+	 * The helix video engine behind the vendor soc-vpu driver; the second
+	 * window is the CPM, whose SRBC register resets the engine.
+	 */
+	vpu: vpu@13200000 {
+		compatible = "ingenic,t10-vpu";
+		reg = <0x13200000 0x100000>, <0x10000000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <62>;
+
+		clocks = <&cgu T20_CLK_VPU>, <&cgu T20_CLK_VPU>;
+		clock-names = "vpu0", "cgu_vpu";
+
+		status = "disabled";
+	};
+
 	efuse: efuse@13540000 {
 		compatible = "ingenic,t10-efuse";
 		reg = <0x13540000 0x10>;

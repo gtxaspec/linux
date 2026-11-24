@@ -107,6 +107,17 @@
 	pinctrl-0 = <&pins_i2c0>;
 };
 
+&isp {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_cim>;
+};
+
+&vpu {
+	status = "okay";
+};
+
 &efuse {
 	status = "okay";
 };
@@ -130,6 +141,12 @@
 	pins_cim_mclk: cim-mclk {
 		function = "cim";
 		groups = "cim-mclk";
+	};
+
+	/* 10-bit DVP on PA0-PA9 with PCLK, MCLK and the sync pins */
+	pins_cim: cim {
+		function = "cim";
+		groups = "cim-data-10bit", "cim-pclk", "cim-mclk", "cim-sync";
 	};
 
 	pins_i2c0: i2c0 {
