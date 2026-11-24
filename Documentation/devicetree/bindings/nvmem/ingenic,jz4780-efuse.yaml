@@ -16,6 +16,8 @@ properties:
   compatible:
     enum:
       - ingenic,jz4780-efuse
+      - ingenic,t32-efuse
+      - ingenic,t33-efuse
 
   reg:
     maxItems: 1
