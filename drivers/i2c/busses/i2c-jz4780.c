@@ -172,19 +172,19 @@ struct jz4780_i2c {
 static inline unsigned short jz4780_i2c_readw(struct jz4780_i2c *i2c,
 					      unsigned long offset)
 {
-	return readw(i2c->iomem + offset);
+	return readl(i2c->iomem + offset);
 }
 
 static inline void jz4780_i2c_writew(struct jz4780_i2c *i2c,
 				     unsigned long offset, unsigned short val)
 {
-	writew(val, i2c->iomem + offset);
+	writel(val, i2c->iomem + offset);
 }
 
 static int jz4780_i2c_disable(struct jz4780_i2c *i2c)
 {
 	unsigned short regval;
-	unsigned long loops = 5;
+	unsigned long loops = 255;
 
 	jz4780_i2c_writew(i2c, JZ4780_I2C_ENB, 0);
 
@@ -193,7 +193,7 @@ static int jz4780_i2c_disable(struct jz4780_i2c *i2c)
 		if (!(regval & JZ4780_I2C_ENB_I2C))
 			return 0;
 
-		usleep_range(5000, 15000);
+		msleep(1);
 	} while (--loops);
 
 	dev_err(&i2c->adap.dev, "disable failed: ENSTA=0x%04x\n", regval);
