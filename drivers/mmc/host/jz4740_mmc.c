@@ -395,7 +395,7 @@ static void jz4740_mmc_post_request(struct mmc_host *mmc,
 	if (data && data->host_cookie != COOKIE_UNMAPPED)
 		jz4740_mmc_dma_unmap(host, data);
 
-	if (err) {
+	if (err && host->use_dma) {
 		struct dma_chan *chan = jz4740_mmc_get_dma_chan(host, data);
 
 		dmaengine_terminate_all(chan);
