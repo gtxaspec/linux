@@ -250,18 +250,23 @@ static const struct ingenic_cgu_clk_info t21_cgu_clocks[] = {
 		.gate = { CGU_REG_CLKGR1, 10 },
 	},
 
-	[T21_CLK_AHB2] = {
-		"ahb2", CGU_CLK_MUX | CGU_CLK_DIV,
+	/* The source of both AHB2 and PCLK */
+	[T21_CLK_AHB2_MUX] = {
+		"ahb2_mux", CGU_CLK_MUX,
 		.parents = { -1, T21_CLK_SCLKA, T21_CLK_MPLL, -1 },
 		.mux = { CGU_REG_CPCCR, 24, 2 },
+	},
+
+	[T21_CLK_AHB2] = {
+		"ahb2", CGU_CLK_DIV,
+		.parents = { T21_CLK_AHB2_MUX, -1, -1, -1 },
 		.div = { CGU_REG_CPCCR, 12, 1, 4, 20, -1, -1 },
 	},
 
-	/* PDIV divides the AHB2 mux source, not AHB2 */
+	/* PDIV divides the AHB2 source, not AHB2 */
 	[T21_CLK_PCLK] = {
-		"pclk", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
-		.parents = { -1, T21_CLK_SCLKA, T21_CLK_MPLL, -1 },
-		.mux = { CGU_REG_CPCCR, 24, 2 },
+		"pclk", CGU_CLK_DIV | CGU_CLK_GATE,
+		.parents = { T21_CLK_AHB2_MUX, -1, -1, -1 },
 		.div = { CGU_REG_CPCCR, 16, 1, 4, 20, -1, -1 },
 		.gate = { CGU_REG_CLKGR1, 14 },
 	},
@@ -624,18 +629,23 @@ static const struct ingenic_cgu_clk_info t30_cgu_clocks[] = {
 		.gate = { CGU_REG_CLKGR1, 10 },
 	},
 
-	[T30_CLK_AHB2] = {
-		"ahb2", CGU_CLK_MUX | CGU_CLK_DIV,
+	/* The source of both AHB2 and PCLK */
+	[T30_CLK_AHB2_MUX] = {
+		"ahb2_mux", CGU_CLK_MUX,
 		.parents = { -1, T30_CLK_SCLKA, T30_CLK_MPLL, -1 },
 		.mux = { CGU_REG_CPCCR, 24, 2 },
+	},
+
+	[T30_CLK_AHB2] = {
+		"ahb2", CGU_CLK_DIV,
+		.parents = { T30_CLK_AHB2_MUX, -1, -1, -1 },
 		.div = { CGU_REG_CPCCR, 12, 1, 4, 20, -1, -1 },
 	},
 
-	/* PDIV divides the AHB2 mux source, not AHB2 */
+	/* PDIV divides the AHB2 source, not AHB2 */
 	[T30_CLK_PCLK] = {
-		"pclk", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
-		.parents = { -1, T30_CLK_SCLKA, T30_CLK_MPLL, -1 },
-		.mux = { CGU_REG_CPCCR, 24, 2 },
+		"pclk", CGU_CLK_DIV | CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB2_MUX, -1, -1, -1 },
 		.div = { CGU_REG_CPCCR, 16, 1, 4, 20, -1, -1 },
 		.gate = { CGU_REG_CLKGR1, 14 },
 	},
