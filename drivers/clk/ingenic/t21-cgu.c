@@ -122,13 +122,14 @@ static void t21_pll_calc_m_n_od(const struct ingenic_cgu_pll_info *pll_info,
 				unsigned int *pm, unsigned int *pn,
 				unsigned int *pod)
 {
-	unsigned long best_err = ULONG_MAX;
+	u64 best_err = U64_MAX;
 	unsigned int best_m = 2, best_n = 1, best_od = 1;
 	unsigned int n, od, m;
 
 	for (od = 1; od <= 8; od <<= 1) {
 		for (n = 1; n <= 4; n++) {
-			unsigned long vco, got, err;
+			/* up to 2 * 512 * EXCLK, past 32 bits */
+			u64 vco, got, err;
 
 			/* m is M + 1 */
 			m = DIV_ROUND_CLOSEST_ULL((u64)rate * od * n,
@@ -140,7 +141,7 @@ static void t21_pll_calc_m_n_od(const struct ingenic_cgu_pll_info *pll_info,
 			if (vco < T21_PLL_VCO_MIN || vco > T21_PLL_VCO_MAX)
 				continue;
 
-			got = div_u64((u64)vco, od);
+			got = div_u64(vco, od);
 			err = got > rate ? got - rate : rate - got;
 			if (err < best_err) {
 				best_err = err;
