@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Ingenic T21 SoC CGU driver
+ * Ingenic T21 and T30 SoC CGU driver
  *
  * Copyright (C) 2026 Alfonso Gamboa <gtxent@gmail.com>
  */
@@ -11,6 +11,7 @@
 #include <linux/of.h>
 
 #include <dt-bindings/clock/ingenic,t21-cgu.h>
+#include <dt-bindings/clock/ingenic,t30-cgu.h>
 
 #include "cgu.h"
 #include "pm.h"
@@ -29,6 +30,7 @@
 #define CGU_REG_USBRDT		0x40
 #define CGU_REG_USBVBFIL	0x44
 #define CGU_REG_USBPCR1		0x48
+#define CGU_REG_EPLL		0x58	/* T30 only */
 #define CGU_REG_MACCDR		0x54
 #define CGU_REG_I2SCDR		0x60
 #define CGU_REG_LPCDR		0x64
@@ -657,12 +659,405 @@ static const struct ingenic_cgu_clk_info t21_cgu_clocks[] = {
 	},
 };
 
-static void __init t21_cgu_init(struct device_node *np)
+/*
+ * T30: the T21's CPCCR, CDR and gate layout and PLL encoding (the vendor
+ * clk_cpccr.c, clk_cgu.c and clk_pll.c are the same files), plus an EPLL
+ * as fourth source of the CDR muxes, and a different set of gates.
+ */
+static const struct ingenic_cgu_clk_info t30_cgu_clocks[] = {
+	/* External clocks */
+
+	[T30_CLK_EXCLK] = { "ext", CGU_CLK_EXT },
+	[T30_CLK_RTCLK] = { "rtc", CGU_CLK_EXT },
+
+	/* PLLs */
+
+	[T30_CLK_APLL] = {
+		"apll", CGU_CLK_PLL,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.pll = T21_PLL(CGU_REG_APLL),
+	},
+
+	[T30_CLK_MPLL] = {
+		"mpll", CGU_CLK_PLL,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.pll = T21_PLL(CGU_REG_MPLL),
+	},
+
+	[T30_CLK_VPLL] = {
+		"vpll", CGU_CLK_PLL,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.pll = T21_PLL(CGU_REG_VPLL),
+	},
+
+	[T30_CLK_EPLL] = {
+		"epll", CGU_CLK_PLL,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.pll = T21_PLL(CGU_REG_EPLL),
+	},
+
+	/* Custom (SoC-specific) OTG PHY */
+
+	[T30_CLK_OTGPHY] = {
+		"otg_phy", CGU_CLK_CUSTOM,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.custom = { &t21_otg_phy_ops },
+	},
+
+	/* Muxes & dividers */
+
+	[T30_CLK_SCLKA] = {
+		"sclk_a", CGU_CLK_MUX,
+		.parents = { -1, T30_CLK_EXCLK, T30_CLK_APLL, -1 },
+		.mux = { CGU_REG_CPCCR, 30, 2 },
+	},
+
+	[T30_CLK_CPUMUX] = {
+		"cpu_mux", CGU_CLK_MUX,
+		.parents = { -1, T30_CLK_SCLKA, T30_CLK_MPLL, -1 },
+		.mux = { CGU_REG_CPCCR, 28, 2 },
+	},
+
+	[T30_CLK_CPU] = {
+		"cpu", CGU_CLK_DIV | CGU_CLK_GATE,
+		.flags = CLK_IS_CRITICAL,
+		.parents = { T30_CLK_CPUMUX, -1, -1, -1 },
+		.div = { CGU_REG_CPCCR, 0, 1, 4, 22, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 15 },
+	},
+
+	[T30_CLK_L2CACHE] = {
+		"l2cache", CGU_CLK_DIV,
+		.flags = CLK_IS_CRITICAL,
+		.parents = { T30_CLK_CPUMUX, -1, -1, -1 },
+		.div = { CGU_REG_CPCCR, 4, 1, 4, 22, -1, -1 },
+	},
+
+	[T30_CLK_AHB0] = {
+		"ahb0", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
+		.flags = CLK_IS_CRITICAL,
+		.parents = { -1, T30_CLK_SCLKA, T30_CLK_MPLL, -1 },
+		.mux = { CGU_REG_CPCCR, 26, 2 },
+		.div = { CGU_REG_CPCCR, 8, 1, 4, 21, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 10 },
+	},
+
+	[T30_CLK_AHB2] = {
+		"ahb2", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = { -1, T30_CLK_SCLKA, T30_CLK_MPLL, -1 },
+		.mux = { CGU_REG_CPCCR, 24, 2 },
+		.div = { CGU_REG_CPCCR, 12, 1, 4, 20, -1, -1 },
+	},
+
+	/* PDIV divides the AHB2 mux source, not AHB2 */
+	[T30_CLK_PCLK] = {
+		"pclk", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
+		.parents = { -1, T30_CLK_SCLKA, T30_CLK_MPLL, -1 },
+		.mux = { CGU_REG_CPCCR, 24, 2 },
+		.div = { CGU_REG_CPCCR, 16, 1, 4, 20, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 14 },
+	},
+
+	[T30_CLK_DDR] = {
+		"ddr", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
+		.flags = CLK_IS_CRITICAL,
+		.parents = { -1, T30_CLK_SCLKA, T30_CLK_MPLL, -1 },
+		.mux = { CGU_REG_DDRCDR, 30, 2 },
+		.div = { CGU_REG_DDRCDR, 0, 1, 4, 29, 28, 27 },
+		.gate = { CGU_REG_CLKGR0, 31 },
+	},
+
+	[T30_CLK_VPU] = {
+		"vpu", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = { T30_CLK_SCLKA, T30_CLK_MPLL,
+			     T30_CLK_VPLL, T30_CLK_EPLL },
+		.mux = { CGU_REG_VPUCDR, 30, 2 },
+		.div = { CGU_REG_VPUCDR, 0, 1, 4, 29, 28, 27 },
+	},
+
+	[T30_CLK_MAC] = {
+		"mac", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = { T30_CLK_SCLKA, T30_CLK_MPLL,
+			     T30_CLK_VPLL, T30_CLK_EPLL },
+		.mux = { CGU_REG_MACCDR, 30, 2 },
+		.div = { CGU_REG_MACCDR, 0, 1, 8, 29, 28, 27 },
+	},
+
+	[T30_CLK_LCD] = {
+		"lcd", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
+		.parents = { T30_CLK_SCLKA, T30_CLK_MPLL,
+			     T30_CLK_VPLL, T30_CLK_EPLL },
+		.mux = { CGU_REG_LPCDR, 30, 2 },
+		.div = { CGU_REG_LPCDR, 0, 1, 8, 28, 27, 26 },
+		.gate = { CGU_REG_CLKGR0, 24 },
+	},
+
+	[T30_CLK_MSCMUX] = {
+		"msc_mux", CGU_CLK_MUX,
+		.parents = { T30_CLK_SCLKA, T30_CLK_MPLL,
+			     T30_CLK_VPLL, -1 },
+		.mux = { CGU_REG_MSC0CDR, 30, 2 },
+	},
+
+	[T30_CLK_MSC0] = {
+		"msc0", CGU_CLK_DIV | CGU_CLK_GATE,
+		.parents = { T30_CLK_MSCMUX, -1, -1, -1 },
+		.div = { CGU_REG_MSC0CDR, 0, 2, 8, 29, 28, 27 },
+		.gate = { CGU_REG_CLKGR0, 4 },
+	},
+
+	[T30_CLK_MSC1] = {
+		"msc1", CGU_CLK_DIV | CGU_CLK_GATE,
+		.parents = { T30_CLK_MSCMUX, -1, -1, -1 },
+		.div = { CGU_REG_MSC1CDR, 0, 2, 8, 29, 28, 27 },
+		.gate = { CGU_REG_CLKGR0, 5 },
+	},
+
+	[T30_CLK_SSIPLL] = {
+		"ssi_pll", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = { T30_CLK_SCLKA, T30_CLK_MPLL,
+			     T30_CLK_VPLL, T30_CLK_EPLL },
+		.mux = { CGU_REG_SSICDR, 30, 2 },
+		.div = { CGU_REG_SSICDR, 0, 1, 8, 28, 27, 26 },
+	},
+
+	[T30_CLK_ISP] = {
+		"isp", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
+		.parents = { T30_CLK_SCLKA, T30_CLK_MPLL,
+			     T30_CLK_VPLL, T30_CLK_EPLL },
+		.mux = { CGU_REG_ISPCDR, 30, 2 },
+		/* CE 29, BUSY 28 and STOP 27, as CIMCDR */
+		.div = { CGU_REG_ISPCDR, 0, 1, 4, 29, 28, 27 },
+		.gate = { CGU_REG_CLKGR0, 23 },
+	},
+
+	[T30_CLK_CIM] = {
+		"cim", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = { T30_CLK_SCLKA, T30_CLK_MPLL,
+			     T30_CLK_VPLL, T30_CLK_EPLL },
+		.mux = { CGU_REG_CIMCDR, 30, 2 },
+		/* CE 29, BUSY 28 and STOP 27; the STOP bit must be cleared */
+		.div = { CGU_REG_CIMCDR, 0, 1, 8, 29, 28, 27 },
+	},
+
+	/* Gate-only clocks */
+
+	[T30_CLK_NEMC] = {
+		"nemc", CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB2, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 0 },
+	},
+
+	[T30_CLK_EFUSE] = {
+		"efuse", CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB2, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 1 },
+	},
+
+	[T30_CLK_OTG] = {
+		"otg", CGU_CLK_GATE,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 3 },
+	},
+
+	[T30_CLK_SSI0] = {
+		"ssi0", CGU_CLK_GATE,
+		.parents = { T30_CLK_SSIPLL, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 6 },
+	},
+
+	[T30_CLK_SMB0] = {
+		"smb0", CGU_CLK_GATE,
+		.parents = { T30_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 7 },
+	},
+
+	[T30_CLK_SMB1] = {
+		"smb1", CGU_CLK_GATE,
+		.parents = { T30_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 8 },
+	},
+
+	[T30_CLK_SMB2] = {
+		"smb2", CGU_CLK_GATE,
+		.parents = { T30_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 9 },
+	},
+
+	[T30_CLK_AIC] = {
+		"aic", CGU_CLK_GATE,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 11 },
+	},
+
+	[T30_CLK_DMIC] = {
+		"dmic", CGU_CLK_GATE,
+		.parents = { T30_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 12 },
+	},
+
+	[T30_CLK_SADC] = {
+		"sadc", CGU_CLK_GATE,
+		.parents = { T30_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 13 },
+	},
+
+	[T30_CLK_UART0] = {
+		"uart0", CGU_CLK_GATE,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 14 },
+	},
+
+	[T30_CLK_UART1] = {
+		"uart1", CGU_CLK_GATE,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 15 },
+	},
+
+	[T30_CLK_SSI1] = {
+		"ssi1", CGU_CLK_GATE,
+		.parents = { T30_CLK_SSIPLL, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 19 },
+	},
+
+	[T30_CLK_SFC] = {
+		"sfc", CGU_CLK_GATE,
+		.parents = { T30_CLK_SSIPLL, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 20 },
+	},
+
+	[T30_CLK_PDMA] = {
+		"pdma", CGU_CLK_GATE,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 21 },
+	},
+
+	[T30_CLK_CSI] = {
+		"csi", CGU_CLK_GATE,
+		.parents = { T30_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 25 },
+	},
+
+	[T30_CLK_DES] = {
+		"des", CGU_CLK_GATE,
+		.parents = { T30_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 28 },
+	},
+
+	[T30_CLK_TCU] = {
+		"tcu_gate", CGU_CLK_GATE,
+		.flags = CLK_IS_CRITICAL,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 30 },
+	},
+
+	[T30_CLK_HELIX] = {
+		"helix", CGU_CLK_GATE,
+		.parents = { T30_CLK_VPU, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 0 },
+	},
+
+	[T30_CLK_IPU] = {
+		"ipu", CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB0, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 2 },
+	},
+
+	[T30_CLK_NCU] = {
+		"ncu", CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB0, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 3 },
+	},
+
+	[T30_CLK_GMAC] = {
+		"gmac", CGU_CLK_GATE,
+		.parents = { T30_CLK_MAC, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 4 },
+	},
+
+	[T30_CLK_AES] = {
+		"aes", CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB2, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 5 },
+	},
+
+	[T30_CLK_AHB1] = {
+		"ahb1", CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB2, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 6 },
+	},
+
+	[T30_CLK_MSCALER] = {
+		"mscaler", CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB0, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 8 },
+	},
+
+	[T30_CLK_LDC] = {
+		"ldc", CGU_CLK_GATE,
+		.parents = { T30_CLK_AHB0, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 9 },
+	},
+
+	[T30_CLK_OST] = {
+		"ost_gate", CGU_CLK_GATE,
+		.flags = CLK_IS_CRITICAL,
+		.parents = { T30_CLK_EXCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 11 },
+	},
+
+	[T30_CLK_RADIX] = {
+		"radix", CGU_CLK_GATE,
+		.parents = { T30_CLK_VPU, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR1, 12 },
+	},
+
+	[T30_CLK_EXCLK_DIV512] = {
+		"exclk_div512", CGU_CLK_FIXDIV,
+		.parents = { T30_CLK_EXCLK },
+		.fixdiv = { 512 },
+	},
+
+	[T30_CLK_RTC] = {
+		"rtc_ercs", CGU_CLK_MUX | CGU_CLK_GATE,
+		.parents = { T30_CLK_EXCLK_DIV512, T30_CLK_RTCLK, -1, -1 },
+		.mux = { CGU_REG_OPCR, 2, 1 },
+		.gate = { CGU_REG_CLKGR0, 29 },
+	},
+
+	[T30_CLK_USBPHY] = {
+		"usb_phy", CGU_CLK_GATE,
+		.parents = { T30_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_OPCR, 23, .clear_to_gate = true },
+	},
+
+	/* I2S fractional divider (custom: M/N ratio) */
+
+	[T30_CLK_DIV_I2S] = {
+		"div_i2s", CGU_CLK_CUSTOM,
+		.parents = { T30_CLK_SCLKA, T30_CLK_MPLL,
+		     T30_CLK_VPLL, T30_CLK_EPLL },
+		.custom = { &t21_i2s_div_ops },
+	},
+
+	/* CE (clock-enable) gate inside the CDR register, bit 29 */
+
+	[T30_CLK_CE_I2S] = {
+		"ce_i2s", CGU_CLK_GATE,
+		.parents = { T30_CLK_DIV_I2S, -1, -1, -1 },
+		/* CE bit 29 is "set to enable", opposite of CLKGR semantics */
+		.gate = { CGU_REG_I2SCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+};
+
+static void __init t21_cgu_setup(struct device_node *np,
+				 const struct ingenic_cgu_clk_info *clocks,
+				 unsigned int num_clocks)
 {
 	int retval;
 
-	cgu = ingenic_cgu_new(t21_cgu_clocks,
-			      ARRAY_SIZE(t21_cgu_clocks), np);
+	cgu = ingenic_cgu_new(clocks, num_clocks, np);
 	if (!cgu) {
 		pr_err("%s: failed to initialise CGU\n", __func__);
 		return;
@@ -679,8 +1074,20 @@ static void __init t21_cgu_init(struct device_node *np)
 
 	ingenic_cgu_register_syscore(cgu);
 }
+
+static void __init t21_cgu_init(struct device_node *np)
+{
+	t21_cgu_setup(np, t21_cgu_clocks, ARRAY_SIZE(t21_cgu_clocks));
+}
+
+static void __init t30_cgu_init(struct device_node *np)
+{
+	t21_cgu_setup(np, t30_cgu_clocks, ARRAY_SIZE(t30_cgu_clocks));
+}
+
 /*
  * CGU has some children devices, this is useful for probing children devices
  * in the case where the device node is compatible with "simple-mfd".
  */
 CLK_OF_DECLARE_DRIVER(t21_cgu, "ingenic,t21-cgu", t21_cgu_init);
+CLK_OF_DECLARE_DRIVER(t30_cgu, "ingenic,t30-cgu", t30_cgu_init);
