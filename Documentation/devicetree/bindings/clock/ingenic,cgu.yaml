@@ -117,6 +117,10 @@ patternProperties:
     $ref: /schemas/phy/ingenic,phy-usb.yaml#
   "^mac-phy-ctrl@[a-f0-9]+$":
     $ref: /schemas/net/ingenic,mac.yaml#
+  "^(mac-phy-id|usb-phy-ctrl)@[a-f0-9]+$":
+    $ref: /schemas/mfd/syscon.yaml#
+  "^reset-controller@[a-f0-9]+$":
+    $ref: /schemas/reset/ingenic,t21-reset.yaml#
 
 additionalProperties: false
 
