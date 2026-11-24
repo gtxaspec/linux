@@ -25,7 +25,12 @@ properties:
           - ingenic,x1830-mac
           - ingenic,x2000-mac
       - items:
-          - const: ingenic,t32-mac
+          - enum:
+              - ingenic,t21-mac
+              - ingenic,t23-mac
+              - ingenic,t30-mac
+              - ingenic,t31-mac
+              - ingenic,t32-mac
           - const: snps,dwmac
       - items:
           - const: ingenic,t33-mac
@@ -51,6 +56,12 @@ properties:
     $ref: /schemas/types.yaml#/definitions/phandle
     description: An extra syscon register that control ethernet interface and timing delay
 
+  ingenic,phy-id-reg:
+    $ref: /schemas/types.yaml#/definitions/phandle
+    description:
+      Syscon of the CPM MAC PHY parameter register (MACPHYP), which holds the
+      identifier that the SoC's internal PHY reports on MDIO.
+
   rx-clk-delay-ps:
     description: RGMII receive clock delay defined in pico seconds
 
@@ -65,6 +76,18 @@ required:
   - clocks
   - clock-names
   - mode-reg
+
+if:
+  properties:
+    compatible:
+      contains:
+        const: ingenic,t21-mac
+then:
+  required:
+    - ingenic,phy-id-reg
+else:
+  properties:
+    ingenic,phy-id-reg: false
 
 unevaluatedProperties: false
 
