@@ -657,6 +657,10 @@ static int ingenic_register_clock(struct ingenic_cgu *cgu, unsigned idx)
 
 	BUILD_BUG_ON(ARRAY_SIZE(clk_info->parents) > ARRAY_SIZE(parent_names));
 
+	/* An unnamed, typeless entry is a clock ID this SoC lacks */
+	if (!clk_info->type && !clk_info->name)
+		return 0;
+
 	if (clk_info->type == CGU_CLK_EXT) {
 		clk = of_clk_get_by_name(cgu->np, clk_info->name);
 		if (IS_ERR(clk)) {
