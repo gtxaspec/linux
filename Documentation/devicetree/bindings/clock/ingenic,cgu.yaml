@@ -29,6 +29,12 @@ select:
           - ingenic,jz4780-cgu
           - ingenic,x1000-cgu
           - ingenic,x1830-cgu
+          - ingenic,t10-cgu
+          - ingenic,t20-cgu
+          - ingenic,t21-cgu
+          - ingenic,t23-cgu
+          - ingenic,t30-cgu
+          - ingenic,t31-cgu
   required:
     - compatible
 
@@ -59,6 +65,12 @@ properties:
           - ingenic,jz4780-cgu
           - ingenic,x1000-cgu
           - ingenic,x1830-cgu
+          - ingenic,t10-cgu
+          - ingenic,t20-cgu
+          - ingenic,t21-cgu
+          - ingenic,t23-cgu
+          - ingenic,t30-cgu
+          - ingenic,t31-cgu
       - const: simple-mfd
     minItems: 1
 
