@@ -26,6 +26,12 @@ properties:
           - const: ingenic,jz4770-i2c
       - items:
           - enum:
+              - ingenic,t10-i2c
+              - ingenic,t20-i2c
+              - ingenic,t21-i2c
+              - ingenic,t23-i2c
+              - ingenic,t30-i2c
+              - ingenic,t31-i2c
               - ingenic,t32-i2c
               - ingenic,t33-i2c
           - const: ingenic,x1000-i2c
