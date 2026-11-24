@@ -39,6 +39,8 @@ properties:
               - ingenic,t23-intc
               - ingenic,t30-intc
               - ingenic,t31-intc
+              - ingenic,t32-intc
+              - ingenic,t33-intc
           - const: ingenic,jz4780-intc
 
   "#interrupt-cells":
