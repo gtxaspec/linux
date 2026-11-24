@@ -116,6 +116,7 @@ enum jz_version {
 	ID_X1600,
 	ID_X1830,
 	ID_T21,
+	ID_T30,
 	ID_T31,
 	ID_X2000,
 	ID_X2100,
@@ -171,6 +172,7 @@ static const unsigned long enabled_socs =
 	IS_ENABLED(CONFIG_MACH_X1600) << ID_X1600 |
 	IS_ENABLED(CONFIG_MACH_X1830) << ID_X1830 |
 	IS_ENABLED(CONFIG_MACH_T21) << ID_T21 |
+	IS_ENABLED(CONFIG_MACH_T30) << ID_T30 |
 	IS_ENABLED(CONFIG_MACH_T31) << ID_T31 |
 	IS_ENABLED(CONFIG_MACH_X2000) << ID_X2000 |
 	IS_ENABLED(CONFIG_MACH_X2100) << ID_X2100;
@@ -3251,6 +3253,139 @@ static const struct ingenic_chip_info t21_chip_info = {
 	.access_table = &t31_access_table,
 };
 
+/*
+ * T30: the T21's and T31's registers (ports 0x1000 apart, the shadow window
+ * at 0x7000, pulls in PEL and PEH) with a fourth port (PD, the ISP and DVP
+ * pads). The pin map is from the vendor mach/platform.h: no UART2, a third
+ * I2C on PC27/PC28.
+ */
+static int t30_uart0_data_pins[] = { 0x33, 0x36, };
+static int t30_uart0_hwflow_pins[] = { 0x34, 0x35, };
+static int t30_uart1_data_pins[] = { 0x37, 0x38, };
+static int t30_i2c0_pins[] = { 0x0c, 0x0d, };
+static int t30_i2c1_pins[] = { 0x39, 0x3a, };
+static int t30_i2c2_pins[] = { 0x5b, 0x5c, };
+static int t30_mmc0_1bit_pins[] = { 0x20, 0x21, 0x22, };
+static int t30_mmc0_4bit_pins[] = { 0x23, 0x24, 0x25, };
+static int t30_mmc1_4bit_pins[] = { 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, };
+static int t30_sfc_data_pins[] = { 0x17, 0x18, 0x1b, 0x1c, };
+static int t30_sfc_quad_pins[] = { 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, };
+/* The vendor names six pads for SSI0, not their roles */
+static int t30_ssi0_pins[] = { 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50, };
+static int t30_mac_rmii_pins[] = {
+	0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2d, 0x2e, 0x2f, 0x30,
+};
+static int t30_pwm0_pins[] = { 0x31, };
+static int t30_pwm1_pins[] = { 0x32, };
+static int t30_pwm2_pins[] = { 0x48, };
+static int t30_pwm3_pins[] = { 0x49, };
+static int t30_cim_pclk_pins[] = { 0x0e, };
+static int t30_cim_mclk_pins[] = { 0x0f, };
+static int t30_cim_sync_pins[] = { 0x10, 0x11, };
+static int t30_cim_data_10bit_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+};
+static int t30_cim_data_10bit_high_pins[] = {
+	0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+};
+static int t30_cim_data_12bit_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+};
+
+static const struct group_desc t30_groups[] = {
+	INGENIC_PIN_GROUP("uart0-data", t30_uart0_data, 0),
+	INGENIC_PIN_GROUP("uart0-hwflow", t30_uart0_hwflow, 0),
+	INGENIC_PIN_GROUP("uart1-data", t30_uart1_data, 0),
+	INGENIC_PIN_GROUP("i2c0-data", t30_i2c0, 1),
+	INGENIC_PIN_GROUP("i2c1-data", t30_i2c1, 0),
+	INGENIC_PIN_GROUP("i2c2-data", t30_i2c2, 1),
+	INGENIC_PIN_GROUP("mmc0-1bit", t30_mmc0_1bit, 0),
+	INGENIC_PIN_GROUP("mmc0-4bit", t30_mmc0_4bit, 0),
+	INGENIC_PIN_GROUP("mmc1-4bit", t30_mmc1_4bit, 0),
+	INGENIC_PIN_GROUP("sfc-data", t30_sfc_data, 1),
+	INGENIC_PIN_GROUP("sfc-quad", t30_sfc_quad, 1),
+	INGENIC_PIN_GROUP("ssi0-pc", t30_ssi0, 0),
+	INGENIC_PIN_GROUP("mac-rmii", t30_mac_rmii, 0),
+	INGENIC_PIN_GROUP("pwm0", t30_pwm0, 0),
+	INGENIC_PIN_GROUP("pwm1", t30_pwm1, 0),
+	INGENIC_PIN_GROUP("pwm2", t30_pwm2, 0),
+	INGENIC_PIN_GROUP("pwm3", t30_pwm3, 0),
+	INGENIC_PIN_GROUP("cim-pclk", t30_cim_pclk, 1),
+	INGENIC_PIN_GROUP("cim-mclk", t30_cim_mclk, 1),
+	INGENIC_PIN_GROUP("cim-sync", t30_cim_sync, 1),
+	INGENIC_PIN_GROUP("cim-data-10bit", t30_cim_data_10bit, 1),
+	INGENIC_PIN_GROUP("cim-data-10bit-high", t30_cim_data_10bit_high, 1),
+	INGENIC_PIN_GROUP("cim-data-12bit", t30_cim_data_12bit, 1),
+};
+
+static const char *t30_uart0_groups[] = { "uart0-data", "uart0-hwflow", };
+static const char *t30_uart1_groups[] = { "uart1-data", };
+static const char *t30_i2c0_groups[] = { "i2c0-data", };
+static const char *t30_i2c1_groups[] = { "i2c1-data", };
+static const char *t30_i2c2_groups[] = { "i2c2-data", };
+static const char *t30_mmc0_groups[] = { "mmc0-1bit", "mmc0-4bit", };
+static const char *t30_mmc1_groups[] = { "mmc1-4bit", };
+static const char *t30_sfc_groups[] = { "sfc-data", "sfc-quad", };
+static const char *t30_ssi0_groups[] = { "ssi0-pc", };
+static const char *t30_mac_groups[] = { "mac-rmii", };
+static const char *t30_pwm0_groups[] = { "pwm0", };
+static const char *t30_pwm1_groups[] = { "pwm1", };
+static const char *t30_pwm2_groups[] = { "pwm2", };
+static const char *t30_pwm3_groups[] = { "pwm3", };
+static const char *t30_cim_groups[] = {
+	"cim-pclk", "cim-mclk", "cim-sync", "cim-data-10bit",
+	"cim-data-10bit-high", "cim-data-12bit",
+};
+
+static const struct pinfunction t30_functions[] = {
+	INGENIC_PIN_FUNCTION("uart0", t30_uart0),
+	INGENIC_PIN_FUNCTION("uart1", t30_uart1),
+	INGENIC_PIN_FUNCTION("i2c0", t30_i2c0),
+	INGENIC_PIN_FUNCTION("i2c1", t30_i2c1),
+	INGENIC_PIN_FUNCTION("i2c2", t30_i2c2),
+	INGENIC_PIN_FUNCTION("mmc0", t30_mmc0),
+	INGENIC_PIN_FUNCTION("mmc1", t30_mmc1),
+	INGENIC_PIN_FUNCTION("sfc", t30_sfc),
+	INGENIC_PIN_FUNCTION("ssi0", t30_ssi0),
+	INGENIC_PIN_FUNCTION("mac", t30_mac),
+	INGENIC_PIN_FUNCTION("pwm0", t30_pwm0),
+	INGENIC_PIN_FUNCTION("pwm1", t30_pwm1),
+	INGENIC_PIN_FUNCTION("pwm2", t30_pwm2),
+	INGENIC_PIN_FUNCTION("pwm3", t30_pwm3),
+	INGENIC_PIN_FUNCTION("cim", t30_cim),
+};
+
+static const u32 t30_pull_ups[4] = {
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+};
+
+static const u32 t30_pull_downs[4] = {
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
+};
+
+static const struct regmap_range t30_access_ranges[] = {
+	regmap_reg_range(0x0000, 0x4000 - 4),
+	regmap_reg_range(0x7000, 0x8000 - 4),
+};
+
+static const struct regmap_access_table t30_access_table = {
+	.yes_ranges = t30_access_ranges,
+	.n_yes_ranges = ARRAY_SIZE(t30_access_ranges),
+};
+
+static const struct ingenic_chip_info t30_chip_info = {
+	.num_chips = 4,
+	.reg_offset = 0x1000,
+	.version = ID_T30,
+	.groups = t30_groups,
+	.num_groups = ARRAY_SIZE(t30_groups),
+	.functions = t30_functions,
+	.num_functions = ARRAY_SIZE(t30_functions),
+	.pull_ups = t30_pull_ups,
+	.pull_downs = t30_pull_downs,
+	.access_table = &t30_access_table,
+};
+
 static const u32 x2000_pull_ups[5] = {
 	0x0003ffff, 0xffffffff, 0x1ff0ffff, 0xc7fe3f3f, 0x8fff003f,
 };
@@ -4836,6 +4971,7 @@ static const struct of_device_id ingenic_gpio_of_matches[] __initconst = {
 	{ .compatible = "ingenic,t10-gpio" },
 	{ .compatible = "ingenic,t20-gpio" },
 	{ .compatible = "ingenic,t21-gpio" },
+	{ .compatible = "ingenic,t30-gpio" },
 	{ .compatible = "ingenic,t31-gpio" },
 	{ .compatible = "ingenic,x2100-gpio" },
 	{},
@@ -5098,6 +5234,10 @@ static const struct of_device_id ingenic_pinctrl_of_matches[] = {
 	{
 		.compatible = "ingenic,t21-pinctrl",
 		.data = IF_ENABLED(CONFIG_MACH_T21, &t21_chip_info)
+	},
+	{
+		.compatible = "ingenic,t30-pinctrl",
+		.data = IF_ENABLED(CONFIG_MACH_T30, &t30_chip_info)
 	},
 	{
 		.compatible = "ingenic,t31-pinctrl",
