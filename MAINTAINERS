@@ -13163,6 +13163,7 @@ F:	drivers/iio/adc/ingenic-adc.c
 F:	drivers/irqchip/irq-ingenic.c
 F:	drivers/memory/jz4780-nemc.c
 F:	drivers/mmc/host/jz4740_mmc.c
+F:	drivers/mmc/host/sdhci-ingenic.c
 F:	drivers/mtd/nand/raw/ingenic/
 F:	drivers/pinctrl/pinctrl-ingenic.c
 F:	drivers/power/supply/ingenic-battery.c
