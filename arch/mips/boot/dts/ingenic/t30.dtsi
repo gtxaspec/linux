@@ -292,6 +292,23 @@
 	};
 
 	/*
+	 * The IPU libimp draws its OSD with, through the out-of-tree ipu module
+	 * (/dev/ipu). Disabled: the module makes its device from this node.
+	 */
+	ipu: ipu@13080000 {
+		compatible = "ingenic,t30-ipu";
+		reg = <0x13080000 0x8000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <6>;
+
+		clocks = <&cgu T30_CLK_IPU>, <&cgu T30_CLK_AHB1>;
+		clock-names = "ipu", "ahb1";
+
+		status = "disabled";
+	};
+
+	/*
 	 * The tx-isp out-of-tree driver registers its own VIC, ISP core, CSI,
 	 * LDC, NCU, multi-scaler and video-in platform devices; this node
 	 * gives them the INTC sources and the clocks. The ISP gate is also what
