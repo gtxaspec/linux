@@ -292,6 +292,23 @@
 	};
 
 	/*
+	 * The IPU libimp draws its OSD with, through the out-of-tree ipu module
+	 * (/dev/ipu). Disabled: the module makes its device from this node.
+	 */
+	ipu: ipu@13080000 {
+		compatible = "ingenic,t10-ipu";
+		reg = <0x13080000 0x8000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <6>;
+
+		clocks = <&cgu T20_CLK_IPU>;
+		clock-names = "ipu";
+
+		status = "disabled";
+	};
+
+	/*
 	 * The tx-isp out-of-tree driver registers its own VIC, ISP core, CSI and
 	 * video-in platform devices; this node gives them the clocks, the INTC
 	 * source and the CIM MCLK pad. The T10 has no CSI gate (and no MIPI
