@@ -124,6 +124,25 @@
 	pinctrl-0 = <&pins_i2c0>;
 };
 
+&isp {
+	status = "okay";
+
+	/*
+	 * The sensor drivers pick a DVP pad group at probe time; MIPI sensors
+	 * only need the MCLK pad.
+	 */
+	pinctrl-names = "default", "dvp-10bit-low", "dvp-10bit-high",
+			"dvp-12bit";
+	pinctrl-0 = <&pins_cim_mclk>;
+	pinctrl-1 = <&pins_cim_dvp_10bit_low>;
+	pinctrl-2 = <&pins_cim_dvp_10bit_high>;
+	pinctrl-3 = <&pins_cim_dvp_12bit>;
+};
+
+&vpu {
+	status = "okay";
+};
+
 &efuse {
 	status = "okay";
 };
@@ -147,6 +166,22 @@
 	pins_cim_mclk: cim-mclk {
 		function = "cim";
 		groups = "cim-mclk";
+	};
+
+	pins_cim_dvp_10bit_low: cim-dvp-10bit-low {
+		function = "cim";
+		groups = "cim-mclk", "cim-pclk", "cim-sync", "cim-data-10bit";
+	};
+
+	pins_cim_dvp_10bit_high: cim-dvp-10bit-high {
+		function = "cim";
+		groups = "cim-mclk", "cim-pclk", "cim-sync",
+			 "cim-data-10bit-high";
+	};
+
+	pins_cim_dvp_12bit: cim-dvp-12bit {
+		function = "cim";
+		groups = "cim-mclk", "cim-pclk", "cim-sync", "cim-data-12bit";
 	};
 
 	pins_i2c0: i2c0 {

@@ -291,6 +291,48 @@
 		status = "disabled";
 	};
 
+	/*
+	 * The tx-isp out-of-tree driver registers its own VIC, ISP core, CSI,
+	 * LDC, NCU, multi-scaler and video-in platform devices; this node
+	 * gives them the INTC sources and the clocks. The ISP gate is also what
+	 * the vendor calls cgu_isp, and CIM is the sensor's MCLK.
+	 */
+	isp: isp@13300000 {
+		compatible = "ingenic,t30-isp";
+		reg = <0x13300000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <29>, <20>, <33>, <35>, <19>;
+		interrupt-names = "isp", "ldc", "ncu", "ncu-p", "mscaler";
+
+		clocks = <&cgu T30_CLK_ISP>, <&cgu T30_CLK_ISP>,
+			 <&cgu T30_CLK_CSI>, <&cgu T30_CLK_CIM>,
+			 <&cgu T30_CLK_NCU>, <&cgu T30_CLK_LDC>,
+			 <&cgu T30_CLK_AHB1>, <&cgu T30_CLK_MSCALER>;
+		clock-names = "cgu_isp", "isp", "csi", "cgu_cim",
+			      "ncu", "ldc", "ahb1", "mscaler";
+
+		status = "disabled";
+	};
+
+	/*
+	 * The helix video engine behind the vendor soc_vpu driver; the second
+	 * window is the CPM, whose SRBC register resets the engine.
+	 */
+	vpu: vpu@13200000 {
+		compatible = "ingenic,t30-vpu";
+		reg = <0x13200000 0x100000>, <0x10000000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <62>;
+
+		clocks = <&cgu T30_CLK_AHB1>, <&cgu T30_CLK_HELIX>,
+			 <&cgu T30_CLK_VPU>;
+		clock-names = "ahb1", "helix0", "cgu_vpu";
+
+		status = "disabled";
+	};
+
 	efuse: efuse@13540000 {
 		compatible = "ingenic,t30-efuse";
 		reg = <0x13540000 0x10>;
