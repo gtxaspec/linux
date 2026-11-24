@@ -163,19 +163,13 @@
 	status = "okay";
 
 	phy-mode = "mii";
-	phy-handle = <&eth_phy>;
+	phy-handle = <&int_phy>;
 
 	assigned-clocks = <&cgu T21_CLK_MAC>;
 	assigned-clock-rates = <25000000>;
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_mac>;
-};
-
-&mdio {
-	eth_phy: ethernet-phy@0 {
-		reg = <0>;
-	};
 };
 
 &pinctrl {

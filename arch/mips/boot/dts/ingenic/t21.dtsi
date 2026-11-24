@@ -67,13 +67,13 @@
 			reg = <0xe8 0x4>;
 		};
 
-		mac_ephy_seed: mac-ephy-seed@50 {
-			compatible = "syscon";
+		mac_phy_id: mac-phy-id@50 {
+			compatible = "ingenic,t21-mac-phy-id", "syscon";
 			reg = <0x50 0x4>;
 		};
 
 		usb_phy_ctrl: usb-phy-ctrl@3c {
-			compatible = "syscon";
+			compatible = "ingenic,t21-usb-phy-ctrl", "syscon";
 			reg = <0x3c 0x10>;
 		};
 
@@ -444,7 +444,7 @@
 		clock-names = "stmmaceth";
 
 		mode-reg = <&mac_phy_ctrl>;
-		ephy-seed-reg = <&mac_ephy_seed>;
+		ingenic,phy-id-reg = <&mac_phy_id>;
 
 		snps,clk-csr = <4>;
 
@@ -454,6 +454,13 @@
 			compatible = "snps,dwmac-mdio";
 			#address-cells = <1>;
 			#size-cells = <0>;
+
+			/* Reports the identifier the MAC glue sets in MACPHYP */
+			int_phy: ethernet-phy@0 {
+				compatible = "ethernet-phy-idc800.7016",
+					     "ethernet-phy-ieee802.3-c22";
+				reg = <0>;
+			};
 		};
 	};
 
