@@ -35,8 +35,8 @@
 #define JZ_EFUSTATE		(0x8)	/* Status Register */
 #define JZ_EFUDATA(n)		(0xC + (n) * 4)
 
-/* We read 32 byte chunks to avoid complexity in the driver. */
-#define JZ_EFU_READ_SIZE 32
+/* We read fixed size chunks to avoid complexity in the driver. */
+#define JZ_EFU_READ_SIZE_MAX 32
 
 #define EFUCTRL_ADDR_MASK	0x3FF
 #define EFUCTRL_ADDR_SHIFT	21
@@ -61,20 +61,30 @@
 
 struct jz4780_efuse_soc_data {
 	size_t size;
+	size_t read_size;
 };
 
 struct jz4780_efuse {
 	struct device *dev;
 	struct regmap *map;
 	struct clk *clk;
+	size_t read_size;
 };
 
 static const struct jz4780_efuse_soc_data jz4780_efuse_soc_data = {
 	.size = 1024,
+	.read_size = 32,
 };
 
 static const struct jz4780_efuse_soc_data t31_efuse_soc_data = {
 	.size = 32,
+	.read_size = 32,
+};
+
+/* The T10's and T20's: byte addressed, a read returns at most the one data register */
+static const struct jz4780_efuse_soc_data t20_efuse_soc_data = {
+	.size = 96,
+	.read_size = 4,
 };
 
 /* main entry point */
@@ -84,16 +94,16 @@ static int jz4780_efuse_read(void *context, unsigned int offset,
 	struct jz4780_efuse *efuse = context;
 
 	while (bytes > 0) {
-		size_t start = offset & ~(JZ_EFU_READ_SIZE - 1);
-		size_t chunk = min(bytes, (start + JZ_EFU_READ_SIZE)
+		size_t start = offset & ~(efuse->read_size - 1);
+		size_t chunk = min(bytes, (start + efuse->read_size)
 				    - offset);
-		char buf[JZ_EFU_READ_SIZE];
+		char buf[JZ_EFU_READ_SIZE_MAX];
 		unsigned int tmp;
 		u32 ctrl;
 		int ret;
 
 		ctrl = (start << EFUCTRL_ADDR_SHIFT)
-			| ((JZ_EFU_READ_SIZE - 1) << EFUCTRL_LEN_SHIFT)
+			| ((efuse->read_size - 1) << EFUCTRL_LEN_SHIFT)
 			| EFUCTRL_RD_EN;
 
 		regmap_update_bits(efuse->map, JZ_EFUCTRL,
@@ -113,7 +123,7 @@ static int jz4780_efuse_read(void *context, unsigned int offset,
 		}
 
 		ret = regmap_bulk_read(efuse->map, JZ_EFUDATA(0),
-				       buf, JZ_EFU_READ_SIZE / sizeof(u32));
+				       buf, efuse->read_size / sizeof(u32));
 		if (ret < 0)
 			return ret;
 
@@ -151,6 +161,7 @@ static void clk_disable_unprepare_helper(void *clock)
 static int jz4780_efuse_probe(struct platform_device *pdev)
 {
 	struct nvmem_device *nvmem;
+	const struct jz4780_efuse_soc_data *soc_data;
 	struct jz4780_efuse *efuse;
 	struct nvmem_config cfg;
 	unsigned long clk_rate;
@@ -190,6 +201,8 @@ static int jz4780_efuse_probe(struct platform_device *pdev)
 	clk_rate = clk_get_rate(efuse->clk);
 
 	efuse->dev = dev;
+	soc_data = of_device_get_match_data(dev);
+	efuse->read_size = soc_data->read_size;
 
 	/*
 	 * rd_adj and rd_strobe are 4 bit values
@@ -221,8 +234,7 @@ static int jz4780_efuse_probe(struct platform_device *pdev)
 	cfg = jz4780_efuse_nvmem_config;
 	cfg.dev = &pdev->dev;
 	cfg.priv = efuse;
-	cfg.size = ((const struct jz4780_efuse_soc_data *)
-		    of_device_get_match_data(&pdev->dev))->size;
+	cfg.size = soc_data->size;
 
 	nvmem = devm_nvmem_register(dev, &cfg);
 
@@ -231,6 +243,8 @@ static int jz4780_efuse_probe(struct platform_device *pdev)
 
 static const struct of_device_id jz4780_efuse_match[] = {
 	{ .compatible = "ingenic,jz4780-efuse", .data = &jz4780_efuse_soc_data },
+	{ .compatible = "ingenic,t10-efuse",    .data = &t20_efuse_soc_data    },
+	{ .compatible = "ingenic,t20-efuse",    .data = &t20_efuse_soc_data    },
 	{ .compatible = "ingenic,t31-efuse",    .data = &t31_efuse_soc_data    },
 	{ /* sentinel */ },
 };
