@@ -252,6 +252,15 @@ config DAVICOM_PHY
 	help
 	  Currently supports dm9161e and dm9131
 
+config INGENIC_EPHY
+	tristate "Ingenic T21 internal PHY"
+	depends on MACH_INGENIC || COMPILE_TEST
+	help
+	  Support for the Fast Ethernet PHY built into the Ingenic T21 SoC.
+	  The MAC glue powers the PHY up and sets the identifier it reports;
+	  this driver sets the PHY's own power control after each reset.
+	  Say Y or M if the board uses the T21's internal PHY.
+
 config ICPLUS_PHY
 	tristate "ICPlus PHYs"
 	help

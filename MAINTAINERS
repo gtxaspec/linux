@@ -13166,6 +13166,7 @@ F:	drivers/memory/jz4780-nemc.c
 F:	drivers/mmc/host/jz4740_mmc.c
 F:	drivers/mmc/host/sdhci-ingenic.c
 F:	drivers/mtd/nand/raw/ingenic/
+F:	drivers/net/phy/ingenic-ephy.c
 F:	drivers/pinctrl/pinctrl-ingenic.c
 F:	drivers/power/supply/ingenic-battery.c
 F:	drivers/pwm/pwm-jz4740.c
