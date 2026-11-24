@@ -1233,11 +1233,7 @@ static inline u32 dwc2_readl(struct dwc2_hsotg *hsotg, u32 offset)
 {
 	u32 val;
 
-#ifdef CONFIG_MACH_INGENIC
-	val = __raw_readl(hsotg->regs + offset);
-#else
 	val = readl(hsotg->regs + offset);
-#endif
 	if (hsotg->needs_byte_swap)
 		return swab32(val);
 	else
@@ -1247,13 +1243,9 @@ static inline u32 dwc2_readl(struct dwc2_hsotg *hsotg, u32 offset)
 static inline void dwc2_writel(struct dwc2_hsotg *hsotg, u32 value, u32 offset)
 {
 	if (hsotg->needs_byte_swap)
-		value = swab32(value);
-
-#ifdef CONFIG_MACH_INGENIC
-	__raw_writel(value, hsotg->regs + offset);
-#else
-	writel(value, hsotg->regs + offset);
-#endif
+		writel(swab32(value), hsotg->regs + offset);
+	else
+		writel(value, hsotg->regs + offset);
 
 #ifdef DWC2_LOG_WRITES
 	pr_info("info:: wrote %08x to %p\n", value, hsotg->regs + offset);
