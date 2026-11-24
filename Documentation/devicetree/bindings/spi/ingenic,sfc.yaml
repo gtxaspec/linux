@@ -21,9 +21,16 @@ properties:
     oneOf:
       - enum:
           - ingenic,x1000-sfc
-          - ingenic,x1600-sfc
-          - ingenic,x2000-sfc
           - ingenic,t32-sfc
+      - items:
+          - enum:
+              - ingenic,t10-sfc
+              - ingenic,t20-sfc
+              - ingenic,t21-sfc
+              - ingenic,t23-sfc
+              - ingenic,t30-sfc
+              - ingenic,t31-sfc
+          - const: ingenic,x1000-sfc
       - items:
           - const: ingenic,t33-sfc
           - const: ingenic,t32-sfc
