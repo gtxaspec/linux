@@ -4,8 +4,9 @@
  * ingenic,t33-cgu DT bindings.
  *
  * The T33 uses the T32's numbers. It has no VPLL and no ISPS divider; its
- * CIM divider is a fractional one the binding does not describe yet. The
- * I2S dividers and the AIC gate are left to the audio support.
+ * CIM divider is a fractional one the binding does not describe yet.
+ * The I2S source mux feeds both I2S dividers; on the T33 it picks SCLK_A or
+ * MPLL only.
  *
  * They are roughly ordered as:
  *   - external clocks
@@ -80,4 +81,10 @@
 #define T32_CLK_LZMA1		60
 
 #define T32_CLK_AHB2_MUX	61
+#define T32_CLK_AIC		62
+#define T32_CLK_I2S_MUX		63
+#define T32_CLK_DIV_I2ST	64
+#define T32_CLK_DIV_I2SR	65
+#define T32_CLK_CE_I2ST		66
+#define T32_CLK_CE_I2SR		67
 #endif /* __DT_BINDINGS_CLOCK_T32_CGU_H__ */

@@ -1347,6 +1347,46 @@ static const struct ingenic_cgu_clk_info t32_cgu_clocks[] = {
 		.gate = { CGU_REG_CLKGR0, 7 },
 	},
 
+	[T32_CLK_AIC] = {
+		"aic", CGU_CLK_GATE,
+		.parents = { T32_CLK_DIV_I2ST, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 8 },
+	},
+
+	/* I2S source in I2STCDR, shared by playback and capture */
+
+	[T32_CLK_I2S_MUX] = {
+		"i2s_mux", CGU_CLK_MUX,
+		.parents = { T32_CLK_SCLKA, T32_CLK_MPLL, T32_CLK_VPLL, -1 },
+		.mux = { CGU_REG_I2STCDR, I2SCDR_PCS_SHIFT, 2 },
+	},
+
+	[T32_CLK_DIV_I2ST] = {
+		"div_i2st", CGU_CLK_FRAC,
+		.parents = { T32_CLK_I2S_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2STCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[T32_CLK_DIV_I2SR] = {
+		"div_i2sr", CGU_CLK_FRAC,
+		.parents = { T32_CLK_I2S_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2SRCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[T32_CLK_CE_I2ST] = {
+		"ce_i2st", CGU_CLK_GATE,
+		.parents = { T32_CLK_DIV_I2ST, -1, -1, -1 },
+		.gate = { CGU_REG_I2STCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+	[T32_CLK_CE_I2SR] = {
+		"ce_i2sr", CGU_CLK_GATE,
+		.parents = { T32_CLK_DIV_I2SR, -1, -1, -1 },
+		.gate = { CGU_REG_I2SRCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
 	[T32_CLK_DMIC] = {
 		"dmic", CGU_CLK_GATE,
 		.parents = { T32_CLK_AHB2, -1, -1, -1 },
@@ -1743,6 +1783,46 @@ static const struct ingenic_cgu_clk_info t33_cgu_clocks[] = {
 		"smb1", CGU_CLK_GATE,
 		.parents = { T32_CLK_PCLK, -1, -1, -1 },
 		.gate = { CGU_REG_CLKGR0, 7 },
+	},
+
+	[T32_CLK_AIC] = {
+		"aic", CGU_CLK_GATE,
+		.parents = { T32_CLK_DIV_I2ST, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 8 },
+	},
+
+	/* I2S source in I2STCDR, shared by playback and capture */
+
+	[T32_CLK_I2S_MUX] = {
+		"i2s_mux", CGU_CLK_MUX,
+		.parents = { T32_CLK_SCLKA, T32_CLK_MPLL, -1, -1 },
+		.mux = { CGU_REG_I2STCDR, I2SCDR_PCS_SHIFT, 2 },
+	},
+
+	[T32_CLK_DIV_I2ST] = {
+		"div_i2st", CGU_CLK_FRAC,
+		.parents = { T32_CLK_I2S_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2STCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[T32_CLK_DIV_I2SR] = {
+		"div_i2sr", CGU_CLK_FRAC,
+		.parents = { T32_CLK_I2S_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2SRCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[T32_CLK_CE_I2ST] = {
+		"ce_i2st", CGU_CLK_GATE,
+		.parents = { T32_CLK_DIV_I2ST, -1, -1, -1 },
+		.gate = { CGU_REG_I2STCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+	[T32_CLK_CE_I2SR] = {
+		"ce_i2sr", CGU_CLK_GATE,
+		.parents = { T32_CLK_DIV_I2SR, -1, -1, -1 },
+		.gate = { CGU_REG_I2SRCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
 	},
 
 	[T32_CLK_DMIC] = {
