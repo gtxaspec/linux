@@ -62,6 +62,7 @@
 struct jz4780_efuse_soc_data {
 	size_t size;
 	size_t read_size;
+	bool word_addr;
 };
 
 struct jz4780_efuse {
@@ -69,6 +70,7 @@ struct jz4780_efuse {
 	struct regmap *map;
 	struct clk *clk;
 	size_t read_size;
+	bool word_addr;
 };
 
 static const struct jz4780_efuse_soc_data jz4780_efuse_soc_data = {
@@ -87,6 +89,13 @@ static const struct jz4780_efuse_soc_data t20_efuse_soc_data = {
 	.read_size = 4,
 };
 
+/* The T21's: the control register takes a word index, one word a read */
+static const struct jz4780_efuse_soc_data t21_efuse_soc_data = {
+	.size = 96,
+	.read_size = 4,
+	.word_addr = true,
+};
+
 /* main entry point */
 static int jz4780_efuse_read(void *context, unsigned int offset,
 			     void *val, size_t bytes)
@@ -102,7 +111,7 @@ static int jz4780_efuse_read(void *context, unsigned int offset,
 		u32 ctrl;
 		int ret;
 
-		ctrl = (start << EFUCTRL_ADDR_SHIFT)
+		ctrl = ((efuse->word_addr ? start / 4 : start) << EFUCTRL_ADDR_SHIFT)
 			| ((efuse->read_size - 1) << EFUCTRL_LEN_SHIFT)
 			| EFUCTRL_RD_EN;
 
@@ -203,6 +212,7 @@ static int jz4780_efuse_probe(struct platform_device *pdev)
 	efuse->dev = dev;
 	soc_data = of_device_get_match_data(dev);
 	efuse->read_size = soc_data->read_size;
+	efuse->word_addr = soc_data->word_addr;
 
 	/*
 	 * rd_adj and rd_strobe are 4 bit values
@@ -245,6 +255,9 @@ static const struct of_device_id jz4780_efuse_match[] = {
 	{ .compatible = "ingenic,jz4780-efuse", .data = &jz4780_efuse_soc_data },
 	{ .compatible = "ingenic,t10-efuse",    .data = &t20_efuse_soc_data    },
 	{ .compatible = "ingenic,t20-efuse",    .data = &t20_efuse_soc_data    },
+	{ .compatible = "ingenic,t21-efuse",    .data = &t21_efuse_soc_data    },
+	{ .compatible = "ingenic,t23-efuse",    .data = &t21_efuse_soc_data    },
+	{ .compatible = "ingenic,t30-efuse",    .data = &t21_efuse_soc_data    },
 	{ .compatible = "ingenic,t31-efuse",    .data = &t31_efuse_soc_data    },
 	{ /* sentinel */ },
 };
