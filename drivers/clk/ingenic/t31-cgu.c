@@ -85,11 +85,15 @@ static void t31_usb_phy_disable(struct clk_hw *hw)
 {
 	void __iomem *reg_opcr	= cgu->base + CGU_REG_OPCR;
 	void __iomem *reg_usbpcr = cgu->base + CGU_REG_USBPCR;
+	unsigned long flags;
 
+	/* OPCR also holds the USB PHY clock gate and the RTC source select */
+	spin_lock_irqsave(&cgu->lock, flags);
 	writel((readl(reg_opcr) & ~OPCR_SPENDN0) | OPCR_GATE_USBPHYCLK,
 	       reg_opcr);
 	writel(readl(reg_usbpcr) | USBPCR_OTG_DISABLE | USBPCR_SIDDQ,
 	       reg_usbpcr);
+	spin_unlock_irqrestore(&cgu->lock, flags);
 }
 
 static int t31_usb_phy_is_enabled(struct clk_hw *hw)
