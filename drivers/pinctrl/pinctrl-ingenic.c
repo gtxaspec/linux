@@ -4506,11 +4506,35 @@ static int ingenic_gpio_get(struct gpio_chip *gc, unsigned int offset)
 	return (int) ingenic_gpio_get_value(jzgc, offset);
 }
 
+static inline void ingenic_shadow_config_pin(struct ingenic_pinctrl *jzpc,
+		unsigned int pin, u8 reg, bool set);
+
 static int ingenic_gpio_direction_output(struct gpio_chip *gc,
 		unsigned int offset, int value)
 {
+	struct ingenic_gpio_chip *jzgc = gpiochip_get_data(gc);
+	int ret;
+
+	if (!is_soc_or_above(jzgc->jzpc, ID_X1000)) {
+		ingenic_gpio_set(gc, offset, value);
+		return pinctrl_gpio_direction_output(gc, offset);
+	}
+
+	/*
+	 * From the X1000 on, the direction change is applied by loading the
+	 * PZ shadow bank into the port (PZ_GID2LD), and the load also copies
+	 * the shadow PAT0 over the value already in the port. Put the value
+	 * in the shadow first so the load drives the right level, then write
+	 * the port again after the load.
+	 */
+	ingenic_shadow_config_pin(jzgc->jzpc, gc->base + offset,
+				  JZ4770_GPIO_PAT0, !!value);
+	ret = pinctrl_gpio_direction_output(gc, offset);
+	if (ret)
+		return ret;
+
 	ingenic_gpio_set(gc, offset, value);
-	return pinctrl_gpio_direction_output(gc, offset);
+	return 0;
 }
 
 static inline void ingenic_config_pin(struct ingenic_pinctrl *jzpc,
