@@ -1088,7 +1088,8 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
 		mmc->f_max = JZ_MMC_CLK_RATE;
 
 	mmc->f_min = mmc->f_max / 128;
-	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
+	if (!mmc->ocr_avail)
+		mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
 
 	/*
 	 * We use a fixed timeout of 5s, hence inform the core about it. A
