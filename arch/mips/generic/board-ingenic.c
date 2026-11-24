@@ -63,6 +63,8 @@ static __init char *ingenic_get_system_type(unsigned long machtype)
 		return "T10";
 	case MACH_INGENIC_T20:
 		return "T20";
+	case MACH_INGENIC_T21:
+		return "T21";
 	case MACH_INGENIC_T31:
 		return "T31";
 	case MACH_INGENIC_X2100:
@@ -194,6 +196,7 @@ static const struct of_device_id ingenic_of_match[] __initconst = {
 	{ .compatible = "ingenic,x2100", .data = (void *)MACH_INGENIC_X2100 },
 	{ .compatible = "ingenic,t10", .data = (void *)MACH_INGENIC_T10 },
 	{ .compatible = "ingenic,t20", .data = (void *)MACH_INGENIC_T20 },
+	{ .compatible = "ingenic,t21", .data = (void *)MACH_INGENIC_T21 },
 	{ .compatible = "ingenic,t31", .data = (void *)MACH_INGENIC_T31 },
 	{}
 };
