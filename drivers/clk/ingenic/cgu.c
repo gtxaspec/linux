@@ -704,12 +704,26 @@ static const struct clk_ops ingenic_clk_ops = {
  * Setup functions.
  */
 
+/*
+ * A parent later in the table is not registered yet; name it from the table
+ * and let the clock core adopt the orphan once it is. External clocks come
+ * first in every table and keep their device tree names.
+ */
+static const char *ingenic_cgu_parent_name(struct ingenic_cgu *cgu,
+					   unsigned int idx)
+{
+	if (cgu->clocks.clks[idx])
+		return __clk_get_name(cgu->clocks.clks[idx]);
+
+	return cgu->clock_info[idx].name;
+}
+
 static int ingenic_register_clock(struct ingenic_cgu *cgu, unsigned idx)
 {
 	const struct ingenic_cgu_clk_info *clk_info = &cgu->clock_info[idx];
 	struct ingenic_clk *ingenic_clk = NULL;
 	struct clk_init_data clk_init = {};
-	struct clk *clk, *parent;
+	struct clk *clk;
 	const char *parent_names[4];
 	unsigned caps, i, num_possible;
 	int err = -EINVAL;
@@ -778,9 +792,8 @@ static int ingenic_register_clock(struct ingenic_cgu *cgu, unsigned idx)
 			if (clk_info->parents[i] == -1)
 				continue;
 
-			parent = cgu->clocks.clks[clk_info->parents[i]];
 			parent_names[clk_init.num_parents] =
-				__clk_get_name(parent);
+				ingenic_cgu_parent_name(cgu, clk_info->parents[i]);
 			clk_init.num_parents++;
 		}
 
@@ -789,8 +802,7 @@ static int ingenic_register_clock(struct ingenic_cgu *cgu, unsigned idx)
 	} else {
 		BUG_ON(clk_info->parents[0] == -1);
 		clk_init.num_parents = 1;
-		parent = cgu->clocks.clks[clk_info->parents[0]];
-		parent_names[0] = __clk_get_name(parent);
+		parent_names[0] = ingenic_cgu_parent_name(cgu, clk_info->parents[0]);
 	}
 
 	if (caps & CGU_CLK_CUSTOM) {
