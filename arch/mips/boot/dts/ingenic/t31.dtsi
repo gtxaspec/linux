@@ -346,6 +346,10 @@
 		clocks = <&cgu T31_CLK_MSC1>;
 		clock-names = "mmc";
 
+		dmas = <&pdma 0x1d 0xffffffff>,
+		       <&pdma 0x1c 0xffffffff>;
+		dma-names = "rx", "tx";
+
 		status = "disabled";
 	};
 
