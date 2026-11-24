@@ -22,6 +22,19 @@ extern void octeon_cop2_restore(struct octeon_cop2_state *);
 #define cop2_present		1
 #define cop2_lazy_restore	1
 
+#elif defined(CONFIG_INGENIC_XBURST_MXU2)
+
+struct xburst_cop2_state;
+
+extern void xburst_cop2_save(struct xburst_cop2_state *st);
+extern void xburst_cop2_restore(struct xburst_cop2_state *st);
+
+#define cop2_save(r)		xburst_cop2_save(&(r)->thread.cp2)
+#define cop2_restore(r)		xburst_cop2_restore(&(r)->thread.cp2)
+
+#define cop2_present		1
+#define cop2_lazy_restore	1
+
 #elif defined(CONFIG_CPU_LOONGSON64)
 
 #define cop2_present		1

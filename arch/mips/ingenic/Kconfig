@@ -129,6 +129,17 @@ config MACH_T31
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
 
+config INGENIC_XBURST_MXU2
+	bool "XBurst MXU2 SIMD unit"
+	depends on MACH_T10 || MACH_T20 || MACH_T21 || MACH_T23 || MACH_T30 || MACH_T31
+	default y
+	help
+	  Lets user space use the 128-bit MXU2 SIMD unit (coprocessor 2) of
+	  the XBurst1 cores in the Ingenic T-series. A task gets the unit on
+	  its first MXU2 instruction and the kernel saves its registers across
+	  context switches. Parts without a usable MXU2 (T21, T23) are found
+	  at boot and keep raising SIGILL.
+
 config INGENIC_TX_ISP_DEPS
 	tristate "Kernel support for the out-of-tree Ingenic tx-isp driver"
 	depends on MEDIA_CONTROLLER && VIDEO_DEV

@@ -333,6 +333,17 @@ void output_octeon_cop2_state_defines(void)
 }
 #endif
 
+#ifdef CONFIG_INGENIC_XBURST_MXU2
+void output_xburst_cop2_state_defines(void);
+void output_xburst_cop2_state_defines(void)
+{
+	COMMENT("XBurst MXU2 xburst_cop2_state offsets.");
+	OFFSET(XBURST_CP2_VPR,	xburst_cop2_state, vpr);
+	OFFSET(XBURST_CP2_MCSR,	xburst_cop2_state, mcsr);
+	BLANK();
+}
+#endif
+
 #ifdef CONFIG_HIBERNATION
 void output_pbe_defines(void);
 void output_pbe_defines(void)

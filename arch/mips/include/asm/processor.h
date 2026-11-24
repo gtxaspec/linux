@@ -209,6 +209,15 @@ struct octeon_cvmseg_state {
 			    [cpu_dcache_line_size() / sizeof(unsigned long)];
 };
 #endif
+#elif defined(CONFIG_INGENIC_XBURST_MXU2)
+struct xburst_cop2_state {
+	/* MXU2 vector registers $vr0-$vr31 */
+	u32 vpr[32][4];
+	/* MXU2 control and status register */
+	u32 mcsr;
+};
+#define COP2_INIT						\
+	.cp2			= {},
 #else
 #define COP2_INIT
 #endif
@@ -269,6 +278,8 @@ struct thread_struct {
 	CONFIG_CAVIUM_OCTEON_CVMSEG_SIZE > 0
 	struct octeon_cvmseg_state cvmseg __attribute__ ((__aligned__(128)));
 #endif
+#elif defined(CONFIG_INGENIC_XBURST_MXU2)
+	struct xburst_cop2_state cp2 __aligned(16);
 #endif
 	struct mips_abi *abi;
 };

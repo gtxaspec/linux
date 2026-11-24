@@ -614,6 +614,9 @@
 /* Implementation specific trap codes used by Loongson cores */
 #define LOONGSON_EXCCODE_GSEXC	16	/* Loongson-specific exception */
 
+/* Implementation specific trap codes used by Ingenic XBurst cores */
+#define XBURST_EXCCODE_MFPE	16	/* MXU2 floating point exception */
+
 /*
  * Bits in the coprocessor 0 config register.
  */
