@@ -21,6 +21,22 @@
 		/* 128 MiB as the T30X ships; the split with the ISP memory is U-Boot's */
 		reg = <0x0 0x8000000>;
 	};
+
+	/*
+	 * The media memory of the out-of-tree camera stack, where thingino's
+	 * U-Boot puts it on this RAM size; its rmem= places and enables it
+	 */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		rmem: rmem@6300000 {
+			reg = <0x6300000 0x1d00000>;
+			no-map;
+			status = "disabled";
+		};
+	};
 };
 
 &exclk {
@@ -138,6 +154,8 @@
 	pinctrl-1 = <&pins_cim_dvp_10bit_low>;
 	pinctrl-2 = <&pins_cim_dvp_10bit_high>;
 	pinctrl-3 = <&pins_cim_dvp_12bit>;
+
+	memory-region = <&rmem>;
 };
 
 &vpu {
@@ -203,4 +221,8 @@
 &codec {
 	spk-gpios = <&gpb 31 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+};
+
+&ipu {
+	memory-region = <&rmem>;
 };

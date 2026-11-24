@@ -21,6 +21,29 @@
 		reg = <0x0 0x8000000>;
 	};
 
+	/*
+	 * The media memory of the out-of-tree camera stack, where thingino's
+	 * U-Boot puts it on this RAM size; its ispmem= and rmem= place and
+	 * enable it
+	 */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		ispmem: ispmem@5b00000 {
+			reg = <0x5b00000 0x800000>;
+			no-map;
+			status = "disabled";
+		};
+
+		rmem: rmem@6300000 {
+			reg = <0x6300000 0x1d00000>;
+			no-map;
+			status = "disabled";
+		};
+	};
+
 	/* PB16, low = on; the Wi-Fi module shares it */
 	vmmc: regulator-vmmc {
 		compatible = "regulator-fixed";
@@ -134,6 +157,9 @@
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_cim>;
+
+	memory-region = <&rmem>, <&ispmem>;
+	memory-region-names = "rmem", "ispmem";
 };
 
 &vpu {
@@ -190,4 +216,8 @@
 &codec {
 	spk-gpios = <&gpb 31 GPIO_ACTIVE_HIGH>;
 	status = "okay";
+};
+
+&ipu {
+	memory-region = <&rmem>;
 };

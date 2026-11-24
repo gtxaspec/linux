@@ -20,6 +20,22 @@
 		device_type = "memory";
 		reg = <0x0 0x4000000>;
 	};
+
+	/*
+	 * The media memory of the out-of-tree camera stack, where thingino's
+	 * U-Boot puts it on this RAM size; its rmem= places and enables it
+	 */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		rmem: rmem@2900000 {
+			reg = <0x2900000 0x1700000>;
+			no-map;
+			status = "disabled";
+		};
+	};
 };
 
 &exclk {
@@ -113,6 +129,8 @@
 	/* consumed by the out-of-tree ISP modules, not bound by a driver */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_cim_mclk>, <&pins_cim_dvp>;
+
+	memory-region = <&rmem>;
 };
 
 &helix {
@@ -206,4 +224,8 @@
 &codec {
 	spk-gpios = <&gpb 31 GPIO_ACTIVE_LOW>;
 	status = "okay";
+};
+
+&ipu {
+	memory-region = <&rmem>;
 };

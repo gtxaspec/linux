@@ -20,6 +20,22 @@
 		device_type = "memory";
 		reg = <0x0 0x4000000>;
 	};
+
+	/*
+	 * The media memory of the out-of-tree camera stack, where thingino's
+	 * U-Boot puts it on this RAM size; its rmem= places and enables it
+	 */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		rmem: rmem@2900000 {
+			reg = <0x2900000 0x1700000>;
+			no-map;
+			status = "disabled";
+		};
+	};
 };
 
 &exclk {

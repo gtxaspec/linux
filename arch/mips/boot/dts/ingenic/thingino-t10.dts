@@ -19,6 +19,29 @@
 		device_type = "memory";
 		reg = <0x0 0x4000000>;
 	};
+
+	/*
+	 * The media memory of the out-of-tree camera stack, where thingino's
+	 * U-Boot puts it on this RAM size; its ispmem= and rmem= place and
+	 * enable it
+	 */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		ispmem: ispmem@2100000 {
+			reg = <0x2100000 0x800000>;
+			no-map;
+			status = "disabled";
+		};
+
+		rmem: rmem@2900000 {
+			reg = <0x2900000 0x1700000>;
+			no-map;
+			status = "disabled";
+		};
+	};
 };
 
 &exclk {
@@ -112,6 +135,9 @@
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_cim>;
+
+	memory-region = <&rmem>, <&ispmem>;
+	memory-region-names = "rmem", "ispmem";
 };
 
 &vpu {
@@ -161,4 +187,8 @@
 
 &codec {
 	status = "okay";
+};
+
+&ipu {
+	memory-region = <&rmem>;
 };
