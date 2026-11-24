@@ -8,4 +8,5 @@ dtb-$(CONFIG_X1830_CU1830_NEO)	+= cu1830-neo.dtb
 dtb-$(CONFIG_MACH_T10)		+= thingino-t10.dtb
 dtb-$(CONFIG_MACH_T20)		+= thingino-t20.dtb
 dtb-$(CONFIG_MACH_T21)		+= thingino-t21.dtb
+dtb-$(CONFIG_MACH_T30)		+= thingino-t30.dtb
 dtb-$(CONFIG_MACH_T31)		+= thingino-t31.dtb

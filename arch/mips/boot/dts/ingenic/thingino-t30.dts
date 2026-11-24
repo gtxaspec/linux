@@ -1,0 +1,156 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "t30.dtsi"
+
+/ {
+	compatible = "thingino,t30", "ingenic,t30";
+	model = "Thingino T30X";
+
+	aliases {
+		serial1 = &uart1;
+	};
+
+	chosen {
+		stdout-path = "serial1:115200n8";
+	};
+
+	memory@0 {
+		device_type = "memory";
+		/* 128 MiB as the T30X ships; the split with the ISP memory is U-Boot's */
+		reg = <0x0 0x8000000>;
+	};
+};
+
+&exclk {
+	clock-frequency = <24000000>;
+};
+
+&uart1 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_uart1>;
+};
+
+&tcu {
+	/* 750 kHz for the system timer and clocksource; SYSOST is sched_clock */
+	assigned-clocks = <&tcu TCU_CLK_TIMER0>, <&tcu TCU_CLK_TIMER1>;
+	assigned-clock-rates = <750000>, <750000>;
+};
+
+&sfc {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_sfc>;
+
+	/*
+	 * The partition layout is the current thingino Makefile's (U-Boot 320K,
+	 * env 64K, backup 64K, kernel 1600K); the rootfs and data split depends
+	 * on the image and the bench flash's actual layout is unverified, so
+	 * everything is read-only.
+	 */
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <25000000>;
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			partition@0 {
+				label = "boot";
+				reg = <0x0 0x50000>;
+				read-only;
+			};
+
+			partition@50000 {
+				label = "env";
+				reg = <0x50000 0x10000>;
+				read-only;
+			};
+
+			partition@60000 {
+				label = "backup";
+				reg = <0x60000 0x10000>;
+				read-only;
+			};
+
+			partition@70000 {
+				label = "kernel";
+				reg = <0x70000 0x190000>;
+				read-only;
+			};
+
+			partition@200000 {
+				label = "rootfs_data";
+				reg = <0x200000 0xe00000>;
+				read-only;
+			};
+
+			partition@0_all {
+				label = "all";
+				reg = <0x0 0x1000000>;
+				read-only;
+			};
+		};
+	};
+};
+
+&msc0 {
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <24000000>;
+	/*
+	 * The Wyze Video Doorbell profile (thingino camera config
+	 * wyze_vdb1_t30x_sc4236_rtl8189ftv) has no card slot (mmc_cd -1) and
+	 * puts its Wi-Fi on MSC1; MSC0 is enabled to exercise the controller.
+	 * Whether PB0-PB5 are free on the real board is unverified.
+	 */
+	broken-cd;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc0>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_i2c0>;
+};
+
+&efuse {
+	status = "okay";
+};
+
+&pinctrl {
+	pins_uart1: uart1 {
+		function = "uart1";
+		groups = "uart1-data";
+	};
+
+	pins_mmc0: mmc0 {
+		function = "mmc0";
+		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_sfc: sfc {
+		function = "sfc";
+		groups = "sfc-data";
+	};
+
+	pins_cim_mclk: cim-mclk {
+		function = "cim";
+		groups = "cim-mclk";
+	};
+
+	pins_i2c0: i2c0 {
+		function = "i2c0";
+		groups = "i2c0-data";
+	};
+};
