@@ -65,8 +65,14 @@ $(obj)/vmlinux.bin.bz2: $(obj)/vmlinux.bin FORCE
 $(obj)/vmlinux.bin.gz: $(obj)/vmlinux.bin FORCE
 	+$(call if_changed,gzip)
 
+# MIPS instructions are 4-byte aligned: lp=2/pb=2 model the position in the
+# word, lc=1 suits literals that are mostly opcode and register fields.
+quiet_cmd_lzma_mips = LZMA    $@
+      cmd_lzma_mips = cat $(real-prereqs) | \
+		      $(XZ) --format=lzma --lzma1=preset=9,lc=1,lp=2,pb=2 > $@
+
 $(obj)/vmlinux.bin.lzma: $(obj)/vmlinux.bin FORCE
-	$(call if_changed,lzma)
+	$(call if_changed,lzma_mips)
 
 $(obj)/vmlinux.bin.lzo: $(obj)/vmlinux.bin FORCE
 	$(call if_changed,lzo)
