@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Ingenic T20 SoC CGU driver
+ * Ingenic T20 and T10 SoC CGU driver
  *
  * Copyright (C) 2026 Alfonso Gamboa <gtxent@gmail.com>
  */
@@ -9,6 +9,7 @@
 #include <linux/io.h>
 #include <linux/math64.h>
 #include <linux/of.h>
+#include <linux/string.h>
 
 #include <dt-bindings/clock/ingenic,t20-cgu.h>
 
@@ -48,13 +49,16 @@
 
 /* I2SCDR: parent select, enable, and M/N */
 #define I2SCDR_PCS_SHIFT	30
-#define I2SCDR_PCS_MASK		GENMASK(31, 30)
 #define I2SCDR_CE_BIT		29
 #define I2SCDR_M_SHIFT		13
 #define I2SCDR_M_MASK		GENMASK(21, 13)
 #define I2SCDR_N_MASK		GENMASK(12, 0)
 
 static struct ingenic_cgu *cgu;
+
+/* The T10 selects the I2S source with bit 31 alone, the T20 with 31:30 */
+static unsigned int i2s_pcs_shift = I2SCDR_PCS_SHIFT;
+static u32 i2s_pcs_mask = GENMASK(31, 30);
 
 /*
  * The PLLs have two output dividers, OD1 and OD0, whose fields hold the
@@ -177,7 +181,7 @@ static u8 t20_i2s_div_get_parent(struct clk_hw *hw)
 {
 	u32 reg = readl(cgu->base + CGU_REG_I2SCDR);
 
-	return (reg & I2SCDR_PCS_MASK) >> I2SCDR_PCS_SHIFT;
+	return (reg & i2s_pcs_mask) >> i2s_pcs_shift;
 }
 
 static int t20_i2s_div_set_parent(struct clk_hw *hw, u8 index)
@@ -187,8 +191,8 @@ static int t20_i2s_div_set_parent(struct clk_hw *hw, u8 index)
 
 	spin_lock_irqsave(&cgu->lock, flags);
 	val = readl(cgu->base + CGU_REG_I2SCDR);
-	val &= ~I2SCDR_PCS_MASK;
-	val |= (u32)index << I2SCDR_PCS_SHIFT;
+	val &= ~i2s_pcs_mask;
+	val |= (u32)index << i2s_pcs_shift;
 	writel(val, cgu->base + CGU_REG_I2SCDR);
 	spin_unlock_irqrestore(&cgu->lock, flags);
 	return 0;
@@ -535,12 +539,50 @@ static const struct ingenic_cgu_clk_info t20_cgu_clocks[] = {
 	},
 };
 
-static void __init t20_cgu_init(struct device_node *np)
+/*
+ * The T10 is the T20 without the VPLL, the LCD gate, the CSI gate and
+ * UART2, and its VPU, MAC, CIM, ISP and I2S sources are SCLK_A or MPLL
+ * (bit 31), like the MSC and SSI ones. It keeps the T20 clock IDs.
+ */
+static struct ingenic_cgu_clk_info t10_cgu_clocks[ARRAY_SIZE(t20_cgu_clocks)];
+
+static void __init t10_cgu_clocks_init(void)
+{
+	static const unsigned int one_bit_mux[] = {
+		T20_CLK_VPU, T20_CLK_MAC, T20_CLK_ISP, T20_CLK_CIM,
+		T20_CLK_DIV_I2S,
+	};
+	struct ingenic_cgu_clk_info *info;
+	unsigned int i;
+
+	memcpy(t10_cgu_clocks, t20_cgu_clocks, sizeof(t10_cgu_clocks));
+
+	memset(&t10_cgu_clocks[T20_CLK_VPLL], 0, sizeof(*info));
+	memset(&t10_cgu_clocks[T20_CLK_LCD], 0, sizeof(*info));
+	memset(&t10_cgu_clocks[T20_CLK_CSI], 0, sizeof(*info));
+	memset(&t10_cgu_clocks[T20_CLK_UART2], 0, sizeof(*info));
+
+	for (i = 0; i < ARRAY_SIZE(one_bit_mux); i++) {
+		info = &t10_cgu_clocks[one_bit_mux[i]];
+		info->parents[2] = -1;
+		info->parents[3] = -1;
+		if (info->type & CGU_CLK_MUX) {
+			info->mux.shift = 31;
+			info->mux.bits = 1;
+		}
+	}
+
+	i2s_pcs_shift = 31;
+	i2s_pcs_mask = BIT(31);
+}
+
+static void __init t20_cgu_register(struct device_node *np,
+				    const struct ingenic_cgu_clk_info *clocks,
+				    unsigned int num)
 {
 	int retval;
 
-	cgu = ingenic_cgu_new(t20_cgu_clocks,
-			      ARRAY_SIZE(t20_cgu_clocks), np);
+	cgu = ingenic_cgu_new(clocks, num, np);
 	if (!cgu) {
 		pr_err("%s: failed to initialise CGU\n", __func__);
 		return;
@@ -557,8 +599,21 @@ static void __init t20_cgu_init(struct device_node *np)
 
 	ingenic_cgu_register_syscore(cgu);
 }
+
+static void __init t20_cgu_init(struct device_node *np)
+{
+	t20_cgu_register(np, t20_cgu_clocks, ARRAY_SIZE(t20_cgu_clocks));
+}
+
+static void __init t10_cgu_init(struct device_node *np)
+{
+	t10_cgu_clocks_init();
+	t20_cgu_register(np, t10_cgu_clocks, ARRAY_SIZE(t10_cgu_clocks));
+}
+
 /*
  * CGU has some children devices, this is useful for probing children devices
  * in the case where the device node is compatible with "simple-mfd".
  */
 CLK_OF_DECLARE_DRIVER(t20_cgu, "ingenic,t20-cgu", t20_cgu_init);
+CLK_OF_DECLARE_DRIVER(t10_cgu, "ingenic,t10-cgu", t10_cgu_init);
