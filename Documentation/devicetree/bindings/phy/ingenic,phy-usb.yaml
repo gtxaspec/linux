@@ -15,22 +15,44 @@ properties:
     pattern: '^usb-phy@.*'
 
   compatible:
-    enum:
-      - ingenic,jz4770-phy
-      - ingenic,jz4775-phy
-      - ingenic,jz4780-phy
-      - ingenic,x1000-phy
-      - ingenic,x1830-phy
-      - ingenic,x2000-phy
+    oneOf:
+      - enum:
+          - ingenic,jz4770-phy
+          - ingenic,jz4775-phy
+          - ingenic,jz4780-phy
+          - ingenic,t21-phy
+          - ingenic,x1000-phy
+          - ingenic,x1830-phy
+          - ingenic,x2000-phy
+      - items:
+          - enum:
+              - ingenic,t23-phy
+              - ingenic,t30-phy
+              - ingenic,t31-phy
+          - const: ingenic,t21-phy
 
   reg:
     maxItems: 1
+    description:
+      The USB PHY control registers of the CPM (USBPCR, USBRDT, USBVBFIL,
+      USBPCR1); on the T-series, the PHY's own register block instead.
 
   clocks:
     maxItems: 1
 
   vcc-supply:
     description: VCC power supply
+
+  resets:
+    maxItems: 1
+    description:
+      Reset of the OTG controller, held while the PHY leaves power-on reset.
+
+  ingenic,usb-phy-ctrl:
+    $ref: /schemas/types.yaml#/definitions/phandle
+    description:
+      Syscon of the CPM USB PHY control registers (USBPCR, USBRDT, USBVBFIL,
+      USBPCR1).
 
   '#phy-cells':
     const: 0
@@ -41,6 +63,21 @@ required:
   - clocks
   - vcc-supply
   - '#phy-cells'
+
+allOf:
+  - if:
+      properties:
+        compatible:
+          contains:
+            const: ingenic,t21-phy
+    then:
+      required:
+        - resets
+        - ingenic,usb-phy-ctrl
+    else:
+      properties:
+        resets: false
+        ingenic,usb-phy-ctrl: false
 
 additionalProperties: false
 
@@ -53,6 +90,20 @@ examples:
 
       vcc-supply = <&vcc>;
       clocks = <&cgu JZ4770_CLK_OTG_PHY>;
+
+      #phy-cells = <0>;
+    };
+
+  - |
+    #include <dt-bindings/clock/ingenic,t31-cgu.h>
+    usb-phy@10060000 {
+      compatible = "ingenic,t31-phy", "ingenic,t21-phy";
+      reg = <0x10060000 0x1000>;
+
+      vcc-supply = <&vcc>;
+      clocks = <&cgu T31_CLK_OTGPHY>;
+      resets = <&srbc 12>;
+      ingenic,usb-phy-ctrl = <&usb_phy_ctrl>;
 
       #phy-cells = <0>;
     };
