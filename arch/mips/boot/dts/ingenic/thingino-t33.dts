@@ -1,0 +1,114 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "t33.dtsi"
+
+/ {
+	compatible = "thingino,t33", "ingenic,t33";
+	model = "Thingino T33 Generic Board";
+
+	aliases {
+		serial1 = &uart1;
+	};
+
+	/* the RAM comes from the mem= the boot loader passes */
+	chosen {
+		stdout-path = "serial1:115200n8";
+	};
+};
+
+&exclk {
+	clock-frequency = <24000000>;
+};
+
+&uart1 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_uart1>;
+};
+
+&sfc0 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_sfc0>;
+
+	/* partitions come from the mtdparts= the boot loader passes */
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <25000000>;
+	};
+};
+
+&msc0 {
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	/* no card detect pad on the T33LQ boards */
+	broken-cd;
+	no-1-8-v;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc0>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_i2c0>;
+};
+
+&dtrng {
+	status = "okay";
+};
+
+&efuse {
+	status = "okay";
+};
+
+&mac {
+	status = "okay";
+
+	phy-mode = "rmii";
+	phy-handle = <&eth_phy>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mac>;
+};
+
+&mdio {
+	eth_phy: ethernet-phy@0 {
+		reg = <0>;
+	};
+};
+
+&pinctrl {
+	pins_uart1: uart1 {
+		function = "uart1";
+		groups = "uart1-data";
+	};
+
+	pins_sfc0: sfc0 {
+		function = "sfc0";
+		groups = "sfc0-data", "sfc0-clk", "sfc0-ce";
+	};
+
+	pins_mmc0: mmc0 {
+		function = "mmc0";
+		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_i2c0: i2c0 {
+		function = "i2c0";
+		groups = "i2c0-data";
+	};
+
+	pins_mac: mac {
+		function = "mac";
+		groups = "mac-rmii", "mac-mdio";
+	};
+};
