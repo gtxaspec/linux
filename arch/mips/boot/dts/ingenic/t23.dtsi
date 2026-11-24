@@ -154,7 +154,7 @@
 
 	pinctrl: pin-controller@10010000 {
 		compatible = "ingenic,t23-pinctrl";
-		reg = <0x10010000 0x1000>;
+		reg = <0x10010000 0x8000>;
 
 		#address-cells = <1>;
 		#size-cells = <0>;
