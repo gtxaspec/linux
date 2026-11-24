@@ -80,7 +80,7 @@
 				reg = <0x750000 0xb0000>;
 			};
 
-			partition@0_all {
+			partition-all@0 {
 				label = "all";
 				reg = <0x0 0x800000>;
 			};

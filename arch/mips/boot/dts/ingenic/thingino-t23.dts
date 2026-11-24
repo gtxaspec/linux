@@ -97,7 +97,7 @@
 				read-only;
 			};
 
-			partition@0_all {
+			partition-all@0 {
 				label = "all";
 				reg = <0x0 0x800000>;
 				read-only;
