@@ -546,23 +546,7 @@ static const struct ingenic_soc_info x1000_soc_info = {
 	.tran_mode_mask = TRAN_CONF_TRAN_MODE_MASK,
 };
 
-static const struct ingenic_soc_info x1600_soc_info = {
-	.version = ID_X1600,
-
-	.max_bus_width = 4,
-
-	.tran_mode_mask = TRAN_CONF_TRAN_MODE_MASK,
-};
-
-static const struct ingenic_soc_info x2000_soc_info = {
-	.version = ID_X2000,
-
-	.max_bus_width = 8,
-
-	.tran_mode_mask = TRAN_CFG1_TRAN_MODE_MASK,
-};
-
-/* The X2000's transfer mode field, but four data lines */
+/* The transfer mode field of the X1600 and later, four data lines */
 static const struct ingenic_soc_info t32_soc_info = {
 	.version = ID_X2000,
 
@@ -573,18 +557,7 @@ static const struct ingenic_soc_info t32_soc_info = {
 
 static const struct of_device_id ingenic_sfc_of_matches[] = {
 	{ .compatible = "ingenic,x1000-sfc", .data = &x1000_soc_info },
-	{ .compatible = "ingenic,x1600-sfc", .data = &x1600_soc_info },
-	{ .compatible = "ingenic,x1700-sfc", .data = &x1600_soc_info },
-	{ .compatible = "ingenic,x1830-sfc", .data = &x1000_soc_info },
-	{ .compatible = "ingenic,t10-sfc", .data = &x1000_soc_info },
-	{ .compatible = "ingenic,t20-sfc", .data = &x1000_soc_info },
-	{ .compatible = "ingenic,t21-sfc", .data = &x1000_soc_info },
-	{ .compatible = "ingenic,t23-sfc", .data = &x1000_soc_info },
-	{ .compatible = "ingenic,t30-sfc", .data = &x1000_soc_info },
-	{ .compatible = "ingenic,t31-sfc", .data = &x1000_soc_info },
 	{ .compatible = "ingenic,t32-sfc", .data = &t32_soc_info },
-	{ .compatible = "ingenic,x2000-sfc", .data = &x2000_soc_info },
-	{ .compatible = "ingenic,x2500-sfc", .data = &x2000_soc_info },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, ingenic_sfc_of_matches);
