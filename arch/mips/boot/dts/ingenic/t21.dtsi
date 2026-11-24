@@ -398,4 +398,32 @@
 			#size-cells = <0>;
 		};
 	};
+
+	isp: isp@13300000 {
+		compatible = "ingenic,t21-isp";
+		reg = <0x13300000 0x10000>, <0x13310000 0x10000>;
+		reg-names = "isp", "vic";
+
+		interrupt-parent = <&intc>;
+		interrupts = <29>, <30>;
+		interrupt-names = "isp", "vic";
+
+		clocks = <&cgu T21_CLK_ISP>, <&cgu T21_CLK_CIM>;
+		clock-names = "isp", "cim";
+
+		status = "disabled";
+	};
+
+	helix: video-codec@13200000 {
+		compatible = "ingenic,t21-helix";
+		reg = <0x13200000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <62>;
+
+		clocks = <&cgu T21_CLK_VPU>, <&cgu T21_CLK_HELIX>, <&cgu T21_CLK_AHB1>;
+		clock-names = "vpu", "helix", "ahb1";
+
+		status = "disabled";
+	};
 };

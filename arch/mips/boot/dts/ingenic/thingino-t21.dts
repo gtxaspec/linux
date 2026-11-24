@@ -108,6 +108,17 @@
 	pinctrl-0 = <&pins_mmc0>;
 };
 
+&isp {
+	/* consumed by the out-of-tree ISP modules, not bound by a driver */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_cim_mclk>, <&pins_cim_dvp>;
+};
+
+&helix {
+	/* the H.264/JPEG encoder, bound by the out-of-tree soc-vpu module */
+	status = "okay";
+};
+
 &i2c0 {
 	status = "okay";
 	clock-frequency = <100000>;
@@ -172,6 +183,12 @@
 	pins_cim_mclk: cim-mclk {
 		function = "cim";
 		groups = "cim-mclk";
+	};
+
+	/* the bench sensor's DVP bus: PA low 10 bit data, PCLK, HSYNC, VSYNC */
+	pins_cim_dvp: cim-dvp {
+		function = "cim";
+		groups = "cim-pclk", "cim-sync", "cim-data-10bit";
 	};
 
 	pins_i2c0: i2c0 {
