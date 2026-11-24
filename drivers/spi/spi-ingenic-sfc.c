@@ -123,6 +123,9 @@
 
 #define SFC_TRANSFER_TIMEOUT			1000
 
+/* 64 32-bit words */
+#define SFC_FIFO_BYTES					256
+
 enum ingenic_sfc_version {
 	ID_X1000,
 	ID_X1600,
@@ -161,9 +164,9 @@ static irqreturn_t ingenic_sfc_irq_handler(int irq, void *data)
 
 static int ingenic_sfc_adjust_op_size(struct spi_mem *mem, struct spi_mem_op *op)
 {
-	/* PIO through the 64-word FIFO */
-	if (op->data.nbytes > 64 * 4)
-		op->data.nbytes = 64 * 4;
+	/* PIO through the FIFO */
+	if (op->data.nbytes > SFC_FIFO_BYTES)
+		op->data.nbytes = SFC_FIFO_BYTES;
 
 	return 0;
 }
@@ -186,16 +189,12 @@ static bool ingenic_sfc_supports_op(struct spi_mem *mem, const struct spi_mem_op
 		return false;
 	}
 
-	/* Max rx data length, check controller limits and alignment */
-	if (op->data.dir == SPI_MEM_DATA_IN &&
-	   (op->data.nbytes > 64 * 4 && !IS_ALIGNED(op->data.nbytes, 4))){
+	/*
+	 * Data goes through the FIFO in one go, any length up to its size;
+	 * adjust_op_size() splits longer transfers.
+	 */
+	if (op->data.nbytes > SFC_FIFO_BYTES)
 		return false;
-}
-
-	/* Max tx data length, check controller limits */
-	if (op->data.dir == SPI_MEM_DATA_OUT && op->data.nbytes > 64 * 4) {
-		return false;
-	}
 
 	/* Max 6 bytes address width supported */
 	if (op->addr.nbytes > 6) {
