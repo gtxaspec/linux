@@ -11,9 +11,14 @@
 		serial1 = &uart1;
 	};
 
-	/* the RAM comes from the mem= the boot loader passes */
 	chosen {
 		stdout-path = "serial1:115200n8";
+	};
+
+	/* the smallest RAM a T33 comes with; the boot loader's mem= has the real map */
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x4000000>;
 	};
 };
 
