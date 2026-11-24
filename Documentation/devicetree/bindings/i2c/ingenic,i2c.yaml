@@ -24,6 +24,11 @@ properties:
       - items:
           - const: ingenic,jz4780-i2c
           - const: ingenic,jz4770-i2c
+      - items:
+          - enum:
+              - ingenic,t32-i2c
+              - ingenic,t33-i2c
+          - const: ingenic,x1000-i2c
 
   reg:
     maxItems: 1
