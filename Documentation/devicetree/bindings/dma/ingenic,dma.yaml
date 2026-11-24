@@ -32,6 +32,11 @@ properties:
       - items:
           - const: ingenic,jz4770-bdma
           - const: ingenic,jz4760b-bdma
+      - items:
+          - enum:
+              - ingenic,t32-dma
+              - ingenic,t33-dma
+          - const: ingenic,x1000-dma
 
   reg:
     items:
