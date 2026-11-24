@@ -83,6 +83,16 @@
 	memory-region = <&rmem>;
 };
 
+&helix {
+	/* the H.264/JPEG encoder, bound by the out-of-tree soc-vpu module */
+	status = "okay";
+};
+
+&radix {
+	/* the H.265 encoder, bound by the same module */
+	status = "okay";
+};
+
 &i2c0 {
 	status = "okay";
 	clock-frequency = <100000>;

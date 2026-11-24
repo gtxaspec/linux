@@ -389,4 +389,32 @@
 
 		status = "disabled";
 	};
+
+	helix: video-codec@132f0000 {
+		compatible = "ingenic,t32-helix";
+		reg = <0x132f0000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <63>;
+
+		clocks = <&cgu T32_CLK_VPU>, <&cgu T32_CLK_IVDC>,
+			 <&cgu T32_CLK_AHB1>, <&cgu T32_CLK_ISPA>;
+		clock-names = "vpu", "ivdc", "ahb1", "ispa";
+
+		status = "disabled";
+	};
+
+	radix: video-codec@13200000 {
+		compatible = "ingenic,t32-radix";
+		reg = <0x13200000 0xf0000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <62>;
+
+		clocks = <&cgu T32_CLK_VPU>, <&cgu T32_CLK_IVDC>,
+			 <&cgu T32_CLK_AHB1>, <&cgu T32_CLK_ISPA>;
+		clock-names = "vpu", "ivdc", "ahb1", "ispa";
+
+		status = "disabled";
+	};
 };
