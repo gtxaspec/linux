@@ -822,6 +822,15 @@ err_out:
 	return NULL;
 }
 
+/* An ID the SoC lacks has no clock; do not hand out a NULL (dummy) one for it */
+static struct clk *ingenic_cgu_of_clk_get(struct of_phandle_args *clkspec,
+					  void *data)
+{
+	struct clk *clk = of_clk_src_onecell_get(clkspec, data);
+
+	return clk ?: ERR_PTR(-ENOENT);
+}
+
 int ingenic_cgu_register_clocks(struct ingenic_cgu *cgu)
 {
 	unsigned i;
@@ -839,7 +848,7 @@ int ingenic_cgu_register_clocks(struct ingenic_cgu *cgu)
 			goto err_out_unregister;
 	}
 
-	err = of_clk_add_provider(cgu->np, of_clk_src_onecell_get,
+	err = of_clk_add_provider(cgu->np, ingenic_cgu_of_clk_get,
 				  &cgu->clocks);
 	if (err)
 		goto err_out_unregister;
