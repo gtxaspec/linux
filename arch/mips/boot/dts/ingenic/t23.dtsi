@@ -440,6 +440,33 @@
 		status = "disabled";
 	};
 
+	helix: video-codec@13100000 {
+		compatible = "ingenic,t23-helix";
+		reg = <0x13100000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <40>;
+
+		clocks = <&cgu T23_CLK_VPU>, <&cgu T23_CLK_VPUGATE>, <&cgu T23_CLK_IVDC>;
+		clock-names = "vpu", "gate", "ivdc";
+
+		status = "disabled";
+	};
+
+	ivdc: ivdc@13200000 {
+		compatible = "ingenic,t23-ivdc";
+		reg = <0x13200000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <38>;
+		interrupt-names = "ivdc";
+
+		clocks = <&cgu T23_CLK_IVDC>;
+		clock-names = "ivdc";
+
+		status = "disabled";
+	};
+
 	csi: csi@10023000 {
 		compatible = "ingenic,t23-csi";
 		reg = <0x10023000 0x1000>, <0x10022000 0x1000>;

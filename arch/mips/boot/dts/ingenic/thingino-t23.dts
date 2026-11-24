@@ -124,6 +124,11 @@
 	pinctrl-0 = <&pins_cim_mclk>;
 };
 
+&helix {
+	/* the H.264/JPEG encoder, bound by the out-of-tree soc-vpu module */
+	status = "okay";
+};
+
 &i2c0 {
 	status = "okay";
 	clock-frequency = <100000>;
