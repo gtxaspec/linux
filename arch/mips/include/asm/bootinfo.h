@@ -89,6 +89,7 @@ enum ingenic_machine_type {
 	MACH_INGENIC_T10,
 	MACH_INGENIC_T20,
 	MACH_INGENIC_T21,
+	MACH_INGENIC_T30,
 	MACH_INGENIC_T31,
 };
 
