@@ -11,6 +11,8 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_fdt.h>
+#include <linux/of_reserved_mem.h>
+#include <linux/overflow.h>
 #include <linux/pm.h>
 #include <linux/sizes.h>
 #include <linux/soc/ingenic/rmem.h>
@@ -21,37 +23,143 @@
 #include <asm/io.h>
 #include <asm/machine.h>
 #include <asm/reboot.h>
-
-static phys_addr_t ingenic_rmem_base, ingenic_rmem_size;
+#include <asm/sections.h>
 
 /*
- * rmem=<size>@<base>: memory kept out of the kernel's map (with mem=) for
- * the vendor media stack. libimp reads the same keyword from /proc/cmdline.
+ * Thingino's U-Boot places the media stack's carve-outs at boot and passes
+ * them as rmem=<size>@<base> (and ispmem= on the T10 and T20); libimp reads
+ * them back from /proc/cmdline. The board device tree describes each as a
+ * disabled no-map /reserved-memory node of that name; move the node to where
+ * the boot loader put the region and enable it, so that the reserved memory
+ * code keeps the kernel off it. A size of 0 leaves the region disabled.
  */
-static int __init ingenic_rmem_param(char *p)
+static u8 ingenic_fdt_buf[SZ_32K] __initdata __aligned(8);
+
+static int __init ingenic_fdt_writable(void)
 {
-	phys_addr_t size, base;
+	void *fdt = initial_boot_params;
+	int ret;
+
+	if (fdt == ingenic_fdt_buf)
+		return 0;
+
+	ret = fdt_open_into(fdt, ingenic_fdt_buf, sizeof(ingenic_fdt_buf));
+	if (ret)
+		return ret;
+
+	return early_init_dt_verify(ingenic_fdt_buf, __pa(ingenic_fdt_buf)) ?
+	       0 : -EINVAL;
+}
+
+static int __init ingenic_carveout_param(const char *name, char *p)
+{
+	phys_addr_t size, base, end;
+	__be32 reg[4], *cell = reg;
+	char node_name[32];
+	void *fdt;
+	int node, ret;
 
 	if (!p)
 		return -EINVAL;
+
 	size = memparse(p, &p);
-	if (*p != '@' || !size)
+	if (*p != '@')
 		return -EINVAL;
 	base = memparse(p + 1, &p);
-	if (!PAGE_ALIGNED(base) || !PAGE_ALIGNED(size))
+
+	if (!PAGE_ALIGNED(base) || !PAGE_ALIGNED(size) ||
+	    check_add_overflow(base, size, &end) ||
+	    (size && dt_root_addr_cells < 2 && upper_32_bits((u64)end - 1))) {
+		pr_err("%s=: bad region %pa+%pa\n", name, &base, &size);
 		return -EINVAL;
-	ingenic_rmem_base = base;
-	ingenic_rmem_size = size;
+	}
+
+	if (size && base < __pa_symbol(_end) && end > __pa_symbol(_text)) {
+		pr_err("%s=: region %pa+%pa overlaps the kernel\n", name, &base, &size);
+		return -EINVAL;
+	}
+
+	ret = ingenic_fdt_writable();
+	if (ret) {
+		pr_err("%s=: cannot update the device tree (%d)\n", name, ret);
+		return 0;
+	}
+	fdt = initial_boot_params;
+
+	node = fdt_path_offset(fdt, "/reserved-memory");
+	if (node >= 0)
+		node = fdt_subnode_offset(fdt, node, name);
+	if (node < 0) {
+		pr_warn("%s=: no /reserved-memory/%s node, region not reserved\n",
+			name, name);
+		return 0;
+	}
+
+	if (!size) {
+		ret = fdt_setprop_string(fdt, node, "status", "disabled");
+	} else {
+		if (dt_root_addr_cells == 2)
+			*cell++ = cpu_to_fdt32(upper_32_bits((u64)base));
+		*cell++ = cpu_to_fdt32(lower_32_bits((u64)base));
+		if (dt_root_size_cells == 2)
+			*cell++ = cpu_to_fdt32(upper_32_bits((u64)size));
+		*cell++ = cpu_to_fdt32(lower_32_bits((u64)size));
+
+		snprintf(node_name, sizeof(node_name), "%s@%llx", name, (u64)base);
+		ret = fdt_setprop(fdt, node, "reg", reg, (cell - reg) * sizeof(*reg));
+		if (!ret)
+			ret = fdt_set_name(fdt, node, node_name);
+		if (!ret)
+			ret = fdt_setprop_string(fdt, node, "status", "okay");
+	}
+
+	if (ret)
+		pr_err("%s=: cannot update the device tree (%d)\n", name, ret);
+	else
+		early_init_dt_verify(fdt, __pa(fdt));
+
 	return 0;
+}
+
+static int __init ingenic_rmem_param(char *p)
+{
+	return ingenic_carveout_param("rmem", p);
 }
 early_param("rmem", ingenic_rmem_param);
 
+static int __init ingenic_ispmem_param(char *p)
+{
+	return ingenic_carveout_param("ispmem", p);
+}
+early_param("ispmem", ingenic_ispmem_param);
+
+/*
+ * The out-of-tree media modules built against this kernel still look the
+ * region up through this call; new code finds it by its memory-region.
+ */
 int ingenic_rmem_region(phys_addr_t *base, phys_addr_t *size)
 {
-	if (!ingenic_rmem_size)
+	struct device_node *parent, *np;
+	struct reserved_mem *rmem = NULL;
+
+	parent = of_find_node_by_path("/reserved-memory");
+	if (!parent)
 		return -ENODEV;
-	*base = ingenic_rmem_base;
-	*size = ingenic_rmem_size;
+
+	for_each_available_child_of_node(parent, np) {
+		if (of_node_name_eq(np, "rmem")) {
+			rmem = of_reserved_mem_lookup(np);
+			of_node_put(np);
+			break;
+		}
+	}
+	of_node_put(parent);
+
+	if (!rmem)
+		return -ENODEV;
+
+	*base = rmem->base;
+	*size = rmem->size;
 	return 0;
 }
 EXPORT_SYMBOL_GPL(ingenic_rmem_region);
