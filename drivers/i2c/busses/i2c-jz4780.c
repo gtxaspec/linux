@@ -732,10 +732,19 @@ out:
 	return ret;
 }
 
+/*
+ * The controller sends the target address along with the first data or read
+ * command in its FIFO, so it cannot do an address-only (zero-length)
+ * transfer; one would complete without touching the bus.
+ */
 static u32 jz4780_i2c_functionality(struct i2c_adapter *adap)
 {
-	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+	return I2C_FUNC_I2C | (I2C_FUNC_SMBUS_EMUL & ~I2C_FUNC_SMBUS_QUICK);
 }
+
+static const struct i2c_adapter_quirks jz4780_i2c_quirks = {
+	.flags = I2C_AQ_NO_ZERO_LEN,
+};
 
 static const struct i2c_algorithm jz4780_i2c_algorithm = {
 	.xfer = jz4780_i2c_xfer,
@@ -786,6 +795,7 @@ static int jz4780_i2c_probe(struct platform_device *pdev)
 	i2c->adap.owner		= THIS_MODULE;
 	i2c->adap.algo		= &jz4780_i2c_algorithm;
 	i2c->adap.algo_data	= i2c;
+	i2c->adap.quirks	= &jz4780_i2c_quirks;
 	i2c->adap.retries	= 5;
 	i2c->adap.dev.parent	= &pdev->dev;
 	i2c->adap.dev.of_node	= pdev->dev.of_node;
