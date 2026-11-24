@@ -15,6 +15,8 @@ config MACH_INGENIC_GENERIC
 	select MACH_T23
 	select MACH_T30
 	select MACH_T31
+	select MACH_T32
+	select MACH_T33
 
 choice
 	prompt "Machine type"
@@ -129,9 +131,22 @@ config MACH_T31
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
 
+config MACH_T32
+	bool
+	select MIPS_CPU_SCACHE
+	select SYS_HAS_CPU_MIPS32_R2
+	select SYS_SUPPORTS_HIGHMEM
+
+config MACH_T33
+	bool
+	select MIPS_CPU_SCACHE
+	select SYS_HAS_CPU_MIPS32_R2
+	select SYS_SUPPORTS_HIGHMEM
+
 config INGENIC_XBURST_MXU2
 	bool "XBurst MXU2 SIMD unit"
-	depends on MACH_T10 || MACH_T20 || MACH_T21 || MACH_T23 || MACH_T30 || MACH_T31
+	depends on MACH_T10 || MACH_T20 || MACH_T21 || MACH_T23 || MACH_T30 || MACH_T31 || \
+		   MACH_T32 || MACH_T33
 	default y
 	help
 	  Lets user space use the 128-bit MXU2 SIMD unit (coprocessor 2) of
