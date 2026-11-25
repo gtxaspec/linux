@@ -1,0 +1,461 @@
+// SPDX-License-Identifier: GPL-2.0
+#include <dt-bindings/clock/ingenic,t41-cgu.h>
+#include <dt-bindings/clock/ingenic,tcu.h>
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "ingenic,t41";
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "ingenic,xburst2-fpu2.1-mxu2.1-smt";
+			reg = <0>;
+
+			clocks = <&cgu T41_CLK_CPU>;
+		};
+
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "ingenic,xburst2-fpu2.1-mxu2.1-smt";
+			reg = <1>;
+
+			clocks = <&cgu T41_CLK_CPU>;
+		};
+	};
+
+	cpuintc: interrupt-controller {
+		#address-cells = <0>;
+		#interrupt-cells = <1>;
+		interrupt-controller;
+		compatible = "mti,cpu-interrupt-controller";
+	};
+
+	/* One 0x100 window per core */
+	intc: interrupt-controller@12300000 {
+		compatible = "ingenic,t41-intc";
+		reg = <0x12300000 0x200>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&cpuintc>;
+		interrupts = <2>;
+	};
+
+	ccu: cpu-control@12200000 {
+		compatible = "ingenic,xburst2-ccu";
+		reg = <0x12200000 0x2000>;
+
+		interrupt-parent = <&cpuintc>;
+		interrupts = <3>;
+	};
+
+	exclk: ext {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+	};
+
+	rtclk: rtc {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+	};
+
+	/* RTC_EN of the TCU clocks EXCLK / 512, not the 32 kHz */
+	tcu_rtc: clock-tcu-rtc {
+		compatible = "fixed-factor-clock";
+		clocks = <&exclk>;
+		clock-mult = <1>;
+		clock-div = <512>;
+		#clock-cells = <0>;
+	};
+
+	cgu: clock-controller@10000000 {
+		compatible = "ingenic,t41-cgu", "simple-mfd";
+		reg = <0x10000000 0x100>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x10000000 0x100>;
+
+		#clock-cells = <1>;
+
+		clocks = <&exclk>, <&rtclk>;
+		clock-names = "ext", "rtc";
+
+		mac_phy_ctrl: mac-phy-ctrl@e8 {
+			compatible = "syscon";
+			reg = <0xe8 0x4>;
+		};
+	};
+
+	ost: timer@12000000 {
+		compatible = "ingenic,t41-ost";
+		reg = <0x12000000 0x10000>, <0x12100000 0x10000>;
+		reg-names = "global", "core";
+
+		clocks = <&cgu T41_CLK_OST>;
+		clock-names = "ost";
+
+		interrupt-parent = <&cpuintc>;
+		interrupts = <4>;
+	};
+
+	tcu: timer@10002000 {
+		compatible = "ingenic,t41-tcu", "ingenic,t32-tcu", "simple-mfd";
+		reg = <0x10002000 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x10002000 0x1000>;
+
+		#clock-cells = <1>;
+
+		clocks = <&tcu_rtc>,
+			 <&cgu T41_CLK_EXCLK>,
+			 <&cgu T41_CLK_PCLK>,
+			 <&cgu T41_CLK_TCU>;
+		clock-names = "rtc", "ext", "pclk", "tcu";
+
+		watchdog: watchdog@0 {
+			compatible = "ingenic,t41-watchdog", "ingenic,t32-watchdog";
+			reg = <0x0 0x10>;
+
+			clocks = <&tcu TCU_CLK_WDT>;
+			clock-names = "wdt";
+		};
+	};
+
+	pinctrl: pinctrl@10010000 {
+		compatible = "ingenic,t41-pinctrl";
+		reg = <0x10010000 0x4000>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		gpa: gpio@0 {
+			compatible = "ingenic,t41-gpio";
+			reg = <0>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 0 32>;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <17>;
+		};
+
+		gpb: gpio@1 {
+			compatible = "ingenic,t41-gpio";
+			reg = <1>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 32 32>;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <16>;
+		};
+
+		gpc: gpio@2 {
+			compatible = "ingenic,t41-gpio";
+			reg = <2>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 64 32>;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <15>;
+		};
+
+		gpd: gpio@3 {
+			compatible = "ingenic,t41-gpio";
+			reg = <3>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 96 32>;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <14>;
+		};
+	};
+
+	uart0: serial@10030000 {
+		compatible = "ingenic,t41-uart", "ingenic,x1000-uart";
+		reg = <0x10030000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <51>;
+
+		clocks = <&exclk>, <&cgu T41_CLK_UART0>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x15 0xffffffff>, <&pdma 0x14 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	uart1: serial@10031000 {
+		compatible = "ingenic,t41-uart", "ingenic,x1000-uart";
+		reg = <0x10031000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <50>;
+
+		clocks = <&exclk>, <&cgu T41_CLK_UART1>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x13 0xffffffff>, <&pdma 0x12 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	uart2: serial@10032000 {
+		compatible = "ingenic,t41-uart", "ingenic,x1000-uart";
+		reg = <0x10032000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <49>;
+
+		clocks = <&exclk>, <&cgu T41_CLK_UART2>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x11 0xffffffff>, <&pdma 0x10 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	uart3: serial@10033000 {
+		compatible = "ingenic,t41-uart", "ingenic,x1000-uart";
+		reg = <0x10033000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <48>;
+
+		clocks = <&exclk>, <&cgu T41_CLK_UART3>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x0f 0xffffffff>, <&pdma 0x0e 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	uart4: serial@10034000 {
+		compatible = "ingenic,t41-uart", "ingenic,x1000-uart";
+		reg = <0x10034000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <57>;
+
+		clocks = <&exclk>, <&cgu T41_CLK_UART4>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x0d 0xffffffff>, <&pdma 0x0c 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	uart5: serial@10035000 {
+		compatible = "ingenic,t41-uart", "ingenic,x1000-uart";
+		reg = <0x10035000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <56>;
+
+		clocks = <&exclk>, <&cgu T41_CLK_UART5>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x0b 0xffffffff>, <&pdma 0x0a 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	i2c0: i2c@10050000 {
+		compatible = "ingenic,t41-i2c", "ingenic,x1000-i2c";
+		reg = <0x10050000 0x1000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <60>;
+
+		clocks = <&cgu T41_CLK_SMB0>;
+
+		dmas = <&pdma 0x25 0xffffffff>, <&pdma 0x24 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	i2c1: i2c@10051000 {
+		compatible = "ingenic,t41-i2c", "ingenic,x1000-i2c";
+		reg = <0x10051000 0x1000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <59>;
+
+		clocks = <&cgu T41_CLK_SMB1>;
+
+		dmas = <&pdma 0x27 0xffffffff>, <&pdma 0x26 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	i2c2: i2c@10052000 {
+		compatible = "ingenic,t41-i2c", "ingenic,x1000-i2c";
+		reg = <0x10052000 0x1000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <58>;
+
+		clocks = <&cgu T41_CLK_SMB2>;
+
+		dmas = <&pdma 0x29 0xffffffff>, <&pdma 0x28 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	dtrng: trng@10072000 {
+		compatible = "ingenic,t41-dtrng", "ingenic,x1830-dtrng";
+		reg = <0x10072000 0xc>;
+
+		clocks = <&cgu T41_CLK_DTRNG>;
+
+		status = "disabled";
+	};
+
+	msc0: mmc@13060000 {
+		compatible = "ingenic,t41-sdhci", "ingenic,t32-sdhci";
+		reg = <0x13060000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <37>;
+
+		clocks = <&cgu T41_CLK_MSC0>, <&cgu T41_CLK_EXCLK>;
+		clock-names = "mmc", "ext";
+
+		status = "disabled";
+	};
+
+	msc1: mmc@13070000 {
+		compatible = "ingenic,t41-sdhci", "ingenic,t32-sdhci";
+		reg = <0x13070000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <36>;
+
+		clocks = <&cgu T41_CLK_MSC1>, <&cgu T41_CLK_EXCLK>;
+		clock-names = "mmc", "ext";
+
+		status = "disabled";
+	};
+
+	pdma: dma-controller@13420000 {
+		compatible = "ingenic,t41-dma", "ingenic,x1830-dma";
+		reg = <0x13420000 0x400>, <0x13421000 0x40>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <10>;
+
+		clocks = <&cgu T41_CLK_PDMA>;
+
+		#dma-cells = <2>;
+	};
+
+	sfc0: spi@13440000 {
+		compatible = "ingenic,t41-sfc", "ingenic,t32-sfc";
+		reg = <0x13440000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <7>;
+
+		clocks = <&cgu T41_CLK_SFC0>;
+		clock-names = "sfc";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	sfc1: spi@13450000 {
+		compatible = "ingenic,t41-sfc", "ingenic,t32-sfc";
+		reg = <0x13450000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <19>;
+
+		clocks = <&cgu T41_CLK_SFC1>;
+		clock-names = "sfc";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	mac: ethernet@134b0000 {
+		compatible = "ingenic,t41-mac", "snps,dwmac";
+		reg = <0x134b0000 0x2000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <55>;
+		interrupt-names = "macirq";
+
+		clocks = <&cgu T41_CLK_GMAC>;
+		clock-names = "stmmaceth";
+
+		mode-reg = <&mac_phy_ctrl>;
+
+		snps,clk-csr = <4>;
+
+		status = "disabled";
+
+		mdio: mdio {
+			compatible = "snps,dwmac-mdio";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+
+	efuse: efuse@13540000 {
+		compatible = "ingenic,t41-efuse";
+		reg = <0x13540000 0x300>;
+
+		clocks = <&cgu T41_CLK_EFUSE>;
+
+		status = "disabled";
+	};
+};
