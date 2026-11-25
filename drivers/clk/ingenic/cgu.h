@@ -116,6 +116,8 @@ struct ingenic_cgu_div_info {
  * @m_bits: size of the numerator field in bits
  * @n_shift: index of the lowest bit of the denominator N within reg
  * @n_bits: size of the denominator field in bits
+ * @ce_mask: change-enable bit of reg, set after M and N are written; 0 if none
+ * @busy_mask: bit of reg that stays set until the change has taken effect; 0 if none
  *
  * The output is parent_rate * M / N.
  */
@@ -125,6 +127,8 @@ struct ingenic_cgu_frac_info {
 	u8 m_bits;
 	u8 n_shift;
 	u8 n_bits;
+	u32 ce_mask;
+	u32 busy_mask;
 };
 
 /**

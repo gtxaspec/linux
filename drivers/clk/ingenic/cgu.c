@@ -632,8 +632,16 @@ ingenic_clk_set_rate(struct clk_hw *hw, unsigned long req_rate,
 		reg = readl(cgu->base + frac->reg) & ~mask;
 		reg |= m << frac->m_shift | n << frac->n_shift;
 		writel(reg, cgu->base + frac->reg);
+
+		if (frac->ce_mask) {
+			writel(reg | frac->ce_mask, cgu->base + frac->reg);
+			if (frac->busy_mask)
+				ret = readl_poll_timeout_atomic(cgu->base + frac->reg, reg,
+								!(reg & frac->busy_mask),
+								0, 100 * USEC_PER_MSEC);
+		}
 		spin_unlock_irqrestore(&cgu->lock, flags);
-		return 0;
+		return ret;
 	}
 
 	return -EINVAL;

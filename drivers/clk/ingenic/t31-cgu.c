@@ -1050,6 +1050,12 @@ static const struct ingenic_cgu_clk_info t23_cgu_clocks[] = {
 #define T32_CDR_STOP		27
 #define T32_MSC0CDR_EXCLK_EN	BIT(21)
 
+/* CIMCDR of the T33: M and N laid out as the I2S dividers' (vendor FRA_DIV 20, 9, 0, 20) */
+#define T33_CIMCDR_M_SHIFT	20
+#define T33_CIMCDR_M_BITS	9
+#define T33_CIMCDR_N_SHIFT	0
+#define T33_CIMCDR_N_BITS	20
+
 #define T32_PLL(_reg) {				\
 	.reg = _reg,				\
 	.rate_multiplier = 1,			\
@@ -1702,12 +1708,29 @@ static const struct ingenic_cgu_clk_info t33_cgu_clocks[] = {
 		.div = { CGU_REG_SSICDR, 0, 1, 8, T32_CDR_CE, T32_CDR_BUSY, T32_CDR_STOP },
 	},
 
+	/* The sensor's MCLK: a fractional divider, parent * M / N, unlike the T32's */
+	[T32_CLK_CIM] = {
+		"cim", CGU_CLK_MUX | CGU_CLK_FRAC,
+		.parents = { T32_CLK_SCLKA, T32_CLK_MPLL, T32_CLK_EXCLK, -1 },
+		.mux = { CGU_REG_CIMCDR, 30, 2 },
+		.frac = { CGU_REG_CIMCDR, T33_CIMCDR_M_SHIFT, T33_CIMCDR_M_BITS,
+			  T33_CIMCDR_N_SHIFT, T33_CIMCDR_N_BITS,
+			  BIT(T32_CDR_CE), BIT(T32_CDR_BUSY) },
+	},
+
 	[T32_CLK_ISP] = {
 		"isp", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
 		.parents = { T32_CLK_SCLKA, T32_CLK_MPLL, -1, -1 },
 		.mux = { CGU_REG_ISPCDR, 30, 2 },
 		.div = { CGU_REG_ISPCDR, 0, 1, 4, T32_CDR_CE, T32_CDR_BUSY, T32_CDR_STOP },
 		.gate = { CGU_REG_CLKGR0, 19 },
+	},
+
+	[T32_CLK_ISPS] = {
+		"isps", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = { T32_CLK_SCLKA, T32_CLK_MPLL, -1, -1 },
+		.mux = { CGU_REG_T32_ISPSCDR, 30, 2 },
+		.div = { CGU_REG_T32_ISPSCDR, 0, 1, 4, T32_CDR_CE, T32_CDR_BUSY, T32_CDR_STOP },
 	},
 
 	[T32_CLK_ISPA] = {
