@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/interrupt-controller/ingenic,xburst2-intc.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic XBurst2 SoC interrupt controller
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description:
+  The interrupt controller of the Ingenic XBurst2 SoCs has 64 sources and a
+  register window of its own for every core, each with an independent mask.
+  A source is delivered to the core in whose window it is unmasked, on that
+  core's CPU interrupt pin 2, once the core's peripheral interrupt is enabled
+  in the core control unit.
+
+properties:
+  $nodename:
+    pattern: "^interrupt-controller@[0-9a-f]+$"
+
+  compatible:
+    const: ingenic,t41-intc
+
+  reg:
+    maxItems: 1
+    description: The per-core windows, one every 0x100 bytes
+
+  "#interrupt-cells":
+    const: 1
+
+  interrupt-controller: true
+
+  interrupts:
+    maxItems: 1
+
+required:
+  - compatible
+  - reg
+  - "#interrupt-cells"
+  - interrupt-controller
+  - interrupts
+
+additionalProperties: false
+
+examples:
+  - |
+    interrupt-controller@12300000 {
+        compatible = "ingenic,t41-intc";
+        reg = <0x12300000 0x200>;
+
+        interrupt-controller;
+        #interrupt-cells = <1>;
+
+        interrupt-parent = <&cpuintc>;
+        interrupts = <2>;
+    };
+...
