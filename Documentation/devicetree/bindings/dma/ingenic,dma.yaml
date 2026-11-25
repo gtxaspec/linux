@@ -39,6 +39,7 @@ properties:
           - const: ingenic,x1000-dma
       - items:
           - enum:
+              - ingenic,a1-dma
               - ingenic,t40-dma
               - ingenic,t41-dma
           - const: ingenic,x1830-dma
