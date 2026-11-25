@@ -21,6 +21,15 @@
 		reg = <0x0 0x4000000>;
 	};
 
+	/* the 3.3 V rail of the USB PHY */
+	vcc_3v3: regulator-3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
 	/*
 	 * The media memory of the out-of-tree camera stack, where thingino's
 	 * U-Boot puts it on this RAM size; its rmem= places and enables it
@@ -104,6 +113,17 @@
 &radix {
 	/* the H.265 encoder, bound by the same module */
 	status = "okay";
+};
+
+&otg_phy {
+	status = "okay";
+
+	vcc-supply = <&vcc_3v3>;
+};
+
+&otg {
+	status = "okay";
+	disable-over-current;
 };
 
 &dtrng {
