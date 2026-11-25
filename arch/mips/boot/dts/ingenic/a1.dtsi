@@ -482,6 +482,77 @@
 		status = "disabled";
 	};
 
+	helix: video-codec@13200000 {
+		compatible = "ingenic,a1-helix";
+		reg = <0x13200000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <33>;
+
+		clocks = <&cgu A1_CLK_JPEG>, <&cgu A1_CLK_VC8000D>;
+		clock-names = "gate_jpeg", "gate_vc8000d";
+
+		ingenic,srbc = <&srbc>;
+
+		status = "disabled";
+	};
+
+	vdec: video-decoder@13100000 {
+		compatible = "ingenic,a1-vc8000d";
+		reg = <0x13100000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <42>;
+
+		clocks = <&cgu A1_CLK_VC8000D>;
+		clock-names = "gate_vc8000d";
+
+		status = "disabled";
+	};
+
+	ipu: ipu@13080000 {
+		compatible = "ingenic,a1-ipu";
+		reg = <0x13080000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <46>;
+
+		clocks = <&cgu A1_CLK_IPU>, <&cgu A1_CLK_IPU_GATE>;
+		clock-names = "div_ipu", "gate_ipu";
+
+		status = "disabled";
+	};
+
+	aip: aip@13090000 {
+		compatible = "ingenic,a1-aip";
+		reg = <0x13090000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <40>, <39>, <38>;
+
+		clocks = <&cgu A1_CLK_AIP>;
+		clock-names = "gate_aip";
+
+		status = "disabled";
+	};
+
+	vde: display@13300000 {
+		compatible = "ingenic,a1-vde";
+		reg = <0x13300000 0xa0000>, <0x10075000 0x1000>,
+		      <0x10076000 0x1000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <20>, <18>, <13>;
+
+		clocks = <&cgu A1_CLK_VDE>, <&cgu A1_CLK_HDMI>,
+			 <&cgu A1_CLK_VGA>, <&cgu A1_CLK_VDEV>,
+			 <&cgu A1_CLK_VDEA>, <&cgu A1_CLK_VDEM>;
+		clock-names = "gate_vde", "gate_hdmi", "gate_vga",
+			      "div_vdev", "div_vdea", "div_vdem";
+
+		status = "disabled";
+	};
+
 	efuse: efuse@13540000 {
 		compatible = "ingenic,a1-efuse";
 		reg = <0x13540000 0x300>;
