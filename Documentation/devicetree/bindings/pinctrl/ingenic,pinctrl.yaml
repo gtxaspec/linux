@@ -52,6 +52,7 @@ properties:
           - ingenic,t31-pinctrl
           - ingenic,t32-pinctrl
           - ingenic,t33-pinctrl
+          - ingenic,t41-pinctrl
           - ingenic,x2000-pinctrl
           - ingenic,x2100-pinctrl
       - items:
@@ -100,6 +101,7 @@ patternProperties:
           - ingenic,t31-gpio
           - ingenic,t32-gpio
           - ingenic,t33-gpio
+          - ingenic,t41-gpio
           - ingenic,x2000-gpio
           - ingenic,x2100-gpio
 
