@@ -28,9 +28,11 @@
 #define CGU_REG_LPCDR		0x64
 #define CGU_REG_MSC0CDR		0x68
 #define CGU_REG_MSC1CDR		0x6c
+#define CGU_REG_I2STCDR		0x70
 #define CGU_REG_SSICDR		0x74
 #define CGU_REG_SFC1CDR		0x7c
 #define CGU_REG_ISPMCDR		0x80
+#define CGU_REG_I2SRCDR		0x84
 #define CGU_REG_CIMCDR		0x90
 #define CGU_REG_LDCCDR		0xa0
 #define CGU_REG_ISPSCDR		0xa8
@@ -49,6 +51,18 @@
 #define T41_CDR_CE		29
 #define T41_CDR_BUSY		28
 #define T41_CDR_STOP		27
+
+/*
+ * I2S{T,R}CDR, parent * M / N. The vendor kernel's clk-t41.c has the source
+ * select, a 9 bit M at bit 20, a 20 bit N and the clock enable at bit 29
+ * in both registers, each with its own source select.
+ */
+#define I2SCDR_PCS_SHIFT	30
+#define I2SCDR_CE_BIT		29
+#define I2SCDR_M_SHIFT		20
+#define I2SCDR_M_BITS		9
+#define I2SCDR_N_SHIFT		0
+#define I2SCDR_N_BITS		20
 
 /*
  * The PLLs: EXCLK * 2 * (M + 1) / ((N + 1) * 2^OD0 * (OD1 + 1)) with M in
@@ -526,6 +540,54 @@ static const struct ingenic_cgu_clk_info t41_cgu_clocks[] = {
 		"dtrng", CGU_CLK_GATE,
 		.parents = { T41_CLK_PCLK, -1, -1, -1 },
 		.gate = { CGU_REG_CLKGR1, 1 },
+	},
+
+	/* the I2S sources: playback in I2STCDR, capture in I2SRCDR */
+
+	[T41_CLK_I2S_MUX] = {
+		"i2s_mux", CGU_CLK_MUX,
+		.parents = { T41_CLK_SCLKA, T41_CLK_MPLL, T41_CLK_VPLL, -1 },
+		.mux = { CGU_REG_I2STCDR, I2SCDR_PCS_SHIFT, 2 },
+	},
+
+	[T41_CLK_I2SR_MUX] = {
+		"i2sr_mux", CGU_CLK_MUX,
+		.parents = { T41_CLK_SCLKA, T41_CLK_MPLL, T41_CLK_VPLL, -1 },
+		.mux = { CGU_REG_I2SRCDR, I2SCDR_PCS_SHIFT, 2 },
+	},
+
+	[T41_CLK_DIV_I2ST] = {
+		"div_i2st", CGU_CLK_FRAC,
+		.parents = { T41_CLK_I2S_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2STCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[T41_CLK_DIV_I2SR] = {
+		"div_i2sr", CGU_CLK_FRAC,
+		.parents = { T41_CLK_I2SR_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2SRCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	/* the clock enables inside the CDRs, set to enable */
+
+	[T41_CLK_CE_I2ST] = {
+		"ce_i2st", CGU_CLK_GATE,
+		.parents = { T41_CLK_DIV_I2ST, -1, -1, -1 },
+		.gate = { CGU_REG_I2STCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+	[T41_CLK_CE_I2SR] = {
+		"ce_i2sr", CGU_CLK_GATE,
+		.parents = { T41_CLK_DIV_I2SR, -1, -1, -1 },
+		.gate = { CGU_REG_I2SRCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+	[T41_CLK_AIC] = {
+		"aic", CGU_CLK_GATE,
+		.parents = { T41_CLK_DIV_I2ST, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 11 },
 	},
 };
 
