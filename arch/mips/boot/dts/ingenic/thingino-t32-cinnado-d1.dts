@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0
+#include "thingino-t32.dts"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	compatible = "thingino,t32-cinnado-d1", "thingino,t32", "ingenic,t32";
+	model = "Cinnado D1 (T32LQ)";
+};
+
+/* Speaker amplifier enable: PB31, low enables it */
+&codec {
+	spk-gpios = <&gpb 31 GPIO_ACTIVE_LOW>;
+};

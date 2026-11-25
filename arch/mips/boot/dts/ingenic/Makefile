@@ -12,4 +12,5 @@ dtb-$(CONFIG_MACH_T23)		+= thingino-t23.dtb
 dtb-$(CONFIG_MACH_T30)		+= thingino-t30.dtb
 dtb-$(CONFIG_MACH_T31)		+= thingino-t31.dtb
 dtb-$(CONFIG_MACH_T32)		+= thingino-t32.dtb
+dtb-$(CONFIG_MACH_T32)		+= thingino-t32-cinnado-d1.dtb
 dtb-$(CONFIG_MACH_T33)		+= thingino-t33.dtb
