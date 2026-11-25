@@ -83,6 +83,29 @@
 	pinctrl-0 = <&pins_i2c0>;
 };
 
+&ipu {
+	/* /dev/ipu (libimp OSD), bound by the out-of-tree ipu-t33 module */
+	status = "okay";
+};
+
+&isp {
+	/* consumed by the out-of-tree ISP modules, not bound by a driver */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_cim_mclk>;
+
+	memory-region = <&rmem>;
+};
+
+&helix {
+	/* the H.264/JPEG encoder, bound by the out-of-tree soc-vpu module */
+	status = "okay";
+};
+
+&radix {
+	/* the H.265 encoder, bound by the same module */
+	status = "okay";
+};
+
 &dtrng {
 	status = "okay";
 };
@@ -126,6 +149,11 @@
 	pins_i2c0: i2c0 {
 		function = "i2c0";
 		groups = "i2c0-data";
+	};
+
+	pins_cim_mclk: cim-mclk {
+		function = "cim";
+		groups = "cim-mclk0";
 	};
 
 	pins_mac: mac {

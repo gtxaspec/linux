@@ -376,4 +376,103 @@
 
 		status = "disabled";
 	};
+
+	ipu: ipu@13080000 {
+		compatible = "ingenic,t33-ipu";
+		reg = <0x13080000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <6>;
+
+		clocks = <&cgu T32_CLK_IPU>;
+		clock-names = "ipu";
+
+		status = "disabled";
+	};
+
+	isp: isp@13300000 {
+		compatible = "ingenic,t33-isp";
+		reg = <0x13300000 0xe0000>, <0x133e0000 0x20000>;
+		reg-names = "isp", "vic";
+
+		interrupt-parent = <&intc>;
+		interrupts = <29>, <30>;
+		interrupt-names = "isp", "vic";
+
+		clocks = <&cgu T32_CLK_ISP>, <&cgu T32_CLK_CIM>,
+			 <&cgu T32_CLK_ISPA>, <&cgu T32_CLK_ISPS>;
+		clock-names = "isp", "cim", "ispa", "isps";
+
+		status = "disabled";
+	};
+
+	ivdc: ivdc@13100000 {
+		compatible = "ingenic,t33-ivdc";
+		reg = <0x13100000 0xf0000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <57>;
+		interrupt-names = "ivdc";
+
+		clocks = <&cgu T32_CLK_IVDC>;
+		clock-names = "ivdc";
+
+		status = "disabled";
+	};
+
+	ldc: ldc@13040000 {
+		compatible = "ingenic,t33-ldc";
+		reg = <0x13040000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <38>;
+		interrupt-names = "ldc";
+
+		clocks = <&cgu T32_CLK_LDC>;
+		clock-names = "ldc";
+
+		status = "disabled";
+	};
+
+	csi: csi@10023000 {
+		compatible = "ingenic,t33-csi";
+		reg = <0x10023000 0x1000>, <0x10022000 0x1000>;
+		reg-names = "csi", "phy";
+
+		interrupt-parent = <&intc>;
+		interrupts = <5>;
+
+		clocks = <&cgu T32_CLK_MIPI_CSI>;
+		clock-names = "csi";
+
+		status = "disabled";
+	};
+
+	helix: video-codec@132f0000 {
+		compatible = "ingenic,t33-helix";
+		reg = <0x132f0000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <63>;
+
+		clocks = <&cgu T32_CLK_VPU>, <&cgu T32_CLK_IVDC>,
+			 <&cgu T32_CLK_AHB1>, <&cgu T32_CLK_ISPA>;
+		clock-names = "vpu", "ivdc", "ahb1", "ispa";
+
+		status = "disabled";
+	};
+
+	radix: video-codec@13200000 {
+		compatible = "ingenic,t33-radix";
+		reg = <0x13200000 0xf0000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <62>;
+
+		clocks = <&cgu T32_CLK_VPU>, <&cgu T32_CLK_IVDC>,
+			 <&cgu T32_CLK_AHB1>, <&cgu T32_CLK_ISPA>;
+		clock-names = "vpu", "ivdc", "ahb1", "ispa";
+
+		status = "disabled";
+	};
 };
