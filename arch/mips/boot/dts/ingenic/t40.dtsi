@@ -468,4 +468,34 @@
 
 		status = "disabled";
 	};
+
+	aic: audio-controller@10020000 {
+		compatible = "ingenic,t40-aic";
+		reg = <0x10020000 0x70>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <1>;
+
+		clocks = <&cgu T40_CLK_AIC>,
+			 <&cgu T40_CLK_DIV_I2ST>,
+			 <&cgu T40_CLK_DIV_I2SR>,
+			 <&cgu T40_CLK_CE_I2ST>,
+			 <&cgu T40_CLK_CE_I2SR>;
+		clock-names = "gate_aic", "div_i2st", "div_i2sr",
+			      "ce_i2st", "ce_i2sr";
+
+		dmas = <&pdma 0x07 0xffffffff>,
+		       <&pdma 0x06 0xffffffff>,
+		       <&pdma 0x05 0xffffffff>;
+		dma-names = "rx", "tx", "aec";
+
+		status = "disabled";
+	};
+
+	codec: audio-codec@10021000 {
+		compatible = "ingenic,t40-codec";
+		reg = <0x10021000 0x130>;
+
+		status = "disabled";
+	};
 };
