@@ -377,6 +377,20 @@
 		status = "disabled";
 	};
 
+	riscv: riscv@12210000 {
+		compatible = "ingenic,t33-riscv";
+		reg = <0x12210000 0x10000>, <0x12220000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <4>;
+		interrupt-names = "riscv";
+
+		clocks = <&cgu T33_CLK_RISCV>;
+		clock-names = "riscv";
+
+		status = "disabled";
+	};
+
 	ipu: ipu@13080000 {
 		compatible = "ingenic,t33-ipu";
 		reg = <0x13080000 0x10000>;
