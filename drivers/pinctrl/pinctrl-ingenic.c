@@ -125,6 +125,7 @@ enum jz_version {
 	ID_T30,
 	ID_T31,
 	ID_T32,
+	ID_A1,
 	ID_X2000,
 	ID_X2100,
 };
@@ -184,6 +185,7 @@ static const unsigned long enabled_socs =
 	IS_ENABLED(CONFIG_MACH_T31) << ID_T31 |
 	(IS_ENABLED(CONFIG_MACH_T32) || IS_ENABLED(CONFIG_MACH_T33) ||
 	 IS_ENABLED(CONFIG_MACH_T40) || IS_ENABLED(CONFIG_MACH_T41)) << ID_T32 |
+	IS_ENABLED(CONFIG_MACH_A1) << ID_A1 |
 	IS_ENABLED(CONFIG_MACH_X2000) << ID_X2000 |
 	IS_ENABLED(CONFIG_MACH_X2100) << ID_X2100;
 
@@ -202,6 +204,17 @@ is_soc_or_above(const struct ingenic_pinctrl *jzpc, enum jz_version version)
 static inline bool ingenic_has_port_shadow(const struct ingenic_pinctrl *jzpc)
 {
 	return jzpc->info->version == ID_T32;
+}
+
+/* The A1 has the T32's pull registers, but writes a pin change to its port directly */
+static inline bool ingenic_has_split_pull(const struct ingenic_pinctrl *jzpc)
+{
+	return jzpc->info->version == ID_T32 || jzpc->info->version == ID_A1;
+}
+
+static inline bool ingenic_has_shadow(const struct ingenic_pinctrl *jzpc)
+{
+	return is_soc_or_above(jzpc, ID_X1000) && jzpc->info->version != ID_A1;
 }
 
 /* The T10's and T20's pull disable register sits below the JZ4770 family's */
@@ -4376,7 +4389,7 @@ static void irq_set_type(struct ingenic_gpio_chip *jzgc,
 		ingenic_gpio_shadow_set_bit(jzgc, reg1, offset, val2);
 		ingenic_gpio_shadow_set_bit_load(jzgc);
 		ingenic_gpio_set_bit(jzgc, X2000_GPIO_EDG, offset, val3);
-	} else if (is_soc_or_above(jzgc->jzpc, ID_X1000)) {
+	} else if (ingenic_has_shadow(jzgc->jzpc)) {
 		ingenic_gpio_shadow_set_bit(jzgc, reg2, offset, val1);
 		ingenic_gpio_shadow_set_bit(jzgc, reg1, offset, val2);
 		ingenic_gpio_shadow_set_bit_load(jzgc);
@@ -4564,7 +4577,7 @@ static int ingenic_gpio_direction_output(struct gpio_chip *gc,
 	struct ingenic_gpio_chip *jzgc = gpiochip_get_data(gc);
 	int ret;
 
-	if (!is_soc_or_above(jzgc->jzpc, ID_X1000)) {
+	if (!ingenic_has_shadow(jzgc->jzpc)) {
 		ingenic_gpio_set(gc, offset, value);
 		return pinctrl_gpio_direction_output(gc, offset);
 	}
@@ -4755,7 +4768,7 @@ static int ingenic_pinmux_set_pin_fn(struct ingenic_pinctrl *jzpc,
 	dev_dbg(jzpc->dev, "set pin P%c%u to function %u\n",
 			'A' + offt, idx, func);
 
-	if (is_soc_or_above(jzpc, ID_X1000)) {
+	if (ingenic_has_shadow(jzpc)) {
 		ingenic_shadow_config_pin(jzpc, pin, JZ4770_GPIO_INT, false);
 		ingenic_shadow_config_pin(jzpc, pin, GPIO_MSK, false);
 		ingenic_shadow_config_pin(jzpc, pin, JZ4770_GPIO_PAT1, func & 0x2);
@@ -4824,7 +4837,7 @@ static int ingenic_pinmux_gpio_set_direction(struct pinctrl_dev *pctldev,
 	dev_dbg(pctldev->dev, "set pin P%c%u to %sput\n",
 			'A' + offt, idx, input ? "in" : "out");
 
-	if (is_soc_or_above(jzpc, ID_X1000)) {
+	if (ingenic_has_shadow(jzpc)) {
 		ingenic_shadow_config_pin(jzpc, pin, JZ4770_GPIO_INT, false);
 		ingenic_shadow_config_pin(jzpc, pin, GPIO_MSK, true);
 		ingenic_shadow_config_pin(jzpc, pin, JZ4770_GPIO_PAT1, input);
@@ -4865,7 +4878,7 @@ static int ingenic_pinconf_get(struct pinctrl_dev *pctldev,
 	unsigned int bias, reg;
 	bool pull, pullup, pulldown;
 
-	if (ingenic_has_port_shadow(jzpc)) {
+	if (ingenic_has_split_pull(jzpc)) {
 		pullup = ingenic_get_pin_config(jzpc, pin, T32_GPIO_PUEN) &&
 				!ingenic_get_pin_config(jzpc, pin, T32_GPIO_PDEN) &&
 				(jzpc->info->pull_ups[offt] & BIT(idx));
@@ -4963,7 +4976,7 @@ static int ingenic_pinconf_get(struct pinctrl_dev *pctldev,
 static void ingenic_set_bias(struct ingenic_pinctrl *jzpc,
 		unsigned int pin, unsigned int bias)
 {
-	if (ingenic_has_port_shadow(jzpc)) {
+	if (ingenic_has_split_pull(jzpc)) {
 		ingenic_config_pin(jzpc, pin, T32_GPIO_PUEN, bias == GPIO_PULL_UP);
 		ingenic_config_pin(jzpc, pin, T32_GPIO_PDEN, bias == GPIO_PULL_DOWN);
 	} else if (is_soc_or_above(jzpc, ID_X2000)) {
@@ -5924,6 +5937,149 @@ static const struct ingenic_chip_info t40_chip_info = {
 	.access_table = &t41_access_table,
 };
 
+/*
+ * A1: five ports 0x1000 apart, the last with 28 pins, and the T32's pull
+ * registers. A port takes a pin change directly, there is no shadow. The pin
+ * map is the vendor a1-pinctrl.dtsi, with the MSC, SFC0 and MAC pins checked
+ * against the A1 reference board schematics; the SFC1 pins are one group as
+ * the vendor has them.
+ */
+static int a1_uart0_data_b_pins[] = { 0x36, 0x37, };
+static int a1_uart0_data_c_pins[] = { 0x42, 0x43, };
+static int a1_uart0_data_c_alt_pins[] = { 0x52, 0x53, };
+static int a1_uart1_data_pins[] = { 0x46, 0x47, };
+static int a1_uart2_data_c_pins[] = { 0x4e, 0x4f, };
+static int a1_uart2_data_b_pins[] = { 0x30, 0x31, };
+static int a1_uart2_data_a_pins[] = { 0x04, 0x05, };
+static int a1_i2c0_a_pins[] = { 0x04, 0x05, };
+static int a1_i2c0_b_pins[] = { 0x24, 0x25, };
+static int a1_i2c0_b_alt_pins[] = { 0x38, 0x39, };
+static int a1_i2c1_a_pins[] = { 0x0a, 0x0b, };
+static int a1_i2c1_b_pins[] = { 0x2a, 0x2b, };
+static int a1_i2c1_c_pins[] = { 0x42, 0x43, };
+static int a1_mmc0_1bit_pins[] = { 0x20, 0x21, 0x22, };
+static int a1_mmc0_4bit_pins[] = { 0x23, 0x24, 0x25, };
+static int a1_mmc1_1bit_pins[] = { 0x2c, 0x2d, 0x2e, };
+static int a1_mmc1_4bit_pins[] = { 0x2f, 0x30, 0x31, };
+static int a1_sfc0_data_pins[] = { 0x54, 0x55, 0x56, 0x57, };
+static int a1_sfc0_clk_pins[] = { 0x58, };
+static int a1_sfc0_ce_pins[] = { 0x59, };
+static int a1_sfc1_pins[] = { 0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, };
+static int a1_mac0_pins[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b,
+	0x0c,
+};
+static int a1_mac0_mdio_pins[] = { 0x0d, 0x0e, };
+static int a1_mac1_pins[] = {
+	0x0f, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a,
+	0x1b,
+};
+static int a1_mac1_mdio_pins[] = { 0x1c, 0x1d, };
+
+static const struct group_desc a1_groups[] = {
+	INGENIC_PIN_GROUP("uart0-data-b", a1_uart0_data_b, 1),
+	INGENIC_PIN_GROUP("uart0-data-c", a1_uart0_data_c, 1),
+	INGENIC_PIN_GROUP("uart0-data-c-alt", a1_uart0_data_c_alt, 0),
+	INGENIC_PIN_GROUP("uart1-data", a1_uart1_data, 0),
+	INGENIC_PIN_GROUP("uart2-data-c", a1_uart2_data_c, 0),
+	INGENIC_PIN_GROUP("uart2-data-b", a1_uart2_data_b, 2),
+	INGENIC_PIN_GROUP("uart2-data-a", a1_uart2_data_a, 1),
+	INGENIC_PIN_GROUP("i2c0-data-a", a1_i2c0_a, 2),
+	INGENIC_PIN_GROUP("i2c0-data-b", a1_i2c0_b, 2),
+	INGENIC_PIN_GROUP("i2c0-data-b-alt", a1_i2c0_b_alt, 2),
+	INGENIC_PIN_GROUP("i2c1-data-a", a1_i2c1_a, 1),
+	INGENIC_PIN_GROUP("i2c1-data-b", a1_i2c1_b, 2),
+	INGENIC_PIN_GROUP("i2c1-data-c", a1_i2c1_c, 2),
+	INGENIC_PIN_GROUP("mmc0-1bit", a1_mmc0_1bit, 0),
+	INGENIC_PIN_GROUP("mmc0-4bit", a1_mmc0_4bit, 0),
+	INGENIC_PIN_GROUP("mmc1-1bit", a1_mmc1_1bit, 0),
+	INGENIC_PIN_GROUP("mmc1-4bit", a1_mmc1_4bit, 0),
+	INGENIC_PIN_GROUP("sfc0-data", a1_sfc0_data, 0),
+	INGENIC_PIN_GROUP("sfc0-clk", a1_sfc0_clk, 0),
+	INGENIC_PIN_GROUP("sfc0-ce", a1_sfc0_ce, 0),
+	INGENIC_PIN_GROUP("sfc1", a1_sfc1, 1),
+	INGENIC_PIN_GROUP("mac0", a1_mac0, 0),
+	INGENIC_PIN_GROUP("mac0-mdio", a1_mac0_mdio, 0),
+	INGENIC_PIN_GROUP("mac1", a1_mac1, 0),
+	INGENIC_PIN_GROUP("mac1-mdio", a1_mac1_mdio, 0),
+};
+
+static const char * const a1_uart0_groups[] = {
+	"uart0-data-b", "uart0-data-c", "uart0-data-c-alt",
+};
+
+static const char * const a1_uart1_groups[] = { "uart1-data", };
+
+static const char * const a1_uart2_groups[] = {
+	"uart2-data-c", "uart2-data-b", "uart2-data-a",
+};
+
+static const char * const a1_i2c0_groups[] = {
+	"i2c0-data-a", "i2c0-data-b", "i2c0-data-b-alt",
+};
+
+static const char * const a1_i2c1_groups[] = {
+	"i2c1-data-a", "i2c1-data-b", "i2c1-data-c",
+};
+
+static const char * const a1_mmc0_groups[] = { "mmc0-1bit", "mmc0-4bit", };
+
+static const char * const a1_mmc1_groups[] = { "mmc1-1bit", "mmc1-4bit", };
+
+static const char * const a1_sfc0_groups[] = {
+	"sfc0-data", "sfc0-clk", "sfc0-ce",
+};
+
+static const char * const a1_sfc1_groups[] = { "sfc1", };
+
+static const char * const a1_mac0_groups[] = { "mac0", "mac0-mdio", };
+
+static const char * const a1_mac1_groups[] = { "mac1", "mac1-mdio", };
+
+static const struct pinfunction a1_functions[] = {
+	INGENIC_PIN_FUNCTION("uart0", a1_uart0),
+	INGENIC_PIN_FUNCTION("uart1", a1_uart1),
+	INGENIC_PIN_FUNCTION("uart2", a1_uart2),
+	INGENIC_PIN_FUNCTION("i2c0", a1_i2c0),
+	INGENIC_PIN_FUNCTION("i2c1", a1_i2c1),
+	INGENIC_PIN_FUNCTION("mmc0", a1_mmc0),
+	INGENIC_PIN_FUNCTION("mmc1", a1_mmc1),
+	INGENIC_PIN_FUNCTION("sfc0", a1_sfc0),
+	INGENIC_PIN_FUNCTION("sfc1", a1_sfc1),
+	INGENIC_PIN_FUNCTION("mac0", a1_mac0),
+	INGENIC_PIN_FUNCTION("mac1", a1_mac1),
+};
+
+static const u32 a1_pull_ups[5] = {
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0fffffff,
+};
+
+static const u32 a1_pull_downs[5] = {
+	0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x0fffffff,
+};
+
+static const struct regmap_range a1_access_ranges[] = {
+	regmap_reg_range(0x0000, 0x5000 - 4),
+};
+
+static const struct regmap_access_table a1_access_table = {
+	.yes_ranges = a1_access_ranges,
+	.n_yes_ranges = ARRAY_SIZE(a1_access_ranges),
+};
+
+static const struct ingenic_chip_info a1_chip_info = {
+	.num_chips = 5,
+	.reg_offset = 0x1000,
+	.version = ID_A1,
+	.groups = a1_groups,
+	.num_groups = ARRAY_SIZE(a1_groups),
+	.functions = a1_functions,
+	.num_functions = ARRAY_SIZE(a1_functions),
+	.pull_ups = a1_pull_ups,
+	.pull_downs = a1_pull_downs,
+	.access_table = &a1_access_table,
+};
+
 static const struct regmap_config ingenic_pinctrl_regmap_config = {
 	.reg_bits = 32,
 	.val_bits = 32,
@@ -5954,6 +6110,7 @@ static const struct of_device_id ingenic_gpio_of_matches[] __initconst = {
 	{ .compatible = "ingenic,t33-gpio" },
 	{ .compatible = "ingenic,t40-gpio" },
 	{ .compatible = "ingenic,t41-gpio" },
+	{ .compatible = "ingenic,a1-gpio" },
 	{ .compatible = "ingenic,x2100-gpio" },
 	{},
 };
@@ -6243,6 +6400,10 @@ static const struct of_device_id ingenic_pinctrl_of_matches[] = {
 	{
 		.compatible = "ingenic,t41-pinctrl",
 		.data = IF_ENABLED(CONFIG_MACH_T41, &t41_chip_info)
+	},
+	{
+		.compatible = "ingenic,a1-pinctrl",
+		.data = IF_ENABLED(CONFIG_MACH_A1, &a1_chip_info)
 	},
 	{
 		.compatible = "ingenic,x2000-pinctrl",
