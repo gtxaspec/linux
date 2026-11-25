@@ -10,6 +10,7 @@
 #include <linux/mmc/host.h>
 #include <linux/module.h>
 #include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/platform_device.h>
 
 #include "sdhci-pltfm.h"
@@ -33,7 +34,15 @@ struct sdhci_ingenic {
 	struct clk *clk;
 	struct clk *ext;
 	struct clk *pll;
+	bool no_ext;
 };
+
+/*
+ * The T41's MSC clock cannot be moved to EXCLK: its mux takes only the PLLs,
+ * and its index 2 is the VPLL, which stays gated. The CGU gives a card clock
+ * of at least this and the SDHCI divider makes the identification clock.
+ */
+#define SDHCI_INGENIC_T41_MIN_CGU_RATE	12500000
 
 /*
  * The CGU makes the card clock: set it to the rate asked for and leave the
@@ -56,9 +65,15 @@ static void sdhci_ingenic_set_clock(struct sdhci_host *host, unsigned int clock)
 
 	clk_disable_unprepare(priv->clk);
 
-	ret = clk_set_parent(priv->clk, parent);
-	if (!ret)
-		ret = clk_set_rate(priv->clk, clock);
+	if (priv->no_ext) {
+		ret = clk_set_rate(priv->clk, max_t(unsigned int, clock,
+						    SDHCI_INGENIC_T41_MIN_CGU_RATE));
+		host->max_clk = clk_get_rate(priv->clk);
+	} else {
+		ret = clk_set_parent(priv->clk, parent);
+		if (!ret)
+			ret = clk_set_rate(priv->clk, clock);
+	}
 	if (ret)
 		dev_warn(mmc_dev(host->mmc), "cannot set the %u Hz card clock: %d\n",
 			 clock, ret);
@@ -67,6 +82,11 @@ static void sdhci_ingenic_set_clock(struct sdhci_host *host, unsigned int clock)
 	if (ret) {
 		dev_err(mmc_dev(host->mmc), "cannot enable the card clock: %d\n",
 			ret);
+		return;
+	}
+
+	if (priv->no_ext) {
+		sdhci_set_clock(host, clock);
 		return;
 	}
 
@@ -138,6 +158,8 @@ static int sdhci_ingenic_probe(struct platform_device *pdev)
 	if (!priv->pll)
 		priv->pll = priv->ext;
 
+	priv->no_ext = of_device_get_match_data(dev);
+
 	pltfm_host->clk = priv->clk;
 
 	__sdhci_read_caps(host, NULL, &caps, &caps1);
@@ -152,6 +174,7 @@ static int sdhci_ingenic_probe(struct platform_device *pdev)
 }
 
 static const struct of_device_id sdhci_ingenic_of_match[] = {
+	{ .compatible = "ingenic,t41-sdhci", .data = (void *)true },
 	{ .compatible = "ingenic,t32-sdhci" },
 	{ /* sentinel */ }
 };
