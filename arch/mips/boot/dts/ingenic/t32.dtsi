@@ -346,6 +346,19 @@
 		status = "disabled";
 	};
 
+	ipu: ipu@13080000 {
+		compatible = "ingenic,t32-ipu";
+		reg = <0x13080000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <6>;
+
+		clocks = <&cgu T32_CLK_IPU>;
+		clock-names = "ipu";
+
+		status = "disabled";
+	};
+
 	isp: isp@13300000 {
 		compatible = "ingenic,t32-isp";
 		reg = <0x13300000 0xe0000>, <0x133e0000 0x20000>;
