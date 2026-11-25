@@ -24,7 +24,9 @@ properties:
     oneOf:
       - const: ingenic,t41-intc
       - items:
-          - const: ingenic,t40-intc
+          - enum:
+              - ingenic,a1-intc
+              - ingenic,t40-intc
           - const: ingenic,t41-intc
 
   reg:
