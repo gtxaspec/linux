@@ -549,11 +549,15 @@
 		interrupt-parent = <&intc>;
 		interrupts = <20>, <18>, <13>;
 
+		/* the vendor stack names each mux and divider apart; here they are one clock */
 		clocks = <&cgu A1_CLK_VDE>, <&cgu A1_CLK_HDMI>,
 			 <&cgu A1_CLK_VGA>, <&cgu A1_CLK_VDEV>,
-			 <&cgu A1_CLK_VDEA>, <&cgu A1_CLK_VDEM>;
+			 <&cgu A1_CLK_VDEA>, <&cgu A1_CLK_VDEM>,
+			 <&cgu A1_CLK_VDEV>, <&cgu A1_CLK_VDEA>,
+			 <&cgu A1_CLK_VDEM>;
 		clock-names = "gate_vde", "gate_hdmi", "gate_vga",
-			      "div_vdev", "div_vdea", "div_vdem";
+			      "div_vdev", "div_vdea", "div_vdem",
+			      "mux_vdev", "mux_vdea", "mux_vdem";
 
 		status = "disabled";
 	};

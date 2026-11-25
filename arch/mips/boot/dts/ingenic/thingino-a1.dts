@@ -94,6 +94,10 @@
 	status = "okay";
 };
 
+&vde {
+	status = "okay";
+};
+
 &dtrng {
 	status = "okay";
 };
