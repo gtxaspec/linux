@@ -1,0 +1,493 @@
+// SPDX-License-Identifier: GPL-2.0
+#include <dt-bindings/clock/ingenic,a1-cgu.h>
+#include <dt-bindings/clock/ingenic,tcu.h>
+
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "ingenic,a1";
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "ingenic,xburst2-fpu2.1-mxu2.1-smt";
+			reg = <0>;
+
+			clocks = <&cgu A1_CLK_CPU>;
+		};
+
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "ingenic,xburst2-fpu2.1-mxu2.1-smt";
+			reg = <1>;
+
+			clocks = <&cgu A1_CLK_CPU>;
+		};
+	};
+
+	cpuintc: interrupt-controller {
+		#address-cells = <0>;
+		#interrupt-cells = <1>;
+		interrupt-controller;
+		compatible = "mti,cpu-interrupt-controller";
+	};
+
+	/* One 0x100 window per core */
+	intc: interrupt-controller@12300000 {
+		compatible = "ingenic,a1-intc", "ingenic,t41-intc";
+		reg = <0x12300000 0x200>;
+
+		interrupt-controller;
+		#interrupt-cells = <1>;
+
+		interrupt-parent = <&cpuintc>;
+		interrupts = <2>;
+	};
+
+	ccu: cpu-control@12200000 {
+		compatible = "ingenic,xburst2-ccu";
+		reg = <0x12200000 0x2000>;
+
+		interrupt-parent = <&cpuintc>;
+		interrupts = <3>;
+	};
+
+	exclk: ext {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+	};
+
+	rtclk: rtc {
+		compatible = "fixed-clock";
+		#clock-cells = <0>;
+		clock-frequency = <32768>;
+	};
+
+	/* RTC_EN of the TCU clocks EXCLK / 512, not the 32 kHz */
+	tcu_rtc: clock-tcu-rtc {
+		compatible = "fixed-factor-clock";
+		clocks = <&exclk>;
+		clock-mult = <1>;
+		clock-div = <512>;
+		#clock-cells = <0>;
+	};
+
+	cgu: clock-controller@10000000 {
+		compatible = "ingenic,a1-cgu", "simple-mfd";
+		reg = <0x10000000 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x10000000 0x1000>;
+
+		#clock-cells = <1>;
+
+		clocks = <&exclk>, <&rtclk>;
+		clock-names = "ext", "rtc";
+
+		mac0_phy_ctrl: mac-phy-ctrl@c8 {
+			compatible = "syscon";
+			reg = <0xc8 0x4>;
+		};
+
+		mac1_phy_ctrl: mac-phy-ctrl@d8 {
+			compatible = "syscon";
+			reg = <0xd8 0x4>;
+		};
+
+		srbc: srbc@f0 {
+			compatible = "ingenic,a1-srbc", "syscon";
+			reg = <0xf0 0x4>;
+		};
+	};
+
+	ost: timer@12000000 {
+		compatible = "ingenic,a1-ost", "ingenic,t41-ost";
+		reg = <0x12000000 0x10000>, <0x12100000 0x10000>;
+		reg-names = "global", "core";
+
+		clocks = <&cgu A1_CLK_OST>;
+		clock-names = "ost";
+
+		interrupt-parent = <&cpuintc>;
+		interrupts = <4>;
+	};
+
+	tcu: timer@10002000 {
+		compatible = "ingenic,a1-tcu", "ingenic,t32-tcu", "simple-mfd";
+		reg = <0x10002000 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x10002000 0x1000>;
+
+		#clock-cells = <1>;
+
+		clocks = <&tcu_rtc>,
+			 <&cgu A1_CLK_EXCLK>,
+			 <&cgu A1_CLK_PCLK>,
+			 <&cgu A1_CLK_TCU>;
+		clock-names = "rtc", "ext", "pclk", "tcu";
+
+		watchdog: watchdog@0 {
+			compatible = "ingenic,a1-watchdog", "ingenic,jz4780-watchdog";
+			reg = <0x0 0x10>;
+
+			clocks = <&tcu TCU_CLK_WDT>;
+			clock-names = "wdt";
+		};
+	};
+
+	pinctrl: pinctrl@10010000 {
+		compatible = "ingenic,a1-pinctrl";
+		reg = <0x10010000 0x5000>;
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		gpa: gpio@0 {
+			compatible = "ingenic,a1-gpio";
+			reg = <0>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 0 32>;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <17>;
+		};
+
+		gpb: gpio@1 {
+			compatible = "ingenic,a1-gpio";
+			reg = <1>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 32 32>;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <16>;
+		};
+
+		gpc: gpio@2 {
+			compatible = "ingenic,a1-gpio";
+			reg = <2>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 64 32>;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <15>;
+		};
+
+		/* No interrupt line */
+		gpd: gpio@3 {
+			compatible = "ingenic,a1-gpio";
+			reg = <3>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 96 32>;
+			#gpio-cells = <2>;
+		};
+
+		gpe: gpio@4 {
+			compatible = "ingenic,a1-gpio";
+			reg = <4>;
+
+			gpio-controller;
+			gpio-ranges = <&pinctrl 0 128 28>;
+			#gpio-cells = <2>;
+
+			interrupt-controller;
+			#interrupt-cells = <2>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <14>;
+		};
+	};
+
+	uart0: serial@10030000 {
+		compatible = "ingenic,a1-uart", "ingenic,x1000-uart";
+		reg = <0x10030000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <51>;
+
+		clocks = <&exclk>, <&cgu A1_CLK_UART0>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x15 0xffffffff>, <&pdma 0x14 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	uart1: serial@10031000 {
+		compatible = "ingenic,a1-uart", "ingenic,x1000-uart";
+		reg = <0x10031000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <50>;
+
+		clocks = <&exclk>, <&cgu A1_CLK_UART1>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x13 0xffffffff>, <&pdma 0x12 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	uart2: serial@10032000 {
+		compatible = "ingenic,a1-uart", "ingenic,x1000-uart";
+		reg = <0x10032000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <49>;
+
+		clocks = <&exclk>, <&cgu A1_CLK_UART2>;
+		clock-names = "baud", "module";
+
+		dmas = <&pdma 0x11 0xffffffff>, <&pdma 0x10 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		status = "disabled";
+	};
+
+	i2c0: i2c@10050000 {
+		compatible = "ingenic,a1-i2c", "ingenic,x1000-i2c";
+		reg = <0x10050000 0x1000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <60>;
+
+		clocks = <&cgu A1_CLK_I2C0>;
+
+		dmas = <&pdma 0x25 0xffffffff>, <&pdma 0x24 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	i2c1: i2c@10051000 {
+		compatible = "ingenic,a1-i2c", "ingenic,x1000-i2c";
+		reg = <0x10051000 0x1000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <59>;
+
+		clocks = <&cgu A1_CLK_I2C1>;
+
+		dmas = <&pdma 0x27 0xffffffff>, <&pdma 0x26 0xffffffff>;
+		dma-names = "rx", "tx";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	rtc: rtc@10003000 {
+		compatible = "ingenic,a1-rtc";
+		reg = <0x10003000 0x1000>;
+
+		clocks = <&cgu A1_CLK_RTC>;
+
+		status = "disabled";
+	};
+
+	dtrng: trng@10072000 {
+		compatible = "ingenic,a1-dtrng", "ingenic,x1830-dtrng";
+		reg = <0x10072000 0xc>;
+
+		clocks = <&cgu A1_CLK_DTRNG>;
+
+		status = "disabled";
+	};
+
+	msc0: mmc@13060000 {
+		compatible = "ingenic,a1-sdhci", "ingenic,t32-sdhci";
+		reg = <0x13060000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <37>;
+
+		clocks = <&cgu A1_CLK_MSC0>, <&cgu A1_CLK_EXCLK>;
+		clock-names = "mmc", "ext";
+
+		/* the MSC mux may be left on a source the CGU does not list */
+		assigned-clocks = <&cgu A1_CLK_MSC0>;
+		assigned-clock-parents = <&cgu A1_CLK_MPLL>;
+
+		status = "disabled";
+	};
+
+	msc1: mmc@13070000 {
+		compatible = "ingenic,a1-sdhci", "ingenic,t32-sdhci";
+		reg = <0x13070000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <36>;
+
+		clocks = <&cgu A1_CLK_MSC1>, <&cgu A1_CLK_EXCLK>;
+		clock-names = "mmc", "ext";
+
+		/* the MSC mux may be left on a source the CGU does not list */
+		assigned-clocks = <&cgu A1_CLK_MSC1>;
+		assigned-clock-parents = <&cgu A1_CLK_MPLL>;
+
+		status = "disabled";
+	};
+
+	pdma: dma-controller@13420000 {
+		compatible = "ingenic,a1-dma", "ingenic,x1830-dma";
+		reg = <0x13420000 0x400>, <0x13421000 0x40>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <10>;
+
+		clocks = <&cgu A1_CLK_PDMA>;
+
+		#dma-cells = <2>;
+	};
+
+	sfc0: spi@13440000 {
+		compatible = "ingenic,a1-sfc", "ingenic,t32-sfc";
+		reg = <0x13440000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <7>;
+
+		clocks = <&cgu A1_CLK_SFC0>;
+		clock-names = "sfc";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	sfc1: spi@13450000 {
+		compatible = "ingenic,a1-sfc", "ingenic,t32-sfc";
+		reg = <0x13450000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <6>;
+
+		clocks = <&cgu A1_CLK_SFC1>;
+		clock-names = "sfc";
+
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		status = "disabled";
+	};
+
+	mac0: ethernet@130b0000 {
+		compatible = "ingenic,a1-mac", "snps,dwxgmac-2.10", "snps,dwxgmac";
+		reg = <0x130b0000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <56>;
+		interrupt-names = "macirq";
+
+		clocks = <&cgu A1_CLK_GMAC0>, <&cgu A1_CLK_MAC0>,
+			 <&cgu A1_CLK_MAC0TX>;
+		clock-names = "stmmaceth", "phy", "tx";
+
+		mode-reg = <&mac0_phy_ctrl>;
+
+		snps,axi-config = <&mac0_axi>;
+		snps,txpbl = <32>;
+		snps,rxpbl = <32>;
+		snps,force_sf_dma_mode;
+
+		status = "disabled";
+
+		mac0_axi: stmmac-axi-config {
+			snps,wr_osr_lmt = <1>;
+			snps,rd_osr_lmt = <1>;
+			snps,blen = <0 0 0 32 0 0 0>;
+		};
+
+		mdio0: mdio {
+			compatible = "snps,dwmac-mdio";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+
+	mac1: ethernet@130c0000 {
+		compatible = "ingenic,a1-mac", "snps,dwxgmac-2.10", "snps,dwxgmac";
+		reg = <0x130c0000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <55>;
+		interrupt-names = "macirq";
+
+		clocks = <&cgu A1_CLK_GMAC1>, <&cgu A1_CLK_MAC1>,
+			 <&cgu A1_CLK_MAC1TX>;
+		clock-names = "stmmaceth", "phy", "tx";
+
+		mode-reg = <&mac1_phy_ctrl>;
+
+		snps,axi-config = <&mac1_axi>;
+		snps,txpbl = <32>;
+		snps,rxpbl = <32>;
+		snps,force_sf_dma_mode;
+
+		status = "disabled";
+
+		mac1_axi: stmmac-axi-config {
+			snps,wr_osr_lmt = <1>;
+			snps,rd_osr_lmt = <1>;
+			snps,blen = <0 0 0 32 0 0 0>;
+		};
+
+		mdio1: mdio {
+			compatible = "snps,dwmac-mdio";
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+	};
+
+	sata: sata@130d0000 {
+		compatible = "ingenic,a1-ahci";
+		reg = <0x130d0000 0x10000>, <0x10080000 0x10000>,
+		      <0x10090000 0x10000>;
+		reg-names = "ahci", "phy0", "phy1";
+
+		interrupt-parent = <&intc>;
+		interrupts = <43>;
+
+		clocks = <&cgu A1_CLK_SATA>;
+
+		ports-implemented = <0x3>;
+		ingenic,srbc = <&srbc>;
+
+		status = "disabled";
+	};
+
+	efuse: efuse@13540000 {
+		compatible = "ingenic,a1-efuse";
+		reg = <0x13540000 0x300>;
+
+		clocks = <&cgu A1_CLK_EFUSE>;
+
+		status = "disabled";
+	};
+};
