@@ -10,6 +10,10 @@ description: |
   For a description of the TCU hardware and drivers, have a look at
   Documentation/arch/mips/ingenic-tcu.rst.
 
+  The T32 and T33 use the SYSOST as clocksource and clock event device, and
+  the TCU only for its clocks and its watchdog (a PWM and the interrupt
+  lines are the SoC's own, unused by the kernel).
+
 maintainers:
   - Paul Cercueil <paul@crapouillou.net>
 
@@ -30,6 +34,7 @@ select:
           - ingenic,t23-tcu
           - ingenic,t30-tcu
           - ingenic,t31-tcu
+          - ingenic,t32-tcu
           - ingenic,x1000-tcu
   required:
     - compatible
@@ -75,6 +80,13 @@ properties:
               - ingenic,t30-tcu
               - ingenic,t31-tcu
           - const: ingenic,jz4760-tcu
+          - const: simple-mfd
+      - items:
+          - const: ingenic,t32-tcu
+          - const: simple-mfd
+      - items:
+          - const: ingenic,t33-tcu
+          - const: ingenic,t32-tcu
           - const: simple-mfd
 
   reg:
@@ -150,6 +162,10 @@ patternProperties:
                   - ingenic,t30-watchdog
                   - ingenic,t31-watchdog
               - const: ingenic,jz4780-watchdog
+          - const: ingenic,t32-watchdog
+          - items:
+              - const: ingenic,t33-watchdog
+              - const: ingenic,t32-watchdog
 
       reg:
         maxItems: 1
@@ -263,13 +279,23 @@ patternProperties:
 
 required:
   - "#clock-cells"
-  - "#interrupt-cells"
-  - interrupt-controller
   - compatible
   - reg
   - clocks
   - clock-names
-  - interrupts
+
+allOf:
+  - if:
+      not:
+        properties:
+          compatible:
+            contains:
+              const: ingenic,t32-tcu
+    then:
+      required:
+        - "#interrupt-cells"
+        - interrupt-controller
+        - interrupts
 
 additionalProperties: false
 
