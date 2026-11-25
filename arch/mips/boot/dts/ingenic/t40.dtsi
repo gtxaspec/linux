@@ -428,4 +428,44 @@
 
 		status = "disabled";
 	};
+
+	isp: isp@13300000 {
+		compatible = "ingenic,t40-isp";
+		reg = <0x13300000 0x10000>, <0x13380000 0x10000>;
+		reg-names = "isp", "vic";
+
+		interrupt-parent = <&intc>;
+		interrupts = <31>, <30>, <29>, <28>;
+		interrupt-names = "isp", "vic", "vic1", "vic2";
+
+		clocks = <&cgu T40_CLK_ISP>, <&cgu T40_CLK_CIM0>,
+			 <&cgu T40_CLK_CIM1>, <&cgu T40_CLK_CIM2>;
+		clock-names = "isp", "cim0", "cim1", "cim2";
+
+		status = "disabled";
+	};
+
+	csi: csi@10054000 {
+		compatible = "ingenic,t40-csi";
+		reg = <0x10054000 0x1000>, <0x10023000 0x1000>;
+		reg-names = "csi", "csi2";
+
+		clocks = <&cgu T40_CLK_MIPI_CSI>;
+		clock-names = "csi";
+
+		status = "disabled";
+	};
+
+	avpu: video-codec@13200000 {
+		compatible = "ingenic,t40-avpu";
+		reg = <0x13200000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <62>;
+
+		clocks = <&cgu T40_CLK_EL150>, <&cgu T40_CLK_AHB1>;
+		clock-names = "avpu", "ahb1";
+
+		status = "disabled";
+	};
 };
