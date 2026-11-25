@@ -73,5 +73,12 @@
 #define T40_CLK_AHB1         58
 #define T40_CLK_IPU          59
 #define T40_CLK_DTRNG        60
+#define T40_CLK_I2S_MUX      61
+#define T40_CLK_I2SR_MUX     62
+#define T40_CLK_DIV_I2ST     63
+#define T40_CLK_DIV_I2SR     64
+#define T40_CLK_CE_I2ST      65
+#define T40_CLK_CE_I2SR      66
+#define T40_CLK_AIC          67
 
 #endif /* __DT_BINDINGS_CLOCK_T40_CGU_H__ */
