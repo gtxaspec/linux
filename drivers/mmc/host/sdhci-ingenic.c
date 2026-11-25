@@ -38,9 +38,9 @@ struct sdhci_ingenic {
 };
 
 /*
- * The T40's and T41's MSC clock is not moved to EXCLK: the T41's mux takes
- * only the PLLs and its index 2 is the VPLL, which stays gated. The CGU gives
- * a card clock of at least this and the SDHCI divider makes the
+ * The A1's, T40's and T41's MSC clock is not moved to EXCLK: the T41's mux
+ * takes only the PLLs and its index 2 is the VPLL, which stays gated. The CGU
+ * gives a card clock of at least this and the SDHCI divider makes the
  * identification clock.
  */
 #define SDHCI_INGENIC_T41_MIN_CGU_RATE	12500000
@@ -175,6 +175,7 @@ static int sdhci_ingenic_probe(struct platform_device *pdev)
 }
 
 static const struct of_device_id sdhci_ingenic_of_match[] = {
+	{ .compatible = "ingenic,a1-sdhci", .data = (void *)true },
 	{ .compatible = "ingenic,t40-sdhci", .data = (void *)true },
 	{ .compatible = "ingenic,t41-sdhci", .data = (void *)true },
 	{ .compatible = "ingenic,t32-sdhci" },
