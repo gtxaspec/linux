@@ -31,6 +31,7 @@ properties:
               - ingenic,t30-mac
               - ingenic,t31-mac
               - ingenic,t32-mac
+              - ingenic,t41-mac
           - const: snps,dwmac
       - items:
           - const: ingenic,t33-mac
