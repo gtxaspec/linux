@@ -20,6 +20,7 @@ select:
     compatible:
       contains:
         enum:
+          - ingenic,a1-cgu
           - ingenic,jz4740-cgu
           - ingenic,jz4725b-cgu
           - ingenic,jz4755-cgu
@@ -60,6 +61,7 @@ properties:
   compatible:
     items:
       - enum:
+          - ingenic,a1-cgu
           - ingenic,jz4740-cgu
           - ingenic,jz4725b-cgu
           - ingenic,jz4755-cgu
@@ -121,7 +123,7 @@ patternProperties:
     $ref: /schemas/phy/ingenic,phy-usb.yaml#
   "^mac-phy-ctrl@[a-f0-9]+$":
     $ref: /schemas/net/ingenic,mac.yaml#
-  "^(mac-phy-id|usb-phy-ctrl)@[a-f0-9]+$":
+  "^(mac-phy-id|usb-phy-ctrl|srbc)@[a-f0-9]+$":
     $ref: /schemas/mfd/syscon.yaml#
   "^reset-controller@[a-f0-9]+$":
     $ref: /schemas/reset/ingenic,t21-reset.yaml#
