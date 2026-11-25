@@ -1,0 +1,134 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include <dt-bindings/gpio/gpio.h>
+
+#include "a1.dtsi"
+
+/ {
+	compatible = "thingino,a1", "ingenic,a1";
+	model = "Thingino A1 Generic Board";
+
+	aliases {
+		i2c0 = &i2c0;
+		serial1 = &uart1;
+	};
+
+	chosen {
+		stdout-path = "serial1:115200n8";
+	};
+
+	/* the smallest RAM an A1 comes with; the boot loader's mem= has the real map */
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x8000000>;
+	};
+};
+
+&exclk {
+	clock-frequency = <24000000>;
+};
+
+&uart1 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_uart1>;
+};
+
+&sfc0 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_sfc0>;
+
+	/* partitions come from the mtdparts= the boot loader passes */
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <25000000>;
+	};
+};
+
+&msc0 {
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	broken-cd;
+	no-1-8-v;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc0>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_i2c0>;
+};
+
+&dtrng {
+	status = "okay";
+};
+
+&efuse {
+	status = "okay";
+};
+
+&rtc {
+	status = "okay";
+};
+
+&sata {
+	status = "okay";
+};
+
+&mac0 {
+	status = "okay";
+
+	phy-mode = "rmii";
+	phy-handle = <&eth_phy>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mac0>;
+};
+
+&mdio0 {
+	eth_phy: ethernet-phy@0 {
+		reg = <0>;
+
+		/* a PHY the boot loader left wedged needs the pulse */
+		reset-gpios = <&gpc 18 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <12000>;
+		reset-deassert-us = <80000>;
+	};
+};
+
+&pinctrl {
+	pins_uart1: uart1 {
+		function = "uart1";
+		groups = "uart1-data";
+	};
+
+	pins_sfc0: sfc0 {
+		function = "sfc0";
+		groups = "sfc0-data", "sfc0-clk", "sfc0-ce";
+	};
+
+	pins_mmc0: mmc0 {
+		function = "mmc0";
+		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_mac0: mac0 {
+		function = "mac0";
+		groups = "mac0", "mac0-mdio";
+	};
+
+	pins_i2c0: i2c0 {
+		function = "i2c0";
+		groups = "i2c0-data-b-alt";
+	};
+};
