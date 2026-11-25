@@ -51,6 +51,18 @@
 #define T21_EPHY_CLK_SETTLE_MS		50
 #define T21_EPHY_RESET_US		1000
 
+/* A1 MACPHYC: the interface and, by link speed, what the TX clock is */
+#define MACPHYC_A1_INTF_MASK		GENMASK(1, 0)
+#define MACPHYC_A1_INTF_RGMII		1
+#define MACPHYC_A1_INTF_RMII		2
+#define MACPHYC_A1_TXCLK_MASK		GENMASK(31, 29)
+#define MACPHYC_A1_TXCLK_1000		0x3
+#define MACPHYC_A1_TXCLK_100		0x4
+#define MACPHYC_A1_TXCLK_10		0x7
+
+#define A1_RMII_PHY_RATE		50000000
+#define A1_RGMII_PHY_RATE		25000000
+
 #define MACPHYC_TX_DELAY_PS_MAX		2496
 #define MACPHYC_TX_DELAY_PS_MIN		20
 
@@ -63,6 +75,7 @@ enum ingenic_mac_version {
 	ID_X1600,
 	ID_X1830,
 	ID_X2000,
+	ID_A1,
 };
 
 struct ingenic_mac {
@@ -74,6 +87,9 @@ struct ingenic_mac {
 
 	int rx_delay;
 	int tx_delay;
+
+	struct clk *phy_clk;
+	struct clk *tx_clk;
 };
 
 struct ingenic_soc_info {
@@ -150,6 +166,52 @@ static int x2000_mac_set_mode(struct ingenic_mac *mac, u8 phy_intf_sel)
 
 	/* Update MAC PHY control register */
 	return regmap_update_bits(mac->regmap, 0, mac->soc_info->mask, val);
+}
+
+static int a1_mac_set_mode(struct ingenic_mac *mac, u8 phy_intf_sel)
+{
+	unsigned int val;
+
+	if (phy_intf_sel == PHY_INTF_SEL_RGMII)
+		val = FIELD_PREP(MACPHYC_A1_INTF_MASK, MACPHYC_A1_INTF_RGMII);
+	else
+		val = FIELD_PREP(MACPHYC_A1_INTF_MASK, MACPHYC_A1_INTF_RMII);
+
+	return regmap_update_bits(mac->regmap, 0, MACPHYC_A1_INTF_MASK, val);
+}
+
+static void a1_mac_fix_speed(void *bsp_priv, phy_interface_t interface,
+			     int speed, unsigned int mode)
+{
+	struct ingenic_mac *mac = bsp_priv;
+	unsigned long tx_rate;
+	unsigned int txclk;
+	int ret;
+
+	switch (speed) {
+	case SPEED_1000:
+		tx_rate = 125000000;
+		txclk = MACPHYC_A1_TXCLK_1000;
+		break;
+	case SPEED_100:
+		tx_rate = 25000000;
+		txclk = MACPHYC_A1_TXCLK_100;
+		break;
+	case SPEED_10:
+		tx_rate = 2500000;
+		txclk = MACPHYC_A1_TXCLK_10;
+		break;
+	default:
+		return;
+	}
+
+	ret = clk_set_rate(mac->tx_clk, tx_rate);
+	if (ret)
+		dev_warn(mac->dev, "cannot set the TX clock to %lu Hz: %d\n",
+			 tx_rate, ret);
+
+	regmap_update_bits(mac->regmap, 0, MACPHYC_A1_TXCLK_MASK,
+			   FIELD_PREP(MACPHYC_A1_TXCLK_MASK, txclk));
 }
 
 static int t21_mac_init(struct ingenic_mac *mac)
@@ -275,6 +337,34 @@ static int ingenic_mac_probe(struct platform_device *pdev)
 	mac->dev = &pdev->dev;
 	mac->plat_dat = plat_dat;
 
+	if (data->version == ID_A1) {
+		unsigned long phy_rate = plat_dat->phy_interface == PHY_INTERFACE_MODE_RGMII ?
+					 A1_RGMII_PHY_RATE : A1_RMII_PHY_RATE;
+
+		mac->phy_clk = devm_clk_get_enabled(&pdev->dev, "phy");
+		if (IS_ERR(mac->phy_clk))
+			return dev_err_probe(&pdev->dev, PTR_ERR(mac->phy_clk),
+					     "Failed to get the PHY clock\n");
+
+		mac->tx_clk = devm_clk_get_enabled(&pdev->dev, "tx");
+		if (IS_ERR(mac->tx_clk))
+			return dev_err_probe(&pdev->dev, PTR_ERR(mac->tx_clk),
+					     "Failed to get the TX clock\n");
+
+		ret = clk_set_rate(mac->phy_clk, phy_rate);
+		if (ret)
+			return dev_err_probe(&pdev->dev, ret,
+					     "Failed to set the PHY clock\n");
+
+		/* The link speed sets the rate before the first frame */
+		ret = clk_set_rate(mac->tx_clk, 25000000);
+		if (ret)
+			return dev_err_probe(&pdev->dev, ret,
+					     "Failed to set the TX clock\n");
+
+		plat_dat->fix_mac_speed = a1_mac_fix_speed;
+	}
+
 	plat_dat->bsp_priv = mac;
 	plat_dat->set_phy_intf_sel = ingenic_set_phy_intf_sel;
 
@@ -347,6 +437,15 @@ static struct ingenic_soc_info x2000_soc_info = {
 			      BIT(PHY_INTF_SEL_RMII),
 };
 
+static struct ingenic_soc_info a1_soc_info = {
+	.version = ID_A1,
+	.mask = MACPHYC_A1_INTF_MASK | MACPHYC_A1_TXCLK_MASK,
+
+	.set_mode = a1_mac_set_mode,
+	.valid_phy_intf_sel = BIT(PHY_INTF_SEL_RGMII) |
+			      BIT(PHY_INTF_SEL_RMII),
+};
+
 static const struct of_device_id ingenic_mac_of_matches[] = {
 	{ .compatible = "ingenic,jz4775-mac", .data = &jz4775_soc_info },
 	{ .compatible = "ingenic,x1000-mac", .data = &x1000_soc_info },
@@ -360,6 +459,7 @@ static const struct of_device_id ingenic_mac_of_matches[] = {
 	{ .compatible = "ingenic,t40-mac", .data = &x1830_soc_info },
 	{ .compatible = "ingenic,t41-mac", .data = &x1830_soc_info },
 	{ .compatible = "ingenic,x2000-mac", .data = &x2000_soc_info },
+	{ .compatible = "ingenic,a1-mac", .data = &a1_soc_info },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, ingenic_mac_of_matches);
