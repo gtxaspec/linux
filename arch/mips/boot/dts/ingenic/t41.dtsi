@@ -458,4 +458,62 @@
 
 		status = "disabled";
 	};
+
+	isp: isp@13300000 {
+		compatible = "ingenic,t41-isp";
+		reg = <0x13300000 0x10000>, <0x13380000 0x10000>;
+		reg-names = "isp", "vic";
+
+		interrupt-parent = <&intc>;
+		interrupts = <31>, <30>;
+		interrupt-names = "isp", "vic";
+
+		clocks = <&cgu T41_CLK_ISPM>, <&cgu T41_CLK_CIM>,
+			 <&cgu T41_CLK_ISPA>, <&cgu T41_CLK_ISPS>;
+		clock-names = "isp", "cim", "ispa", "isps";
+
+		status = "disabled";
+	};
+
+	ivdc: ivdc@13200000 {
+		compatible = "ingenic,t41-ivdc";
+		reg = <0x13200000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <13>;
+		interrupt-names = "ivdc";
+
+		clocks = <&cgu T41_CLK_IVDC>;
+		clock-names = "ivdc";
+
+		status = "disabled";
+	};
+
+	ldc: ldc@13040000 {
+		compatible = "ingenic,t41-ldc";
+		reg = <0x13040000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <35>;
+		interrupt-names = "ldc";
+
+		clocks = <&cgu T41_CLK_LDC>;
+		clock-names = "ldc";
+
+		status = "disabled";
+	};
+
+	csi: csi@10023000 {
+		compatible = "ingenic,t41-csi";
+		reg = <0x10023000 0x1000>, <0x10022000 0x1000>;
+		reg-names = "csi", "phy";
+
+		interrupt-parent = <&intc>;
+		interrupts = <5>;
+
+		clocks = <&cgu T41_CLK_MIPI_CSI>;
+		clock-names = "csi";
+
+		status = "disabled";
+	};
 };
