@@ -80,5 +80,12 @@
 #define T41_CLK_LZMA         65
 #define T41_CLK_IPU          66
 #define T41_CLK_DTRNG        67
+#define T41_CLK_AIC          68
+#define T41_CLK_I2S_MUX      69
+#define T41_CLK_DIV_I2ST     70
+#define T41_CLK_DIV_I2SR     71
+#define T41_CLK_CE_I2ST      72
+#define T41_CLK_CE_I2SR      73
+#define T41_CLK_I2SR_MUX     74
 
 #endif /* __DT_BINDINGS_CLOCK_T41_CGU_H__ */
