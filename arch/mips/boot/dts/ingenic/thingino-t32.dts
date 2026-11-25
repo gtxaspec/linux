@@ -166,6 +166,11 @@
 		groups = "mmc0-1bit", "mmc0-4bit";
 	};
 
+	pins_dmic: dmic {
+		function = "dmic";
+		groups = "dmic";
+	};
+
 	pins_cim_mclk: cim-mclk {
 		function = "cim";
 		groups = "cim-mclk0";
@@ -188,4 +193,11 @@
 
 &codec {
 	status = "okay";
+};
+
+&dmic {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_dmic>;
 };

@@ -387,6 +387,19 @@
 		status = "disabled";
 	};
 
+	dmic: dmic@134d0000 {
+		compatible = "ingenic,t32-dmic";
+		reg = <0x134d0000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <33>;
+
+		clocks = <&cgu T32_CLK_DMIC>;
+		clock-names = "gate_dmic";
+
+		status = "disabled";
+	};
+
 	sfc0: spi@13440000 {
 		compatible = "ingenic,t32-sfc";
 		reg = <0x13440000 0x10000>;
