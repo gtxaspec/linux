@@ -90,6 +90,14 @@
 	memory-region = <&rmem>;
 };
 
+&aic {
+	status = "okay";
+};
+
+&codec {
+	status = "okay";
+};
+
 &dtrng {
 	status = "okay";
 };
