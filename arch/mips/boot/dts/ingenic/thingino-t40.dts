@@ -104,7 +104,7 @@
 &isp {
 	/* consumed by the out-of-tree ISP modules, not bound by a driver */
 	pinctrl-names = "default";
-	pinctrl-0 = <&pins_cim0_mclk>;
+	pinctrl-0 = <&pins_cim_mclk>;
 
 	memory-region = <&rmem>;
 };
@@ -169,8 +169,9 @@
 		groups = "mac-rmii", "mac-mdio";
 	};
 
-	pins_cim0_mclk: cim0-mclk {
+	/* the sensor's MCLK source is picked at run time: all three pads get the CIM function */
+	pins_cim_mclk: cim-mclk {
 		function = "cim";
-		groups = "cim0-mclk";
+		groups = "cim0-mclk", "cim1-mclk", "cim2-mclk";
 	};
 };
