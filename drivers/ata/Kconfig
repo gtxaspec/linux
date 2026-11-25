@@ -220,6 +220,20 @@ config AHCI_IMX
 
 	  If unsure, say N.
 
+config AHCI_INGENIC
+	tristate "Ingenic A1 AHCI SATA support"
+	depends on OF
+	depends on MACH_INGENIC || COMPILE_TEST
+	select MFD_SYSCON
+	select SATA_HOST
+	help
+	  This option enables support for the AHCI SATA controller of the
+	  Ingenic A1 SoC. It has two ports, each with an Innophy PHY that
+	  the driver resets and tunes through the CPM and the PHY registers
+	  before the generic AHCI host takes over.
+
+	  If unsure, say N.
+
 config AHCI_CEVA
 	tristate "CEVA AHCI SATA support"
 	depends on OF
