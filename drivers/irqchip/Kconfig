@@ -417,6 +417,20 @@ config INGENIC_IRQ
 	depends on MACH_INGENIC
 	default y
 
+config INGENIC_XBURST2_IRQ
+	bool "Ingenic XBurst2 SoC interrupt controller"
+	default MACH_T41
+	depends on MIPS || COMPILE_TEST
+	select GENERIC_IRQ_EFFECTIVE_AFF_MASK if SMP
+	select IRQ_DOMAIN
+	help
+	  Support for the per-core interrupt controller of the Ingenic XBurst2
+	  SoCs (T41). Every core has a register window and mask of its own, and
+	  the driver delivers a source to the core in whose window it is
+	  unmasked.
+
+	  If unsure, say N.
+
 config INGENIC_TCU_IRQ
 	bool "Ingenic JZ47xx TCU interrupt controller"
 	default MACH_INGENIC
