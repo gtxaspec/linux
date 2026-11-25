@@ -116,6 +116,17 @@ config INGENIC_CGU_T31
 
 	  If building for a T31, T23, T32 or T33 SoC, you want to say Y here.
 
+config INGENIC_CGU_A1
+	bool "Ingenic A1 CGU driver"
+	default MACH_A1
+	select INGENIC_CGU_COMMON
+	help
+	  Support the clocks provided by the CGU hardware on Ingenic A1 SoCs:
+	  the four PLLs, the CPU and bus clocks, the peripheral dividers and
+	  the clock gates. The PLLs are read only, the boot loader sets them.
+
+	  If building for an A1 SoC, you want to say Y here.
+
 config INGENIC_CGU_T40
 	bool "Ingenic T40 CGU driver"
 	default MACH_T40
