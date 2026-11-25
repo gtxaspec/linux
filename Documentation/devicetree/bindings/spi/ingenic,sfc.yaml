@@ -34,6 +34,7 @@ properties:
       - items:
           - enum:
               - ingenic,t33-sfc
+              - ingenic,t40-sfc
               - ingenic,t41-sfc
           - const: ingenic,t32-sfc
 
