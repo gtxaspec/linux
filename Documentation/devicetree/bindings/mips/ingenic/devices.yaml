@@ -88,6 +88,12 @@ properties:
           - const: thingino,t32
           - const: ingenic,t32
 
+      - description: Cinnado D1 camera with the Ingenic T32LQ
+        items:
+          - const: thingino,t32-cinnado-d1
+          - const: thingino,t32
+          - const: ingenic,t32
+
       - description: Thingino generic board for the Ingenic T33
         items:
           - const: thingino,t33
