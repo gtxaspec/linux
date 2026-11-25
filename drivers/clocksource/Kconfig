@@ -740,6 +740,18 @@ config INGENIC_SYSOST
 	help
 	  Support for the SYSOST of the Ingenic X Series SoCs.
 
+config INGENIC_XBURST2_OST
+	bool "Clocksource/timer using the OSTs of the Ingenic XBurst2 SoCs"
+	default MACH_T41
+	depends on MIPS || COMPILE_TEST
+	depends on COMMON_CLK
+	select TIMER_OF
+	help
+	  Support for the global OST (clocksource) and the per-core OSTs
+	  (clockevents) of the Ingenic XBurst2 SoCs (T41). The global OST is
+	  a 64-bit counter that also serves as the scheduler clock; each core
+	  gets a one-shot timer that interrupts that core only.
+
 config INGENIC_OST
 	bool "Clocksource using the OST in Ingenic JZ SoCs"
 	depends on MIPS || COMPILE_TEST

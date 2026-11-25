@@ -80,6 +80,7 @@ obj-$(CONFIG_ASM9260_TIMER)		+= asm9260_timer.o
 obj-$(CONFIG_INGENIC_OST)		+= ingenic-ost.o
 obj-$(CONFIG_INGENIC_SYSOST)	+= ingenic-sysost.o
 obj-$(CONFIG_INGENIC_TIMER)		+= ingenic-timer.o
+obj-$(CONFIG_INGENIC_XBURST2_OST)	+= ingenic-xburst2-ost.o
 obj-$(CONFIG_CLKSRC_ST_LPC)		+= clksrc_st_lpc.o
 obj-$(CONFIG_X86_NUMACHIP)		+= numachip.o
 obj-$(CONFIG_RISCV_TIMER)		+= timer-riscv.o
