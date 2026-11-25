@@ -29,6 +29,10 @@
 #define CGU_REG_SFC1CDR		0x94
 #define CGU_REG_MSC0CDR		0x98
 #define CGU_REG_MSC1CDR		0x9c
+#define CGU_REG_VDEVCDR		0xb0
+#define CGU_REG_VDEACDR		0xb4
+#define CGU_REG_VDEMCDR		0xb8
+#define CGU_REG_IPUMCDR		0xbc
 #define CGU_REG_MAC0CDR		0xc0
 #define CGU_REG_MAC0TXCDR	0xc4
 #define CGU_REG_MACPTPCDR	0xcc
@@ -438,6 +442,71 @@ static const struct ingenic_cgu_clk_info a1_cgu_clocks[] = {
 		"jpeg", CGU_CLK_GATE,
 		.parents = { A1_CLK_AHB1, -1, -1, -1 },
 		.gate = { CGU_REG_CLKGR1, 13 },
+	},
+
+	[A1_CLK_VDEV] = {
+		"vdev", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = A1_PLL_PARENTS,
+		.mux = { CGU_REG_VDEVCDR, 30, 2 },
+		.div = A1_CDR_DIV(CGU_REG_VDEVCDR, 8),
+	},
+
+	[A1_CLK_VDEA] = {
+		"vdea", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = A1_PLL_PARENTS,
+		.mux = { CGU_REG_VDEACDR, 30, 2 },
+		.div = A1_CDR_DIV(CGU_REG_VDEACDR, 8),
+	},
+
+	[A1_CLK_VDEM] = {
+		"vdem", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = A1_PLL_PARENTS,
+		.mux = { CGU_REG_VDEMCDR, 30, 2 },
+		.div = A1_CDR_DIV(CGU_REG_VDEMCDR, 8),
+	},
+
+	[A1_CLK_IPU] = {
+		"ipu", CGU_CLK_MUX | CGU_CLK_DIV,
+		.parents = A1_PLL_PARENTS,
+		.mux = { CGU_REG_IPUMCDR, 30, 2 },
+		.div = A1_CDR_DIV(CGU_REG_IPUMCDR, 8),
+	},
+
+	/*
+	 * HDMI gate shut with the VDE gate open hangs the bus on a read, so
+	 * the unused-clock sweep must not pick them off one by one.
+	 */
+	[A1_CLK_VDE] = {
+		"gate_vde", CGU_CLK_GATE,
+		.flags = CLK_IGNORE_UNUSED,
+		.parents = { A1_CLK_VDEA, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 28 },
+	},
+
+	[A1_CLK_HDMI] = {
+		"gate_hdmi", CGU_CLK_GATE,
+		.flags = CLK_IGNORE_UNUSED,
+		.parents = { A1_CLK_AHB0, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 27 },
+	},
+
+	[A1_CLK_VGA] = {
+		"gate_vga", CGU_CLK_GATE,
+		.flags = CLK_IGNORE_UNUSED,
+		.parents = { A1_CLK_PCLK, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 26 },
+	},
+
+	[A1_CLK_IPU_GATE] = {
+		"gate_ipu", CGU_CLK_GATE,
+		.parents = { A1_CLK_IPU, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 29 },
+	},
+
+	[A1_CLK_AIP] = {
+		"gate_aip", CGU_CLK_GATE,
+		.parents = { A1_CLK_AHB0, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 18 },
 	},
 
 };
