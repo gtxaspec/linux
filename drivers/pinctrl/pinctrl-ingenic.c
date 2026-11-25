@@ -5266,6 +5266,7 @@ static int t32_mac_mdio_pins[] = { 0x2a, 0x2b, };
 static int t32_cim_mclk0_pins[] = { 0x10, };
 
 static int t32_cim_mclk1_pins[] = { 0x11, };
+static int t32_dmic_pins[] = { 0x3c, 0x3d, 0x3e, };
 
 static const struct group_desc t32_groups[] = {
 	INGENIC_PIN_GROUP("uart0-data-b", t32_uart0_data_b, 2),
@@ -5305,6 +5306,7 @@ static const struct group_desc t32_groups[] = {
 	INGENIC_PIN_GROUP("mac-mdio", t32_mac_mdio, 0),
 	INGENIC_PIN_GROUP("cim-mclk0", t32_cim_mclk0, 0),
 	INGENIC_PIN_GROUP("cim-mclk1", t32_cim_mclk1, 0),
+	INGENIC_PIN_GROUP("dmic", t32_dmic, 0),
 };
 
 static const char * const t32_uart0_groups[] = {
@@ -5343,6 +5345,8 @@ static const char * const t32_mac_groups[] = { "mac-rmii", "mac-mdio", };
 
 static const char * const t32_cim_groups[] = { "cim-mclk0", "cim-mclk1", };
 
+static const char * const t32_dmic_groups[] = { "dmic", };
+
 static const struct pinfunction t32_functions[] = {
 	INGENIC_PIN_FUNCTION("uart0", t32_uart0),
 	INGENIC_PIN_FUNCTION("uart1", t32_uart1),
@@ -5356,6 +5360,7 @@ static const struct pinfunction t32_functions[] = {
 	INGENIC_PIN_FUNCTION("ssi0", t32_ssi0),
 	INGENIC_PIN_FUNCTION("mac", t32_mac),
 	INGENIC_PIN_FUNCTION("cim", t32_cim),
+	INGENIC_PIN_FUNCTION("dmic", t32_dmic),
 };
 
 static const struct group_desc t33_groups[] = {
