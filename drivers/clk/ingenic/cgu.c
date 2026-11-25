@@ -196,7 +196,8 @@ static int ingenic_pll_determine_rate(struct clk_hw *hw,
 	struct ingenic_clk *ingenic_clk = to_ingenic_clk(hw);
 	const struct ingenic_cgu_clk_info *clk_info = to_clk_info(ingenic_clk);
 
-	if (clk_info->pll.od1_bits) {
+	/* a PLL with a second divider is only programmed when it says how */
+	if (clk_info->pll.od1_bits && !clk_info->pll.calc_m_n_od) {
 		req->rate = clk_hw_get_rate(hw);
 		return 0;
 	}
@@ -242,6 +243,17 @@ ingenic_pll_set_rate(struct clk_hw *hw, unsigned long req_rate,
 	spin_lock_irqsave(&cgu->lock, flags);
 	ctl = readl(cgu->base + pll_info->reg);
 
+	/*
+	 * A PLL the kernel programs is written the way the vendor kernel does:
+	 * switched off, then a word holding only the dividers and the enable
+	 * bit. The boot loader leaves other bits set that the vendor value
+	 * clears.
+	 */
+	if (pll_info->calc_m_n_od) {
+		writel(0, cgu->base + pll_info->reg);
+		ctl = pll_info->enable_bit >= 0 ? BIT(pll_info->enable_bit) : 0;
+	}
+
 	ctl &= ~(GENMASK(pll_info->m_bits - 1, 0) << pll_info->m_shift);
 	ctl |= (m - pll_info->m_offset) << pll_info->m_shift;
 
@@ -251,6 +263,12 @@ ingenic_pll_set_rate(struct clk_hw *hw, unsigned long req_rate,
 	if (pll_info->od_bits > 0) {
 		ctl &= ~(GENMASK(pll_info->od_bits - 1, 0) << pll_info->od_shift);
 		ctl |= pll_info->od_encoding[od - 1] << pll_info->od_shift;
+	}
+
+	/* the calculation leaves the second divider at 1 */
+	if (pll_info->od1_bits && pll_info->calc_m_n_od) {
+		ctl &= ~(GENMASK(pll_info->od1_bits - 1, 0) << pll_info->od1_shift);
+		ctl |= (pll_info->od1_direct ? 1 : 0) << pll_info->od1_shift;
 	}
 
 	writel(ctl, cgu->base + pll_info->reg);

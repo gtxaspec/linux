@@ -44,7 +44,8 @@
  *             the PLL's control register
  * @od1_bits: the size of that field in bits, or 0 if the PLL has none; the
  *            rate of such a PLL is read only, as it is set up by the boot
- *            loader
+ *            loader, unless @calc_m_n_od is set: the second divider is then
+ *            programmed as 1
  * @od1_direct: true if the second divider is the value in its field itself,
  *              not the value plus one
  * @bypass_reg: the offset of the bypass control register within the CGU
