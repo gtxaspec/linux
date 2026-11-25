@@ -24,6 +24,7 @@ properties:
       - ingenic,t31-efuse
       - ingenic,t32-efuse
       - ingenic,t33-efuse
+      - ingenic,t40-efuse
       - ingenic,t41-efuse
 
   reg:
