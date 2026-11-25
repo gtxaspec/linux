@@ -139,7 +139,7 @@ static void cpu_set_fpu_2008(struct cpuinfo_mips *c)
 		 * fixed 1, but operate with the legacy encodings.
 		 */
 		if (c->cputype == CPU_XBURST &&
-		    (c->processor_id & PRID_IMP_MASK) != PRID_IMP_XBURST2) {
+		    (c->processor_id & PRID_IMP_XBURST2_MASK) != PRID_IMP_XBURST2) {
 			c->options &= ~MIPS_CPU_NAN_2008;
 			c->options |= MIPS_CPU_NAN_LEGACY;
 			c->fpu_csr31 &= ~(FPU_CSR_ABS2008 | FPU_CSR_NAN2008);

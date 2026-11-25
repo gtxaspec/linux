@@ -1751,6 +1751,8 @@ static inline void cpu_probe_loongson(struct cpuinfo_mips *c, unsigned int cpu) 
 
 static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 {
+	unsigned int imp;
+
 	decode_configs(c);
 
 	/*
@@ -1766,7 +1768,11 @@ static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 	/* XBurst has virtually tagged icache */
 	c->icache.flags |= MIPS_CACHE_VTAG;
 
-	switch (c->processor_id & PRID_IMP_MASK) {
+	imp = c->processor_id & PRID_IMP_MASK;
+	if ((imp & PRID_IMP_XBURST2_MASK) == PRID_IMP_XBURST2)
+		imp = PRID_IMP_XBURST2;
+
+	switch (imp) {
 
 	/* XBurst®1 with MXU1.0/MXU1.1 SIMD ISA */
 	case PRID_IMP_XBURST_REV1:
@@ -1826,6 +1832,13 @@ static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
 	case PRID_IMP_XBURST2:
 		c->cputype = CPU_XBURST;
 		__cpu_name[cpu] = "Ingenic XBurst II";
+		/*
+		 * Config4.IE reads 3: TLBINV and TLBINVF are implemented,
+		 * which the generic decode takes only for IE 2. Without them
+		 * the TLB is made unique one write at a time, and a write
+		 * that matches an entry still to be rewritten is fatal here.
+		 */
+		c->options |= MIPS_CPU_TLBINV;
 		break;
 
 	default:

@@ -189,6 +189,11 @@
 #define PRID_IMP_XBURST_REV1	0x0200	/* XBurst®1 with MXU1.0/MXU1.1 SIMD ISA	*/
 #define PRID_IMP_XBURST_REV2	0x0100	/* XBurst®1 with MXU2.0 SIMD ISA		*/
 #define PRID_IMP_XBURST2		0x2000	/* XBurst®2 with MXU2.1 SIMD ISA		*/
+/*
+ * An XBurst2 keeps its generation in PRID 15:13 and a revision of it below:
+ * 0x2000 reads on the X2000, 0x2100 on the T40, T41 and A1
+ */
+#define PRID_IMP_XBURST2_MASK	0xe000
 
 /*
  * These are the PRID's for when 23:16 == PRID_COMP_NETLOGIC
