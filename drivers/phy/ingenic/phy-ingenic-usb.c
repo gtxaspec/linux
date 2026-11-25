@@ -107,6 +107,8 @@
 
 struct ingenic_soc_info {
 	void (*usb_phy_init)(struct phy *phy);
+	/* Programs the CPM side of a T-series PHY, returns the USBPCR value */
+	u32 (*usb_phy_setup)(struct regmap *map);
 	const struct phy_ops *ops;
 };
 
@@ -337,13 +339,8 @@ static const struct ingenic_soc_info x2000_soc_info = {
 	.usb_phy_init = x2000_usb_phy_init,
 };
 
-static int t21_usb_phy_init(struct phy *phy)
+static u32 t21_usb_phy_setup(struct regmap *map)
 {
-	struct ingenic_usb_phy *priv = phy_get_drvdata(phy);
-	struct regmap *map = priv->regmap;
-	u32 reg;
-	int err;
-
 	regmap_update_bits(map, REG_USBPCR1_OFFSET,
 			   USBPCR1_T21_OTG_SEL | USBPCR1_DPPD | USBPCR1_DMPD |
 			   USBPCR1_REFCLKDIV_MASK | USBPCR1_WORD_IF_16BIT,
@@ -356,11 +353,21 @@ static int t21_usb_phy_init(struct phy *phy)
 	regmap_write(map, REG_USBRDT_OFFSET,
 		     USBRDT_RDT_T21 | USBRDT_VBFIL_LD_EN);
 
-	reg = USBPCR_USB_MODE | USBPCR_COMMONONN | USBPCR_TXPREEMPHTUNE |
-	      FIELD_PREP(USBPCR_IDPULLUP_MASK, USBPCR_IDPULLUP_OTG) |
-	      FIELD_PREP(USBPCR_SQRXTUNE_MASK, USBPCR_SQRXTUNE_DCR_20PCT) |
-	      FIELD_PREP(USBPCR_TXHSXVTUNE_MASK, USBPCR_TXHSXVTUNE_DCR_15MV) |
-	      FIELD_PREP(USBPCR_TXVREFTUNE_MASK, USBPCR_TXVREFTUNE_T21);
+	return USBPCR_USB_MODE | USBPCR_COMMONONN | USBPCR_TXPREEMPHTUNE |
+	       FIELD_PREP(USBPCR_IDPULLUP_MASK, USBPCR_IDPULLUP_OTG) |
+	       FIELD_PREP(USBPCR_SQRXTUNE_MASK, USBPCR_SQRXTUNE_DCR_20PCT) |
+	       FIELD_PREP(USBPCR_TXHSXVTUNE_MASK, USBPCR_TXHSXVTUNE_DCR_15MV) |
+	       FIELD_PREP(USBPCR_TXVREFTUNE_MASK, USBPCR_TXVREFTUNE_T21);
+}
+
+static int t21_usb_phy_init(struct phy *phy)
+{
+	struct ingenic_usb_phy *priv = phy_get_drvdata(phy);
+	struct regmap *map = priv->regmap;
+	u32 reg;
+	int err;
+
+	reg = priv->soc_info->usb_phy_setup(map);
 	regmap_write(map, REG_USBPCR_OFFSET, reg | USBPCR_POR);
 
 	err = reset_control_assert(priv->reset);
@@ -408,6 +415,7 @@ static const struct phy_ops t21_usb_phy_ops = {
 };
 
 static const struct ingenic_soc_info t21_soc_info = {
+	.usb_phy_setup = t21_usb_phy_setup,
 	.ops = &t21_usb_phy_ops,
 };
 
