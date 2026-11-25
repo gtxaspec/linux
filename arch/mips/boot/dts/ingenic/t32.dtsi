@@ -416,6 +416,19 @@
 		status = "disabled";
 	};
 
+	pwm: pwm@13450000 {
+		compatible = "ingenic,t32-pwm";
+		reg = <0x13450000 0x1000>;
+
+		clocks = <&cgu T32_CLK_PWM>;
+		assigned-clocks = <&cgu T32_CLK_PWM>;
+		assigned-clock-rates = <50000000>;
+
+		#pwm-cells = <3>;
+
+		status = "disabled";
+	};
+
 	sfc1: spi@13490000 {
 		compatible = "ingenic,t32-sfc";
 		reg = <0x13490000 0x10000>;
