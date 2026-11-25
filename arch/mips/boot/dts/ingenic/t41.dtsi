@@ -516,4 +516,18 @@
 
 		status = "disabled";
 	};
+
+	avpu: video-codec@13100000 {
+		compatible = "ingenic,t41-avpu";
+		reg = <0x13100000 0x100000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <62>;
+
+		clocks = <&cgu T41_CLK_EL200>, <&cgu T41_CLK_IVDC>,
+			 <&cgu T41_CLK_ISPA>;
+		clock-names = "avpu", "ivdc", "ahb1";
+
+		status = "disabled";
+	};
 };
