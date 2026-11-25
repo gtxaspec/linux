@@ -54,6 +54,7 @@ properties:
           - ingenic,t33-pinctrl
           - ingenic,t40-pinctrl
           - ingenic,t41-pinctrl
+          - ingenic,a1-pinctrl
           - ingenic,x2000-pinctrl
           - ingenic,x2100-pinctrl
       - items:
@@ -104,6 +105,7 @@ patternProperties:
           - ingenic,t33-gpio
           - ingenic,t40-gpio
           - ingenic,t41-gpio
+          - ingenic,a1-gpio
           - ingenic,x2000-gpio
           - ingenic,x2100-gpio
 
@@ -134,9 +136,10 @@ patternProperties:
       - reg
       - gpio-controller
       - "#gpio-cells"
-      - interrupts
-      - interrupt-controller
-      - "#interrupt-cells"
+
+    dependentRequired:
+      interrupts: [interrupt-controller, "#interrupt-cells"]
+      interrupt-controller: [interrupts, "#interrupt-cells"]
 
     additionalProperties: false
 
