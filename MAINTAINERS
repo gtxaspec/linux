@@ -13170,6 +13170,7 @@ F:	drivers/mtd/nand/raw/ingenic/
 F:	drivers/net/phy/ingenic-ephy.c
 F:	drivers/pinctrl/pinctrl-ingenic.c
 F:	drivers/power/supply/ingenic-battery.c
+F:	drivers/pwm/pwm-ingenic-t32.c
 F:	drivers/pwm/pwm-jz4740.c
 F:	drivers/remoteproc/ingenic_rproc.c
 F:	drivers/rtc/rtc-jz4740.c
