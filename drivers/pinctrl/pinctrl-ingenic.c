@@ -6162,24 +6162,27 @@ static int __init ingenic_gpio_probe(struct ingenic_pinctrl *jzpc,
 	jzgc->gc.request = gpiochip_generic_request;
 	jzgc->gc.free = gpiochip_generic_free;
 
-	err = fwnode_irq_get(fwnode, 0);
-	if (err < 0)
-		return err;
-	if (!err)
-		return -EINVAL;
-	jzgc->irq = err;
+	/* A bank may have no interrupt line: the A1's port D has none */
+	if (fwnode_property_present(fwnode, "interrupts")) {
+		err = fwnode_irq_get(fwnode, 0);
+		if (err < 0)
+			return err;
+		if (!err)
+			return -EINVAL;
+		jzgc->irq = err;
 
-	girq = &jzgc->gc.irq;
-	gpio_irq_chip_set_chip(girq, &ingenic_gpio_irqchip);
-	girq->parent_handler = ingenic_gpio_irq_handler;
-	girq->num_parents = 1;
-	girq->parents = devm_kzalloc_objs(dev, *girq->parents, 1);
-	if (!girq->parents)
-		return -ENOMEM;
+		girq = &jzgc->gc.irq;
+		gpio_irq_chip_set_chip(girq, &ingenic_gpio_irqchip);
+		girq->parent_handler = ingenic_gpio_irq_handler;
+		girq->num_parents = 1;
+		girq->parents = devm_kzalloc_objs(dev, *girq->parents, 1);
+		if (!girq->parents)
+			return -ENOMEM;
 
-	girq->parents[0] = jzgc->irq;
-	girq->default_type = IRQ_TYPE_NONE;
-	girq->handler = handle_level_irq;
+		girq->parents[0] = jzgc->irq;
+		girq->default_type = IRQ_TYPE_NONE;
+		girq->handler = handle_level_irq;
+	}
 
 	err = devm_gpiochip_add_data(dev, &jzgc->gc, jzgc);
 	if (err)
