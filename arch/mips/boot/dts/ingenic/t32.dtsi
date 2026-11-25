@@ -376,6 +376,20 @@
 		status = "disabled";
 	};
 
+	ldc: ldc@13040000 {
+		compatible = "ingenic,t32-ldc";
+		reg = <0x13040000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <38>;
+		interrupt-names = "ldc";
+
+		clocks = <&cgu T32_CLK_LDC>;
+		clock-names = "ldc";
+
+		status = "disabled";
+	};
+
 	csi: csi@10023000 {
 		compatible = "ingenic,t32-csi";
 		reg = <0x10023000 0x1000>, <0x10022000 0x1000>;
