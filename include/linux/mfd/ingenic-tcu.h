@@ -45,6 +45,9 @@
 #define TCU_TCSR_PWM_INITL_HIGH	BIT(8)	/* Sets the initial output level */
 #define TCU_TCSR_PWM_EN		BIT(7)	/* PWM pin output enable */
 
+/* T32, T33: a channel counts only while this is set, and bit 15 is clear */
+#define TCU_TCSR_CNT_EN		BIT(16)
+
 #define TCU_WDT_TCER_TCEN	BIT(0)	/* Watchdog timer enable */
 
 #define TCU_CHANNEL_STRIDE	0x10

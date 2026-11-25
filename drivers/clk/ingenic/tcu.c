@@ -9,6 +9,8 @@
 #include <linux/clockchips.h>
 #include <linux/mfd/ingenic-tcu.h>
 #include <linux/mfd/syscon.h>
+#include <linux/of.h>
+#include <linux/platform_device.h>
 #include <linux/regmap.h>
 #include <linux/slab.h>
 #include <linux/syscore_ops.h>
@@ -32,6 +34,8 @@ struct ingenic_soc_info {
 	bool has_ost;
 	bool has_tcu_clk;
 	bool allow_missing_tcu_clk;
+	/* TCSR bits a channel needs set to count, above the clock select */
+	u32 chn_tcsr_run;
 };
 
 struct ingenic_tcu_clk_info {
@@ -270,7 +274,7 @@ static const struct ingenic_tcu_clk_info ingenic_tcu_ost_clk_info =
 static int __init ingenic_tcu_register_clock(struct ingenic_tcu *tcu,
 			unsigned int idx, enum tcu_clk_parent parent,
 			const struct ingenic_tcu_clk_info *info,
-			struct clk_hw_onecell_data *clocks)
+			struct clk_hw_onecell_data *clocks, u32 tcsr_run)
 {
 	struct ingenic_tcu_clk *tcu_clk;
 	int err;
@@ -286,7 +290,8 @@ static int __init ingenic_tcu_register_clock(struct ingenic_tcu *tcu,
 
 	/* Reset channel and clock divider, set default parent */
 	ingenic_tcu_enable_regs(&tcu_clk->hw);
-	regmap_update_bits(tcu->map, info->tcsr_reg, 0xffff, BIT(parent));
+	regmap_update_bits(tcu->map, info->tcsr_reg, 0xffff | tcsr_run,
+			   BIT(parent) | tcsr_run);
 	ingenic_tcu_disable_regs(&tcu_clk->hw);
 
 	err = of_clk_hw_register(tcu->np, &tcu_clk->hw);
@@ -325,11 +330,20 @@ static const struct ingenic_soc_info x1000_soc_info = {
 	.allow_missing_tcu_clk = true,
 };
 
+/* The OST is the SYSOST, outside the TCU */
+static const struct ingenic_soc_info t32_soc_info = {
+	.num_channels = 8,
+	.has_ost = false,
+	.has_tcu_clk = true,
+	.chn_tcsr_run = TCU_TCSR_CNT_EN,
+};
+
 static const struct of_device_id __maybe_unused ingenic_tcu_of_match[] __initconst = {
 	{ .compatible = "ingenic,jz4740-tcu", .data = &jz4740_soc_info, },
 	{ .compatible = "ingenic,jz4725b-tcu", .data = &jz4725b_soc_info, },
 	{ .compatible = "ingenic,jz4760-tcu", .data = &jz4770_soc_info, },
 	{ .compatible = "ingenic,jz4770-tcu", .data = &jz4770_soc_info, },
+	{ .compatible = "ingenic,t32-tcu", .data = &t32_soc_info, },
 	{ .compatible = "ingenic,x1000-tcu", .data = &x1000_soc_info, },
 	{ /* sentinel */ }
 };
@@ -393,7 +407,8 @@ static int __init ingenic_tcu_probe(struct device_node *np)
 	for (i = 0; i < tcu->soc_info->num_channels; i++) {
 		ret = ingenic_tcu_register_clock(tcu, i, TCU_PARENT_EXT,
 						 &ingenic_tcu_clk_info[i],
-						 tcu->clocks);
+						 tcu->clocks,
+						 tcu->soc_info->chn_tcsr_run);
 		if (ret) {
 			pr_crit("cannot register clock %d\n", i);
 			goto err_unregister_timer_clocks;
@@ -409,7 +424,7 @@ static int __init ingenic_tcu_probe(struct device_node *np)
 	 */
 	ret = ingenic_tcu_register_clock(tcu, TCU_CLK_WDT, TCU_PARENT_RTC,
 					 &ingenic_tcu_watchdog_clk_info,
-					 tcu->clocks);
+					 tcu->clocks, 0);
 	if (ret) {
 		pr_crit("cannot register watchdog clock\n");
 		goto err_unregister_timer_clocks;
@@ -419,7 +434,7 @@ static int __init ingenic_tcu_probe(struct device_node *np)
 		ret = ingenic_tcu_register_clock(tcu, TCU_CLK_OST,
 						 TCU_PARENT_EXT,
 						 &ingenic_tcu_ost_clk_info,
-						 tcu->clocks);
+						 tcu->clocks, 0);
 		if (ret) {
 			pr_crit("cannot register ost clock\n");
 			goto err_unregister_watchdog_clock;
@@ -491,6 +506,13 @@ static void __init ingenic_tcu_init(struct device_node *np)
 	if (ret)
 		pr_crit("Failed to initialize TCU clocks: %d\n", ret);
 
+	/*
+	 * of_clk_init() marks the node populated. The clocksource driver
+	 * releases it where it binds; where the SYSOST is the clocksource
+	 * nothing does, and the watchdog needs its platform device.
+	 */
+	of_node_clear_flag(np, OF_POPULATED);
+
 	if (IS_ENABLED(CONFIG_PM_SLEEP))
 		register_syscore(&tcu_pm);
 }
@@ -499,4 +521,27 @@ CLK_OF_DECLARE_DRIVER(jz4740_cgu, "ingenic,jz4740-tcu", ingenic_tcu_init);
 CLK_OF_DECLARE_DRIVER(jz4725b_cgu, "ingenic,jz4725b-tcu", ingenic_tcu_init);
 CLK_OF_DECLARE_DRIVER(jz4760_cgu, "ingenic,jz4760-tcu", ingenic_tcu_init);
 CLK_OF_DECLARE_DRIVER(jz4770_cgu, "ingenic,jz4770-tcu", ingenic_tcu_init);
+CLK_OF_DECLARE_DRIVER(t32_cgu, "ingenic,t32-tcu", ingenic_tcu_init);
 CLK_OF_DECLARE_DRIVER(x1000_cgu, "ingenic,x1000-tcu", ingenic_tcu_init);
+
+/*
+ * Where the clocksource driver does not bind the TCU, this does, for its
+ * watchdog to find its clock supplier ready
+ */
+static const struct of_device_id ingenic_tcu_clk_of_match[] = {
+	{ .compatible = "ingenic,t32-tcu" },
+	{ /* sentinel */ }
+};
+
+static int __init ingenic_tcu_clk_dev_probe(struct platform_device *pdev)
+{
+	return 0;
+}
+
+static struct platform_driver ingenic_tcu_clk_driver = {
+	.driver = {
+		.name	= "ingenic-tcu-clk",
+		.of_match_table = ingenic_tcu_clk_of_match,
+	},
+};
+builtin_platform_driver_probe(ingenic_tcu_clk_driver, ingenic_tcu_clk_dev_probe);
