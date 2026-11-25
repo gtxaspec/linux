@@ -23,6 +23,9 @@ properties:
       - items:
           - const: ingenic,t33-sdhci
           - const: ingenic,t32-sdhci
+      - items:
+          - const: ingenic,t41-sdhci
+          - const: ingenic,t32-sdhci
 
   reg:
     maxItems: 1
