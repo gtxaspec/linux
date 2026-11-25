@@ -14,6 +14,23 @@ description:
 
 allOf:
   - $ref: snps,dwmac.yaml#
+  - if:
+      properties:
+        compatible:
+          contains:
+            const: ingenic,a1-mac
+    then:
+      properties:
+        clocks:
+          minItems: 3
+        clock-names:
+          minItems: 3
+    else:
+      properties:
+        clocks:
+          maxItems: 1
+        clock-names:
+          maxItems: 1
 
 properties:
   compatible:
@@ -38,6 +55,10 @@ properties:
           - const: ingenic,t33-mac
           - const: ingenic,t32-mac
           - const: snps,dwmac
+      - items:
+          - const: ingenic,a1-mac
+          - const: snps,dwxgmac-2.10
+          - const: snps,dwxgmac
 
   reg:
     maxItems: 1
@@ -49,10 +70,15 @@ properties:
     const: macirq
 
   clocks:
-    maxItems: 1
+    minItems: 1
+    maxItems: 3
 
   clock-names:
-    const: stmmaceth
+    minItems: 1
+    items:
+      - const: stmmaceth
+      - const: phy
+      - const: tx
 
   mode-reg:
     $ref: /schemas/types.yaml#/definitions/phandle

@@ -75,6 +75,7 @@ properties:
         - ingenic,t32-mac
         - ingenic,t40-mac
         - ingenic,t41-mac
+        - ingenic,a1-mac
         - loongson,ls2k-dwmac
         - loongson,ls7a-dwmac
         - nuvoton,ma35d1-dwmac
@@ -598,6 +599,7 @@ allOf:
                 - ingenic,t32-mac
                 - ingenic,t40-mac
                 - ingenic,t41-mac
+                - ingenic,a1-mac
                 - qcom,qcs404-ethqos
                 - qcom,sa8255p-ethqos
                 - qcom,sa8775p-ethqos
