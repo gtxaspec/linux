@@ -1083,6 +1083,14 @@ static const struct ingenic_cgu_clk_info t32_cgu_clocks[] = {
 	[T32_CLK_EXCLK] = { "ext", CGU_CLK_EXT },
 	[T32_CLK_RTCLK] = { "rtc", CGU_CLK_EXT },
 
+	/* Custom (SoC-specific) OTG PHY */
+
+	[T32_CLK_OTGPHY] = {
+		"otg_phy", CGU_CLK_CUSTOM,
+		.parents = { T32_CLK_EXCLK, -1, -1, -1 },
+		.custom = { &t31_otg_phy_ops },
+	},
+
 	/* PLLs */
 
 	[T32_CLK_APLL] = {
@@ -1540,6 +1548,14 @@ static const struct ingenic_cgu_clk_info t33_cgu_clocks[] = {
 
 	[T32_CLK_EXCLK] = { "ext", CGU_CLK_EXT },
 	[T32_CLK_RTCLK] = { "rtc", CGU_CLK_EXT },
+
+	/* Custom (SoC-specific) OTG PHY */
+
+	[T32_CLK_OTGPHY] = {
+		"otg_phy", CGU_CLK_CUSTOM,
+		.parents = { T32_CLK_EXCLK, -1, -1, -1 },
+		.custom = { &t31_otg_phy_ops },
+	},
 
 	/* PLLs */
 
