@@ -18,6 +18,7 @@
 #include <linux/slab.h>
 #include <linux/err.h>
 #include <linux/of.h>
+#include <linux/of_device.h>
 #include <linux/regmap.h>
 #include <linux/stringify.h>
 
@@ -37,18 +38,33 @@ MODULE_PARM_DESC(heartbeat,
 		__stringify(MAX_HEARTBEAT) ", default "
 		__stringify(DEFAULT_HEARTBEAT));
 
+struct jz4740_wdt_soc_info {
+	/* TCNT takes no write: a strobe in TCSR clears it */
+	bool tcnt_clr_strobe;
+};
+
 struct jz4740_wdt_drvdata {
 	struct watchdog_device wdt;
 	struct regmap *map;
 	struct clk *clk;
 	unsigned long clk_rate;
+	const struct jz4740_wdt_soc_info *soc_info;
 };
+
+static void jz4740_wdt_clear_count(struct jz4740_wdt_drvdata *drvdata)
+{
+	if (drvdata->soc_info && drvdata->soc_info->tcnt_clr_strobe)
+		regmap_set_bits(drvdata->map, TCU_REG_WDT_TCSR,
+				TCU_WDT_TCSR_CNT_CLR);
+	else
+		regmap_write(drvdata->map, TCU_REG_WDT_TCNT, 0);
+}
 
 static int jz4740_wdt_ping(struct watchdog_device *wdt_dev)
 {
 	struct jz4740_wdt_drvdata *drvdata = watchdog_get_drvdata(wdt_dev);
 
-	regmap_write(drvdata->map, TCU_REG_WDT_TCNT, 0);
+	jz4740_wdt_clear_count(drvdata);
 
 	return 0;
 }
@@ -63,8 +79,12 @@ static int jz4740_wdt_set_timeout(struct watchdog_device *wdt_dev,
 	regmap_read(drvdata->map, TCU_REG_WDT_TCER, &tcer);
 	regmap_write(drvdata->map, TCU_REG_WDT_TCER, 0);
 
+	/*
+	 * Clear the count first: where it is not writable a TDR at or below it
+	 * resets at once
+	 */
+	jz4740_wdt_clear_count(drvdata);
 	regmap_write(drvdata->map, TCU_REG_WDT_TDR, timeout_value);
-	regmap_write(drvdata->map, TCU_REG_WDT_TCNT, 0);
 
 	if (tcer & TCU_WDT_TCER_TCEN)
 		regmap_write(drvdata->map, TCU_REG_WDT_TCER, TCU_WDT_TCER_TCEN);
@@ -126,10 +146,15 @@ static const struct watchdog_ops jz4740_wdt_ops = {
 	.restart = jz4740_wdt_restart,
 };
 
+static const struct jz4740_wdt_soc_info t32_wdt_soc_info = {
+	.tcnt_clr_strobe = true,
+};
+
 #ifdef CONFIG_OF
 static const struct of_device_id jz4740_wdt_of_matches[] = {
 	{ .compatible = "ingenic,jz4740-watchdog", },
 	{ .compatible = "ingenic,jz4780-watchdog", },
+	{ .compatible = "ingenic,t32-watchdog", .data = &t32_wdt_soc_info },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, jz4740_wdt_of_matches);
@@ -146,6 +171,8 @@ static int jz4740_wdt_probe(struct platform_device *pdev)
 	drvdata = devm_kzalloc_obj(dev, struct jz4740_wdt_drvdata);
 	if (!drvdata)
 		return -ENOMEM;
+
+	drvdata->soc_info = of_device_get_match_data(dev);
 
 	drvdata->clk = devm_clk_get(&pdev->dev, "wdt");
 	if (IS_ERR(drvdata->clk)) {

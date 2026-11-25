@@ -49,6 +49,8 @@
 #define TCU_TCSR_CNT_EN		BIT(16)
 
 #define TCU_WDT_TCER_TCEN	BIT(0)	/* Watchdog timer enable */
+/* T32, T33: the counter takes no write; this strobe clears it instead */
+#define TCU_WDT_TCSR_CNT_CLR	BIT(10)
 
 #define TCU_CHANNEL_STRIDE	0x10
 #define TCU_REG_TDFRc(c)	(TCU_REG_TDFR0 + ((c) * TCU_CHANNEL_STRIDE))
