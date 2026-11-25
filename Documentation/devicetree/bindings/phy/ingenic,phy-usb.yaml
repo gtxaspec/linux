@@ -10,6 +10,26 @@ maintainers:
   - Paul Cercueil <paul@crapouillou.net>
   - 周琰杰 (Zhou Yanjie) <zhouyanjie@wanyeetech.com>
 
+select:
+  properties:
+    compatible:
+      contains:
+        enum:
+          - ingenic,jz4770-phy
+          - ingenic,jz4775-phy
+          - ingenic,jz4780-phy
+          - ingenic,t21-phy
+          - ingenic,t23-phy
+          - ingenic,t30-phy
+          - ingenic,t31-phy
+          - ingenic,t32-phy
+          - ingenic,t33-phy
+          - ingenic,x1000-phy
+          - ingenic,x1830-phy
+          - ingenic,x2000-phy
+  required:
+    - compatible
+
 properties:
   $nodename:
     pattern: '^usb-phy@.*'
@@ -21,6 +41,7 @@ properties:
           - ingenic,jz4775-phy
           - ingenic,jz4780-phy
           - ingenic,t21-phy
+          - ingenic,t32-phy
           - ingenic,x1000-phy
           - ingenic,x1830-phy
           - ingenic,x2000-phy
@@ -30,6 +51,9 @@ properties:
               - ingenic,t30-phy
               - ingenic,t31-phy
           - const: ingenic,t21-phy
+      - items:
+          - const: ingenic,t33-phy
+          - const: ingenic,t32-phy
 
   reg:
     maxItems: 1
@@ -69,7 +93,9 @@ allOf:
       properties:
         compatible:
           contains:
-            const: ingenic,t21-phy
+            enum:
+              - ingenic,t21-phy
+              - ingenic,t32-phy
     then:
       required:
         - resets
@@ -90,6 +116,20 @@ examples:
 
       vcc-supply = <&vcc>;
       clocks = <&cgu JZ4770_CLK_OTG_PHY>;
+
+      #phy-cells = <0>;
+    };
+
+  - |
+    #include <dt-bindings/clock/ingenic,t32-cgu.h>
+    usb-phy@10060000 {
+      compatible = "ingenic,t33-phy", "ingenic,t32-phy";
+      reg = <0x10060000 0x1000>;
+
+      vcc-supply = <&vcc>;
+      clocks = <&cgu T32_CLK_OTGPHY>;
+      resets = <&srbc 12>;
+      ingenic,usb-phy-ctrl = <&usb_phy_ctrl>;
 
       #phy-cells = <0>;
     };

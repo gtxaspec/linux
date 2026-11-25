@@ -11,7 +11,7 @@ maintainers:
 
 description: |
   The Soft Reset and Bus Control register (SRBC) of the clock and power
-  controller in the Ingenic T21, T23, T30 and T31. Setting a reset bit holds
+  controller in the Ingenic T21, T23, T30, T31, T32 and T33. Setting a reset bit holds
   the block (OTG controller, VPU, ISP) in reset; clearing it releases the
   block. The other bits of the register request bus stops and are not
   resets. The reset specifier is the bit number in SRBC, for example 12 for
@@ -26,6 +26,8 @@ properties:
               - ingenic,t23-reset
               - ingenic,t30-reset
               - ingenic,t31-reset
+              - ingenic,t32-reset
+              - ingenic,t33-reset
           - const: ingenic,t21-reset
 
   reg:
