@@ -23,6 +23,7 @@ properties:
               - ingenic,t31-dtrng
               - ingenic,t32-dtrng
               - ingenic,t33-dtrng
+              - ingenic,t41-dtrng
           - const: ingenic,x1830-dtrng
 
   reg:
