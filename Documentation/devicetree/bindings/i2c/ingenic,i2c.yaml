@@ -34,6 +34,7 @@ properties:
               - ingenic,t31-i2c
               - ingenic,t32-i2c
               - ingenic,t33-i2c
+              - ingenic,a1-i2c
               - ingenic,t40-i2c
               - ingenic,t41-i2c
           - const: ingenic,x1000-i2c
