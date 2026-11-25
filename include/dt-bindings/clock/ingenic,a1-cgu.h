@@ -66,5 +66,14 @@
 #define A1_CLK_MONITOR	51
 #define A1_CLK_JPEG	52
 #define A1_CLK_VC8000D	53
+#define A1_CLK_VDEV	54
+#define A1_CLK_VDEA	55
+#define A1_CLK_VDEM	56
+#define A1_CLK_IPU	57
+#define A1_CLK_VDE	58
+#define A1_CLK_HDMI	59
+#define A1_CLK_VGA	60
+#define A1_CLK_IPU_GATE	61
+#define A1_CLK_AIP	62
 
 #endif /* __DT_BINDINGS_CLOCK_A1_CGU_H__ */
