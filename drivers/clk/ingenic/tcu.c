@@ -49,6 +49,7 @@ struct ingenic_tcu_clk {
 
 struct ingenic_tcu {
 	const struct ingenic_soc_info *soc_info;
+	struct device_node *np;
 	struct regmap *map;
 	struct clk *clk;
 
@@ -230,17 +231,18 @@ static const struct clk_ops ingenic_tcu_clk_ops = {
 	.is_enabled	= ingenic_tcu_is_enabled,
 };
 
-static const char * const ingenic_tcu_timer_parents[] = {
-	[TCU_PARENT_PCLK] = "pclk",
-	[TCU_PARENT_RTC]  = "rtc",
-	[TCU_PARENT_EXT]  = "ext",
+/* The names the node gives its input clocks; older device trees lack them */
+static const struct clk_parent_data ingenic_tcu_timer_parents[] = {
+	[TCU_PARENT_PCLK] = { .fw_name = "pclk", .name = "pclk" },
+	[TCU_PARENT_RTC]  = { .fw_name = "rtc", .name = "rtc" },
+	[TCU_PARENT_EXT]  = { .fw_name = "ext", .name = "ext" },
 };
 
 #define DEF_TIMER(_name, _gate_bit, _tcsr)				\
 	{								\
 		.init_data = {						\
 			.name = _name,					\
-			.parent_names = ingenic_tcu_timer_parents,	\
+			.parent_data = ingenic_tcu_timer_parents,	\
 			.num_parents = ARRAY_SIZE(ingenic_tcu_timer_parents),\
 			.ops = &ingenic_tcu_clk_ops,			\
 			.flags = CLK_SET_RATE_UNGATE,			\
@@ -287,7 +289,7 @@ static int __init ingenic_tcu_register_clock(struct ingenic_tcu *tcu,
 	regmap_update_bits(tcu->map, info->tcsr_reg, 0xffff, BIT(parent));
 	ingenic_tcu_disable_regs(&tcu_clk->hw);
 
-	err = clk_hw_register(NULL, &tcu_clk->hw);
+	err = of_clk_hw_register(tcu->np, &tcu_clk->hw);
 	if (err) {
 		kfree(tcu_clk);
 		return err;
@@ -348,6 +350,7 @@ static int __init ingenic_tcu_probe(struct device_node *np)
 	if (!tcu)
 		return -ENOMEM;
 
+	tcu->np = np;
 	tcu->map = map;
 	tcu->soc_info = id->data;
 
