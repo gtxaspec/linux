@@ -45,6 +45,7 @@ properties:
               - ingenic,t31-uart
               - ingenic,t32-uart
               - ingenic,t33-uart
+              - ingenic,a1-uart
               - ingenic,t40-uart
               - ingenic,t41-uart
           - const: ingenic,x1000-uart
