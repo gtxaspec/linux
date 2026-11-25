@@ -124,9 +124,19 @@ ingenic_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
 		BUG_ON(od == pll_info->od_max);
 	od++;
 
-	if (pll_info->od1_bits)
-		od *= ((ctl_od1 >> pll_info->od1_shift) &
-		       GENMASK(pll_info->od1_bits - 1, 0)) + 1;
+	if (pll_info->od1_bits) {
+		unsigned int od1 = (ctl_od1 >> pll_info->od1_shift) &
+			       GENMASK(pll_info->od1_bits - 1, 0);
+
+		od1 += !pll_info->od1_direct;
+		if (!od1)
+			return 0;
+		od *= od1;
+	}
+
+	/* a PLL the boot loader left unconfigured has no divider set */
+	if (!n)
+		return 0;
 
 	return div_u64((u64)parent_rate * m * pll_info->rate_multiplier,
 		n * od);

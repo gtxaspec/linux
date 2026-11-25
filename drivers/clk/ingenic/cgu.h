@@ -40,11 +40,13 @@
  *               their encoded values in the PLL control register, or -1 for
  *               unsupported values
  * @od1_shift: the index of the lowest bit of a second, linear post-VCO divider
- *             (the value in the field plus one divides) in the PLL's control
- *             register
+ *             (the value in the field plus one divides, see @od1_direct) in
+ *             the PLL's control register
  * @od1_bits: the size of that field in bits, or 0 if the PLL has none; the
  *            rate of such a PLL is read only, as it is set up by the boot
  *            loader
+ * @od1_direct: true if the second divider is the value in its field itself,
+ *              not the value plus one
  * @bypass_reg: the offset of the bypass control register within the CGU
  * @bypass_bit: the index of the bypass bit in the PLL control register, or
  *              -1 if there is no bypass bit
@@ -63,6 +65,7 @@ struct ingenic_cgu_pll_info {
 	u8 n_shift, n_bits, n_offset;
 	u8 od_shift, od_bits, od_max;
 	u8 od1_shift, od1_bits;
+	bool od1_direct;
 	unsigned bypass_reg;
 	s8 bypass_bit;
 	s8 enable_bit;
