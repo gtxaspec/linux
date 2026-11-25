@@ -41,6 +41,11 @@ struct xburst_mxu3_state;
 extern bool xburst_mxu3_present;
 extern void xburst_mxu3_save(struct xburst_mxu3_state *st);
 extern void xburst_mxu3_restore(struct xburst_mxu3_state *st);
+
+/* SIMD sections in kernel code; the user task's registers survive them */
+void kernel_mxuv3_begin_partial(unsigned int num_regs);
+void kernel_mxuv3_end(void);
+#define kernel_mxuv3_begin()	kernel_mxuv3_begin_partial(32)
 #endif
 
 #if defined(CONFIG_INGENIC_XBURST_MXU2) && defined(CONFIG_INGENIC_XBURST_MXU3)

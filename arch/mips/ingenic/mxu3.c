@@ -13,9 +13,12 @@
 #include <linux/bug.h>
 #include <linux/cpuhotplug.h>
 #include <linux/context_tracking.h>
+#include <linux/export.h>
 #include <linux/init.h>
 #include <linux/irqflags.h>
 #include <linux/notifier.h>
+#include <linux/percpu.h>
+#include <linux/preempt.h>
 #include <linux/ptrace.h>
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
@@ -112,6 +115,37 @@ asmlinkage void do_mxu3_fpe(struct pt_regs *regs)
 
 	exception_exit(prev_state);
 }
+
+/*
+ * Kernel use of the unit by a closed-source module's SIMD routines. The task
+ * that called into the kernel may own live MXU3 registers (the CU2 notifier
+ * below loads them lazily and nothing saves them on kernel entry), so the
+ * section keeps them in a per-CPU buffer and puts them back at the end.
+ * Preemption stays off in between: the buffer belongs to the CPU.
+ */
+static DEFINE_PER_CPU(struct xburst_mxu3_state, kernel_mxu3_ctx);
+static DEFINE_PER_CPU(unsigned int, kernel_mxu3_status);
+
+void kernel_mxuv3_begin_partial(unsigned int num_regs)
+{
+	unsigned int status;
+
+	/* One buffer per CPU: a section must not nest in interrupt context */
+	WARN_ON_ONCE(!in_task());
+	preempt_disable();
+	status = mxu3_enable();
+	__this_cpu_write(kernel_mxu3_status, status);
+	xburst_mxu3_save(this_cpu_ptr(&kernel_mxu3_ctx));
+}
+EXPORT_SYMBOL_GPL(kernel_mxuv3_begin_partial);
+
+void kernel_mxuv3_end(void)
+{
+	xburst_mxu3_restore(this_cpu_ptr(&kernel_mxu3_ctx));
+	write_c0_status(__this_cpu_read(kernel_mxu3_status));
+	preempt_enable();
+}
+EXPORT_SYMBOL_GPL(kernel_mxuv3_end);
 
 static int xburst_mxu3_cu2_call(struct notifier_block *nfb,
 				unsigned long action, void *data)
