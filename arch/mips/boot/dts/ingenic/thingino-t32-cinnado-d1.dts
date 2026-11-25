@@ -12,6 +12,11 @@
 	spk-gpios = <&gpb 31 GPIO_ACTIVE_LOW>;
 };
 
+/* The pins stay in GPIO mode until a board user selects a PWM pin group */
+&pwm {
+	status = "okay";
+};
+
 /* The card slot's detect switch is on PA21, closed to ground by a card */
 &pinctrl {
 	pins_mmc0_cd: mmc0-cd {
