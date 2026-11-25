@@ -74,6 +74,58 @@
 	.stable_bit = 3,			\
 }
 
+#define T40_PLL_SET(_reg) {			\
+	.reg = _reg,				\
+	.rate_multiplier = 1,			\
+	.m_shift = 20,				\
+	.m_bits = 12,				\
+	.n_shift = 14,				\
+	.n_bits = 6,				\
+	.od_shift = 11,				\
+	.od_bits = 3,				\
+	.od_max = 8,				\
+	.od_encoding = t40_pll_od_encoding,	\
+	.od1_shift = 8,				\
+	.od1_bits = 3,				\
+	.od1_direct = true,			\
+	.bypass_bit = -1,			\
+	.enable_bit = 0,			\
+	.stable_bit = 3,			\
+	.calc_m_n_od = t40_epll_calc,		\
+}
+
+/*
+ * The EPLL is the only PLL the kernel programs: the sensor drivers set it to
+ * 891 MHz (/24 gives the 37.125 MHz an IMX307 wants) and the boot loader
+ * leaves it at 384 MHz. The rates are the vendor kernel's table for the
+ * EXCLK, M / N and a post divider that is OD0 here (the vendor's od1) with
+ * the second divider at 1; a request takes the highest rate not above it.
+ */
+static const struct {
+	unsigned int mhz, m, n, od;
+} t40_epll_rates[] = {
+	{ 1800, 150, 1, 2 }, { 1608, 134, 1, 2 }, { 1500, 125, 1, 2 },
+	{ 1404, 117, 1, 2 }, { 1392, 116, 1, 2 }, { 1308, 109, 1, 2 },
+	{ 1296, 108, 1, 2 }, { 1200, 100, 1, 2 }, { 1104, 92, 1, 2 },
+	{ 1080, 90, 1, 2 }, { 1008, 84, 1, 2 }, { 900, 75, 1, 2 },
+	{ 891, 297, 4, 2 }, { 864, 72, 1, 2 }, { 600, 75, 1, 3 },
+	{ 384, 32, 1, 2 },
+};
+
+static void t40_epll_calc(const struct ingenic_cgu_pll_info *pll_info,
+			  unsigned long rate, unsigned long parent_rate,
+			  unsigned int *pm, unsigned int *pn, unsigned int *pod)
+{
+	int i = 0;
+
+	while (i < ARRAY_SIZE(t40_epll_rates) - 1 &&
+	       rate < t40_epll_rates[i].mhz * 1000000UL)
+		i++;
+	*pm = t40_epll_rates[i].m;
+	*pn = t40_epll_rates[i].n;
+	*pod = t40_epll_rates[i].od;
+}
+
 /* OD0 is the divider itself; zero, which no running PLL holds, reads as 8 */
 static const s8 t40_pll_od_encoding[8] = {
 	1, 2, 3, 4, 5, 6, 7, 0,
@@ -109,7 +161,7 @@ static const struct ingenic_cgu_clk_info t40_cgu_clocks[] = {
 	[T40_CLK_EPLL] = {
 		"epll", CGU_CLK_PLL,
 		.parents = { T40_CLK_EXCLK, -1, -1, -1 },
-		.pll = T40_PLL(CGU_REG_EPLL),
+		.pll = T40_PLL_SET(CGU_REG_EPLL),
 	},
 
 	[T40_CLK_SCLKA] = {
