@@ -17,6 +17,7 @@ config MACH_INGENIC_GENERIC
 	select MACH_T31
 	select MACH_T32
 	select MACH_T33
+	select MACH_T40
 	select MACH_T41
 
 choice
@@ -144,6 +145,13 @@ config MACH_T33
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
 
+config MACH_T40
+	bool
+	select MIPS_CPU_SCACHE
+	select SYS_HAS_CPU_MIPS32_R2
+	select SYS_SUPPORTS_HIGHMEM
+	select SYS_SUPPORTS_SMP
+
 config MACH_T41
 	bool
 	select MIPS_CPU_SCACHE
@@ -153,10 +161,10 @@ config MACH_T41
 
 config INGENIC_XBURST2_SMP
 	bool
-	depends on MACH_T41 && SMP
+	depends on (MACH_T40 || MACH_T41) && SMP
 	default y
 	help
-	  Starts the second core of the XBurst2 CPU (T41) through the core
+	  Starts the second core of the XBurst2 CPU (T40, T41) through the core
 	  control unit and sends it inter-processor interrupts through the
 	  CCU mailboxes. CPU hotplug is not supported.
 
