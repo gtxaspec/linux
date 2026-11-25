@@ -90,4 +90,7 @@
 
 /* T33 only */
 #define T33_CLK_RISCV		68
+
+/* T32 and T33 */
+#define T32_CLK_OTGPHY		69
 #endif /* __DT_BINDINGS_CLOCK_T32_CGU_H__ */
