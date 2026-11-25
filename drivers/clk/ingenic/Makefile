@@ -11,4 +11,5 @@ obj-$(CONFIG_INGENIC_CGU_X1830)		+= x1830-cgu.o
 obj-$(CONFIG_INGENIC_CGU_T20)		+= t20-cgu.o
 obj-$(CONFIG_INGENIC_CGU_T21)		+= t21-cgu.o
 obj-$(CONFIG_INGENIC_CGU_T31)		+= t31-cgu.o
+obj-$(CONFIG_INGENIC_CGU_T41)		+= t41-cgu.o
 obj-$(CONFIG_INGENIC_TCU_CLK)		+= tcu.o
