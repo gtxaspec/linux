@@ -38,6 +38,7 @@
 #include <asm/dsp.h>
 #include <asm/inst.h>
 #include <asm/msa.h>
+#include <asm/cop2.h>
 #include <asm/syscalls.h>
 
 #include "signal-common.h"
@@ -263,14 +264,46 @@ static int restore_msa_extcontext(void __user *buf, unsigned int size)
 
 #endif /* !CONFIG_CPU_HAS_MSA */
 
+#ifdef CONFIG_INGENIC_XBURST_MXU3
+
+static int save_mxu3_extcontext(void __user *buf)
+{
+	return xburst_mxu3_save_sigctx(buf);
+}
+
+static int restore_mxu3_extcontext(void __user *buf, unsigned int size)
+{
+	return xburst_mxu3_restore_sigctx(buf, size);
+}
+
+#else /* !CONFIG_INGENIC_XBURST_MXU3 */
+
+static int save_mxu3_extcontext(void __user *buf)
+{
+	return 0;
+}
+
+static int restore_mxu3_extcontext(void __user *buf, unsigned int size)
+{
+	return -EINVAL;
+}
+
+#endif /* !CONFIG_INGENIC_XBURST_MXU3 */
+
 static int save_extcontext(void __user *buf)
 {
-	int sz;
+	int sz, mxu3_sz;
 
 	sz = save_msa_extcontext(buf);
 	if (sz < 0)
 		return sz;
 	buf += sz;
+
+	mxu3_sz = save_mxu3_extcontext(buf);
+	if (mxu3_sz < 0)
+		return mxu3_sz;
+	buf += mxu3_sz;
+	sz += mxu3_sz;
 
 	/* If no context was saved then trivially return */
 	if (!sz)
@@ -305,6 +338,10 @@ static int restore_extcontext(void __user *buf)
 		switch (ext.magic) {
 		case MSA_EXTCONTEXT_MAGIC:
 			err = restore_msa_extcontext(buf, ext.size);
+			break;
+
+		case MXU3_EXTCONTEXT_MAGIC:
+			err = restore_mxu3_extcontext(buf, ext.size);
 			break;
 
 		default:
@@ -486,6 +523,10 @@ static size_t extcontext_max_size(void)
 
 	if (thread_msa_context_live())
 		sz += sizeof(struct msa_extcontext);
+
+#ifdef CONFIG_INGENIC_XBURST_MXU3
+	sz += xburst_mxu3_sigctx_size();
+#endif
 
 	/* If any context is saved then we'll append the end marker */
 	if (sz)

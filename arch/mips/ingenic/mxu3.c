@@ -22,7 +22,9 @@
 #include <linux/ptrace.h>
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
+#include <linux/sched/task_stack.h>
 #include <linux/stddef.h>
+#include <linux/uaccess.h>
 
 #include <asm/cop2.h>
 #include <asm/cpu.h>
@@ -33,6 +35,7 @@
 #include <asm/processor.h>
 #include <asm/setup.h>
 #include <asm/traps.h>
+#include <asm/ucontext.h>
 
 #define MCSR_CAUSE_E	BIT(17)	/* unimplemented operation, always enabled */
 #define MCSR_CAUSE_V	BIT(16)
@@ -159,12 +162,77 @@ static int xburst_mxu3_cu2_call(struct notifier_block *nfb,
 
 	local_irq_save(flags);
 	regs->cp0_status |= ST0_CU2;
+	current->thread.mxu3.used = true;
 	status = mxu3_enable();
 	xburst_mxu3_restore(&current->thread.mxu3);
 	write_c0_status(status);
 	local_irq_restore(flags);
 
 	return NOTIFY_STOP;
+}
+
+/*
+ * A signal handler may use the unit too, so a frame carries the context of
+ * the interrupted code and sigreturn puts it back. Like a context switch,
+ * delivery saves the live registers and drops CU2: the handler loads the
+ * saved state on its first instruction, and no switch saves the registers
+ * over the copy while it is made.
+ */
+size_t xburst_mxu3_sigctx_size(void)
+{
+	if (!xburst_mxu3_present || !current->thread.mxu3.used)
+		return 0;
+
+	return sizeof(struct mxu3_extcontext);
+}
+
+int xburst_mxu3_save_sigctx(void __user *buf)
+{
+	struct mxu3_extcontext __user *ctx = buf;
+	struct xburst_mxu3_state *st = &current->thread.mxu3;
+	struct pt_regs *regs = task_pt_regs(current);
+	int err;
+
+	if (!xburst_mxu3_present || !st->used)
+		return 0;
+
+	preempt_disable();
+	if (regs->cp0_status & ST0_CU2) {
+		unsigned int status = mxu3_enable();
+
+		xburst_mxu3_save(st);
+		write_c0_status(status);
+		regs->cp0_status &= ~ST0_CU2;
+	}
+	preempt_enable();
+
+	err = __put_user(MXU3_EXTCONTEXT_MAGIC, &ctx->ext.magic);
+	err |= __put_user(sizeof(*ctx), &ctx->ext.size);
+	err |= copy_to_user(ctx->vpr, st->vpr, sizeof(ctx->vpr));
+	err |= copy_to_user(ctx->vsr, st->vsr, sizeof(ctx->vsr));
+	err |= __put_user(st->mcsr, &ctx->mcsr);
+
+	return err ? -EFAULT : sizeof(*ctx);
+}
+
+int xburst_mxu3_restore_sigctx(void __user *buf, unsigned int size)
+{
+	struct mxu3_extcontext __user *ctx = buf;
+	struct xburst_mxu3_state *st = &current->thread.mxu3;
+	int err;
+
+	if (!xburst_mxu3_present || size != sizeof(*ctx))
+		return -EINVAL;
+
+	/* without CU2 no switch saves the registers over what is copied */
+	task_pt_regs(current)->cp0_status &= ~ST0_CU2;
+
+	err = copy_from_user(st->vpr, ctx->vpr, sizeof(st->vpr));
+	err |= copy_from_user(st->vsr, ctx->vsr, sizeof(st->vsr));
+	err |= __get_user(st->mcsr, &ctx->mcsr);
+	st->used = true;
+
+	return err ? -EFAULT : 0;
 }
 
 static int xburst_mxu3_cpu_online(unsigned int cpu)

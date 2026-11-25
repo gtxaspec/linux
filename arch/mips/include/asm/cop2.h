@@ -46,6 +46,11 @@ extern void xburst_mxu3_restore(struct xburst_mxu3_state *st);
 void kernel_mxuv3_begin_partial(unsigned int num_regs);
 void kernel_mxuv3_end(void);
 #define kernel_mxuv3_begin()	kernel_mxuv3_begin_partial(32)
+
+/* extended signal context: size to reserve, save at delivery, put back */
+size_t xburst_mxu3_sigctx_size(void);
+int xburst_mxu3_save_sigctx(void __user *buf);
+int xburst_mxu3_restore_sigctx(void __user *buf, unsigned int size);
 #endif
 
 #if defined(CONFIG_INGENIC_XBURST_MXU2) && defined(CONFIG_INGENIC_XBURST_MXU3)

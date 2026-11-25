@@ -40,6 +40,26 @@ struct msa_extcontext {
 	unsigned int		csr;
 };
 
+/**
+ * struct mxu3_extcontext - XBurst2 MXU3 extended context structure
+ * @ext:	the extended context header, with magic == MXU3_EXTCONTEXT_MAGIC
+ * @vpr:	the vector registers vr0-vr31, 16 words each
+ * @vsr:	the vector sum registers vs0-vs3, 16 words each
+ * @mcsr:	the value of the MXU3 control & status register
+ *
+ * If a task has used MXU3 at the time a signal is delivered to it, this
+ * structure holds the MXU3 context of the task as it was prior to the signal
+ * delivery, and is put back by sigreturn.
+ */
+struct mxu3_extcontext {
+	struct extcontext	ext;
+#define MXU3_EXTCONTEXT_MAGIC	0x784d5833	/* xMX3 */
+
+	unsigned int		vpr[32][16];
+	unsigned int		vsr[4][16];
+	unsigned int		mcsr;
+};
+
 #define END_EXTCONTEXT_MAGIC	0x78454e44	/* xEND */
 
 /**

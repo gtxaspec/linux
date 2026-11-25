@@ -230,6 +230,8 @@ struct xburst_mxu3_state {
 	u32 vsr[4][16];
 	/* MXU3 control and status register */
 	u32 mcsr;
+	/* the task has taken the unit, so signal frames carry its state */
+	bool used;
 };
 #endif
 
