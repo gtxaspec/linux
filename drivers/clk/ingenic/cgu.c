@@ -86,12 +86,13 @@ ingenic_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
 	const struct ingenic_cgu_pll_info *pll_info;
 	unsigned m, n, od, od_enc = 0;
 	bool bypass;
-	u32 ctl;
+	u32 ctl, ctl_od1;
 
 	BUG_ON(clk_info->type != CGU_CLK_PLL);
 	pll_info = &clk_info->pll;
 
 	ctl = readl(cgu->base + pll_info->reg);
+	ctl_od1 = ctl;
 
 	m = (ctl >> pll_info->m_shift) & GENMASK(pll_info->m_bits - 1, 0);
 	m += pll_info->m_offset;
@@ -122,6 +123,10 @@ ingenic_pll_recalc_rate(struct clk_hw *hw, unsigned long parent_rate)
 	else
 		BUG_ON(od == pll_info->od_max);
 	od++;
+
+	if (pll_info->od1_bits)
+		od *= ((ctl_od1 >> pll_info->od1_shift) &
+		       GENMASK(pll_info->od1_bits - 1, 0)) + 1;
 
 	return div_u64((u64)parent_rate * m * pll_info->rate_multiplier,
 		n * od);
@@ -180,6 +185,11 @@ static int ingenic_pll_determine_rate(struct clk_hw *hw,
 {
 	struct ingenic_clk *ingenic_clk = to_ingenic_clk(hw);
 	const struct ingenic_cgu_clk_info *clk_info = to_clk_info(ingenic_clk);
+
+	if (clk_info->pll.od1_bits) {
+		req->rate = clk_hw_get_rate(hw);
+		return 0;
+	}
 
 	req->rate = ingenic_pll_calc(clk_info, req->rate, req->best_parent_rate,
 				     NULL, NULL, NULL);
