@@ -115,6 +115,8 @@ void __init device_tree_init(void)
 
 	if (!register_cps_smp_ops())
 		return;
+	if (!register_xburst2_smp_ops())
+		return;
 	if (!register_vsmp_smp_ops())
 		return;
 

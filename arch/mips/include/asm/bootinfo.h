@@ -94,6 +94,7 @@ enum ingenic_machine_type {
 	MACH_INGENIC_T31,
 	MACH_INGENIC_T32,
 	MACH_INGENIC_T33,
+	MACH_INGENIC_T41,
 };
 
 extern char *system_type;

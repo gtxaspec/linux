@@ -95,6 +95,15 @@ static inline int register_vsmp_smp_ops(void)
 #endif
 }
 
+#ifdef CONFIG_INGENIC_XBURST2_SMP
+extern int register_xburst2_smp_ops(void);
+#else
+static inline int register_xburst2_smp_ops(void)
+{
+	return -ENODEV;
+}
+#endif
+
 #ifdef CONFIG_MIPS_CPS
 extern int register_cps_smp_ops(void);
 #else

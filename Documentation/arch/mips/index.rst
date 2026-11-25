@@ -10,5 +10,6 @@ MIPS-specific Documentation
 
    booting
    ingenic-tcu
+   ingenic-xburst2
 
    features
