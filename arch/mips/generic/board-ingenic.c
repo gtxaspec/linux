@@ -167,6 +167,8 @@ EXPORT_SYMBOL_GPL(ingenic_rmem_region);
 static __init char *ingenic_get_system_type(unsigned long machtype)
 {
 	switch (machtype) {
+	case MACH_INGENIC_A1:
+		return "A1";
 	case MACH_INGENIC_T10:
 		return "T10";
 	case MACH_INGENIC_T20:
@@ -324,6 +326,7 @@ static const struct of_device_id ingenic_of_match[] __initconst = {
 	{ .compatible = "ingenic,t33", .data = (void *)MACH_INGENIC_T33 },
 	{ .compatible = "ingenic,t40", .data = (void *)MACH_INGENIC_T40 },
 	{ .compatible = "ingenic,t41", .data = (void *)MACH_INGENIC_T41 },
+	{ .compatible = "ingenic,a1", .data = (void *)MACH_INGENIC_A1 },
 	{}
 };
 

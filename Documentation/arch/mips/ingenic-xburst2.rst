@@ -1,10 +1,10 @@
 .. SPDX-License-Identifier: GPL-2.0
 
-===========================================
-Ingenic XBurst2 multi-core CPU, T40 and T41
-===========================================
+===============================================
+Ingenic XBurst2 multi-core CPU, A1, T40 and T41
+===============================================
 
-The XBurst2 CPU of the Ingenic T40 and T41 (the A1 shares its core) has two
+The XBurst2 CPU of the Ingenic A1, T40 and T41 has two
 MIPS32r2-compatible cores. They are controlled through a core control unit
 (CCU) in the SoC, and the SoC's interrupt controller and OSTs are built
 around the cores, not shared by them.
@@ -50,7 +50,7 @@ reschedule and call-function actions.
 Interrupt routing
 =================
 
-``ingenic,t41-intc`` (the T40's too) has one window per core (0x100 apart),
+``ingenic,t41-intc`` (the A1's and T40's too) has one window per core (0x100 apart),
 each with two banks of 32 sources and a mask of its own. A source is delivered to the core
 in whose window it is unmasked. The driver keeps the core of every source
 and moves the mask on an affinity change; all sources start on core 0.
@@ -58,7 +58,7 @@ and moves the mask on an affinity change; all sources start on core 0.
 Timers
 ======
 
-``ingenic,t41-ost`` (also the T40's): a 64-bit global OST (clocksource and scheduler clock)
+``ingenic,t41-ost`` (also the A1's and T40's): a 64-bit global OST (clocksource and scheduler clock)
 and a 32-bit one-shot OST per core (clockevent) at 0x100 intervals.
 
 Not supported
