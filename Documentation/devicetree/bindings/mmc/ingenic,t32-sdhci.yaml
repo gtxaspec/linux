@@ -25,6 +25,7 @@ properties:
           - const: ingenic,t32-sdhci
       - items:
           - enum:
+              - ingenic,a1-sdhci
               - ingenic,t40-sdhci
               - ingenic,t41-sdhci
           - const: ingenic,t32-sdhci
