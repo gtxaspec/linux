@@ -99,6 +99,11 @@ properties:
           - const: thingino,t33
           - const: ingenic,t33
 
+      - description: Thingino generic board for the Ingenic A1
+        items:
+          - const: thingino,a1
+          - const: ingenic,a1
+
       - description: Thingino generic board for the Ingenic T40
         items:
           - const: thingino,t40
