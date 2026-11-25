@@ -18,7 +18,11 @@ description:
 
 properties:
   compatible:
-    const: ingenic,t41-ost
+    oneOf:
+      - const: ingenic,t41-ost
+      - items:
+          - const: ingenic,t40-ost
+          - const: ingenic,t41-ost
 
   reg:
     items:

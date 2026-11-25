@@ -21,7 +21,11 @@ properties:
     pattern: "^interrupt-controller@[0-9a-f]+$"
 
   compatible:
-    const: ingenic,t41-intc
+    oneOf:
+      - const: ingenic,t41-intc
+      - items:
+          - const: ingenic,t40-intc
+          - const: ingenic,t41-intc
 
   reg:
     maxItems: 1
