@@ -86,6 +86,10 @@
 	status = "okay";
 };
 
+&aip {
+	status = "okay";
+};
+
 &dtrng {
 	status = "okay";
 };
