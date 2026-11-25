@@ -125,6 +125,8 @@
 
 /* 64 32-bit words */
 #define SFC_FIFO_BYTES					256
+/* RREQ comes with this many words in the FIFO, the vendor drains that much per request */
+#define SFC_THRESHOLD_WORDS				63
 
 enum ingenic_sfc_version {
 	ID_X1000,
@@ -287,8 +289,60 @@ static void ingenic_sfc_write_txfifo(struct ingenic_sfc *sfc, const u8 *from, un
 	}
 }
 
+/*
+ * A read request means the FIFO holds the threshold's worth of words, not the
+ * rest of the transfer: drain that much per request and the remainder once
+ * the transfer has ended, as the vendor driver does.
+ */
+static int ingenic_sfc_pio_read(struct ingenic_sfc *sfc, u8 *to, unsigned int len)
+{
+	unsigned int words = DIV_ROUND_UP(len, 4);
+	ktime_t timeout = ktime_add_ms(ktime_get(), SFC_TRANSFER_TIMEOUT);
+	u32 sr;
+	int ret;
+
+	for (;;) {
+		unsigned int n, bytes;
+
+		sr = readl(sfc->base + SFC_REG_SR);
+		if (sr & (SR_OVER | SR_UNDER)) {
+			dev_err(sfc->dev, "SFC read error: SR=0x%08x\n", sr);
+			return -EIO;
+		}
+
+		if (sr & SR_RECE_REQ) {
+			n = min_t(unsigned int, words, SFC_THRESHOLD_WORDS);
+			bytes = min(n * 4, len);
+			ingenic_sfc_read_rxfifo(sfc, to, bytes);
+			to += bytes;
+			len -= bytes;
+			words -= n;
+			writel(SCR_CLR_RREQ, sfc->base + SFC_REG_SCR);
+			continue;
+		}
+
+		/* the rest is all in the FIFO: below the threshold no request may come */
+		if (sr & SR_END || FIELD_GET(SR_FIFO_NUM_MASK, sr) >= words) {
+			ingenic_sfc_read_rxfifo(sfc, to, len);
+			ret = readl_poll_timeout(sfc->base + SFC_REG_SR, sr, sr & SR_END,
+						 10, SFC_TRANSFER_TIMEOUT * USEC_PER_MSEC);
+			if (ret)
+				dev_err(sfc->dev, "SFC read END timeout: SR=0x%08x\n", sr);
+			return ret;
+		}
+
+		if (ktime_after(ktime_get(), timeout)) {
+			dev_err(sfc->dev, "SFC read timeout: SR=0x%08x, %u words left\n",
+				sr, words);
+			return -ETIMEDOUT;
+		}
+		cpu_relax();
+	}
+}
+
 static int ingenic_sfc_exec_op_pio(struct ingenic_sfc *sfc, const struct spi_mem_op *op)
 {
+	bool poll_rx = op->data.dir == SPI_MEM_DATA_IN && op->data.nbytes;
 	int ret, val;
 
 	val = readl(sfc->base + SFC_REG_GLB);
@@ -319,12 +373,23 @@ static int ingenic_sfc_exec_op_pio(struct ingenic_sfc *sfc, const struct spi_mem
 	ingenic_sfc_set_transfer_mode(sfc, op);
 
 	writel(0x1f, sfc->base + SFC_REG_SCR);
-	writel(~(INTC_MASK_END | INTC_MASK_RREQ), sfc->base + SFC_REG_INTC);
+	/* a read is polled, its requests come many times in a transfer */
+	if (poll_rx)
+		writel(0x1f, sfc->base + SFC_REG_INTC);
+	else
+		writel(~(INTC_MASK_END | INTC_MASK_RREQ), sfc->base + SFC_REG_INTC);
 
 	writel(0, sfc->base + SFC_REG_MEM_ADDR);
 
 	writel(TRIG_FLUSH, sfc->base + SFC_REG_TRIG);
 	writel(TRIG_START, sfc->base + SFC_REG_TRIG);
+
+	if (poll_rx) {
+		ret = ingenic_sfc_pio_read(sfc, op->data.buf.in, op->data.nbytes);
+		writel(0x1f, sfc->base + SFC_REG_SCR);
+		writel(TRIG_STOP, sfc->base + SFC_REG_TRIG);
+		return ret;
+	}
 
 	if (op->data.dir == SPI_MEM_DATA_OUT)
 		ingenic_sfc_write_txfifo(sfc, op->data.buf.out, op->data.nbytes);
@@ -338,17 +403,6 @@ static int ingenic_sfc_exec_op_pio(struct ingenic_sfc *sfc, const struct spi_mem
 			readl(sfc->base + SFC_REG_GLB),
 			readl(sfc->base + SFC_REG_TRAN_CONF(0)));
 		return -ETIMEDOUT;
-	}
-
-	if (op->data.dir == SPI_MEM_DATA_IN) {
-		ingenic_sfc_read_rxfifo(sfc, op->data.buf.in, op->data.nbytes);
-		ret = readl_poll_timeout(sfc->base + SFC_REG_SR, val, val & SR_END,
-					 10, SFC_TRANSFER_TIMEOUT * USEC_PER_MSEC);
-		if (ret) {
-			dev_err(sfc->dev, "SFC read END timeout: SR=0x%08x\n", val);
-			writel(TRIG_STOP, sfc->base + SFC_REG_TRIG);
-			return ret;
-		}
 	}
 
 	writel(INTC_MASK_END | INTC_MASK_RREQ, sfc->base + SFC_REG_SCR);
@@ -452,7 +506,7 @@ static int ingenic_sfc_setup(struct spi_device *spi)
 	writel(0, sfc->base + SFC_REG_CGE);
 
 	val = readl(sfc->base + SFC_REG_GLB);
-	u32p_replace_bits(&val, 64 - 1, GLB_THRESHOLD_MASK);
+	u32p_replace_bits(&val, SFC_THRESHOLD_WORDS, GLB_THRESHOLD_MASK);
 	u32p_replace_bits(&val, GLB_BURST_MD_INCR8, GLB_BURST_MD_MASK);
 	writel(val, sfc->base + SFC_REG_GLB);
 
