@@ -8,6 +8,9 @@
 	model = "Thingino T40 Generic Board";
 
 	aliases {
+		i2c0 = &i2c0;
+		i2c1 = &i2c1;
+		i2c3 = &i2c3;
 		serial1 = &uart1;
 	};
 
@@ -82,6 +85,22 @@
 	pinctrl-0 = <&pins_i2c0>;
 };
 
+&i2c1 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_i2c1>;
+};
+
+&i2c3 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_i2c3>;
+};
+
 &dtrng {
 	status = "okay";
 };
@@ -125,6 +144,16 @@
 	pins_i2c0: i2c0 {
 		function = "i2c0";
 		groups = "i2c0-data-a";
+	};
+
+	pins_i2c1: i2c1 {
+		function = "i2c1";
+		groups = "i2c1-data-a";
+	};
+
+	pins_i2c3: i2c3 {
+		function = "i2c3";
+		groups = "i2c3-data-b";
 	};
 
 	pins_mac: mac {
