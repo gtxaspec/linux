@@ -23,6 +23,19 @@
 		device_type = "memory";
 		reg = <0x0 0x8000000>;
 	};
+
+	/* the media memory of the out-of-tree stack; rmem= places and enables it */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		rmem: rmem@4000000 {
+			reg = <0x4000000 0x4000000>;
+			no-map;
+			status = "disabled";
+		};
+	};
 };
 
 &exclk {
@@ -67,6 +80,10 @@
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_i2c0>;
+};
+
+&helix {
+	status = "okay";
 };
 
 &dtrng {
