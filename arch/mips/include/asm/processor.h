@@ -222,6 +222,17 @@ struct xburst_cop2_state {
 #define COP2_INIT
 #endif
 
+#ifdef CONFIG_INGENIC_XBURST_MXU3
+struct xburst_mxu3_state {
+	/* MXU3 vector registers vr0-vr31, 512 bits each */
+	u32 vpr[32][16];
+	/* MXU3 vector sum registers vs0-vs3 */
+	u32 vsr[4][16];
+	/* MXU3 control and status register */
+	u32 mcsr;
+};
+#endif
+
 #ifdef CONFIG_CPU_HAS_MSA
 # define ARCH_MIN_TASKALIGN	16
 # define FPU_ALIGN		__aligned(16)
@@ -280,6 +291,9 @@ struct thread_struct {
 #endif
 #elif defined(CONFIG_INGENIC_XBURST_MXU2)
 	struct xburst_cop2_state cp2 __aligned(16);
+#endif
+#ifdef CONFIG_INGENIC_XBURST_MXU3
+	struct xburst_mxu3_state mxu3 __aligned(16);
 #endif
 	struct mips_abi *abi;
 };

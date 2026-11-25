@@ -583,6 +583,9 @@ NESTED(nmi_handler, PT_SIZE, sp)
 #ifdef CONFIG_INGENIC_XBURST_MXU2
 	BUILD_HANDLER mxu_fpe mxu_fpe cli silent	/* #16 */
 #endif
+#ifdef CONFIG_INGENIC_XBURST_MXU3
+	BUILD_HANDLER mxu3_fpe mxu3_fpe cli silent	/* #16 */
+#endif
 	BUILD_HANDLER msa msa sti silent		/* #21 */
 	BUILD_HANDLER mdmx mdmx sti silent		/* #22 */
 #ifdef	CONFIG_HARDWARE_WATCHPOINTS

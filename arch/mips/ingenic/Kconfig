@@ -188,6 +188,16 @@ config INGENIC_XBURST_MXU2
 	  context switches. Parts without a usable MXU2 (T21, T23) are found
 	  at boot and keep raising SIGILL.
 
+config INGENIC_XBURST_MXU3
+	bool "XBurst MXU3 SIMD unit"
+	depends on MACH_A1 || MACH_T40 || MACH_T41
+	default y
+	help
+	  Lets user space use the 512-bit MXU3 SIMD unit (coprocessor 2) of
+	  the XBurst2 cores in the Ingenic T40, T41 and A1. A task gets the
+	  unit on its first MXU3 instruction and the kernel saves its
+	  registers across context switches and signal handlers.
+
 config INGENIC_TX_ISP_DEPS
 	tristate "Kernel support for the out-of-tree Ingenic tx-isp driver"
 	depends on MEDIA_CONTROLLER && VIDEO_DEV

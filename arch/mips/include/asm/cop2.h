@@ -22,8 +22,9 @@ extern void octeon_cop2_restore(struct octeon_cop2_state *);
 #define cop2_present		1
 #define cop2_lazy_restore	1
 
-#elif defined(CONFIG_INGENIC_XBURST_MXU2)
+#elif defined(CONFIG_INGENIC_XBURST_MXU2) || defined(CONFIG_INGENIC_XBURST_MXU3)
 
+#ifdef CONFIG_INGENIC_XBURST_MXU2
 struct xburst_cop2_state;
 
 extern void xburst_cop2_save(struct xburst_cop2_state *st);
@@ -32,9 +33,43 @@ extern void xburst_cop2_restore(struct xburst_cop2_state *st);
 /* SIMD sections in kernel code; the user task's registers survive them */
 void kernel_mxu_begin_partial(unsigned int mask);
 void kernel_mxu_end(void);
+#endif
 
+#ifdef CONFIG_INGENIC_XBURST_MXU3
+struct xburst_mxu3_state;
+
+extern bool xburst_mxu3_present;
+extern void xburst_mxu3_save(struct xburst_mxu3_state *st);
+extern void xburst_mxu3_restore(struct xburst_mxu3_state *st);
+#endif
+
+#if defined(CONFIG_INGENIC_XBURST_MXU2) && defined(CONFIG_INGENIC_XBURST_MXU3)
+/* A kernel built for both generations tells them apart at run time */
+#define cop2_save(r)							\
+do {									\
+	struct task_struct *__t = (r);					\
+									\
+	if (xburst_mxu3_present)					\
+		xburst_mxu3_save(&__t->thread.mxu3);			\
+	else								\
+		xburst_cop2_save(&__t->thread.cp2);			\
+} while (0)
+#define cop2_restore(r)							\
+do {									\
+	struct task_struct *__t = (r);					\
+									\
+	if (xburst_mxu3_present)					\
+		xburst_mxu3_restore(&__t->thread.mxu3);			\
+	else								\
+		xburst_cop2_restore(&__t->thread.cp2);			\
+} while (0)
+#elif defined(CONFIG_INGENIC_XBURST_MXU3)
+#define cop2_save(r)		xburst_mxu3_save(&(r)->thread.mxu3)
+#define cop2_restore(r)		xburst_mxu3_restore(&(r)->thread.mxu3)
+#else
 #define cop2_save(r)		xburst_cop2_save(&(r)->thread.cp2)
 #define cop2_restore(r)		xburst_cop2_restore(&(r)->thread.cp2)
+#endif
 
 #define cop2_present		1
 #define cop2_lazy_restore	1

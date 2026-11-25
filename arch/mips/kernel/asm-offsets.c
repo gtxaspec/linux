@@ -344,6 +344,18 @@ void output_xburst_cop2_state_defines(void)
 }
 #endif
 
+#ifdef CONFIG_INGENIC_XBURST_MXU3
+void output_xburst_mxu3_state_defines(void);
+void output_xburst_mxu3_state_defines(void)
+{
+	COMMENT("XBurst MXU3 xburst_mxu3_state offsets.");
+	OFFSET(XBURST_MXU3_VPR,	xburst_mxu3_state, vpr);
+	OFFSET(XBURST_MXU3_VSR,	xburst_mxu3_state, vsr);
+	OFFSET(XBURST_MXU3_MCSR,	xburst_mxu3_state, mcsr);
+	BLANK();
+}
+#endif
+
 #ifdef CONFIG_HIBERNATION
 void output_pbe_defines(void);
 void output_pbe_defines(void)

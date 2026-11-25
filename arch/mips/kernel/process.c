@@ -69,6 +69,10 @@ void start_thread(struct pt_regs * regs, unsigned long pc, unsigned long sp)
 	/* CU2 is clear now, so the old image's MXU2 state is never restored */
 	memset(&current->thread.cp2, 0, sizeof(current->thread.cp2));
 #endif
+#ifdef CONFIG_INGENIC_XBURST_MXU3
+	/* CU2 is clear now, so the old image's MXU3 state is never restored */
+	memset(&current->thread.mxu3, 0, sizeof(current->thread.mxu3));
+#endif
 	regs->cp0_epc = pc;
 	regs->regs[29] = sp;
 }
@@ -101,8 +105,8 @@ int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
 
 	save_dsp(current);
 
-#ifdef CONFIG_INGENIC_XBURST_MXU2
-	/* With CU2 set the MXU2 registers are this task's, maybe unsaved */
+#if defined(CONFIG_INGENIC_XBURST_MXU2) || defined(CONFIG_INGENIC_XBURST_MXU3)
+	/* With CU2 set the MXU registers are this task's, maybe unsaved */
 	if (KSTK_STATUS(current) & ST0_CU2) {
 		unsigned int status = read_c0_status();
 

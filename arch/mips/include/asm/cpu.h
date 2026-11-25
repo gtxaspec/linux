@@ -194,6 +194,7 @@
  * 0x2000 reads on the X2000, 0x2100 on the T40, T41 and A1
  */
 #define PRID_IMP_XBURST2_MASK	0xe000
+#define PRID_IMP_XBURST2_MXU3	0x2100	/* T40, T41 and A1: XBurst®2 with MXU3 */
 
 /*
  * These are the PRID's for when 23:16 == PRID_COMP_NETLOGIC
