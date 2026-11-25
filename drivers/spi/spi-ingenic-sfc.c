@@ -340,9 +340,53 @@ static int ingenic_sfc_pio_read(struct ingenic_sfc *sfc, u8 *to, unsigned int le
 	}
 }
 
+/*
+ * A write request means the FIFO has room for the threshold's worth of
+ * words: feed that much on each request, the vendor driver's way, and wait
+ * for the end of the transfer once all of it is in.
+ */
+static int ingenic_sfc_pio_write(struct ingenic_sfc *sfc, const u8 *from, unsigned int len)
+{
+	unsigned int words = DIV_ROUND_UP(len, 4);
+	ktime_t timeout = ktime_add_ms(ktime_get(), SFC_TRANSFER_TIMEOUT);
+	u32 sr;
+
+	for (;;) {
+		sr = readl(sfc->base + SFC_REG_SR);
+		if (sr & (SR_OVER | SR_UNDER)) {
+			dev_err(sfc->dev, "SFC write error: SR=0x%08x\n", sr);
+			return -EIO;
+		}
+
+		if (words && sr & SR_TRAN_REQ) {
+			unsigned int n = min_t(unsigned int, words, SFC_THRESHOLD_WORDS);
+			unsigned int bytes = min(n * 4, len);
+
+			/* acknowledge first: filling the FIFO may raise the next request */
+			writel(SCR_CLR_TREQ, sfc->base + SFC_REG_SCR);
+			ingenic_sfc_write_txfifo(sfc, from, bytes);
+			from += bytes;
+			len -= bytes;
+			words -= n;
+			continue;
+		}
+
+		if (!words && sr & SR_END)
+			return 0;
+
+		if (ktime_after(ktime_get(), timeout)) {
+			dev_err(sfc->dev, "SFC write timeout: SR=0x%08x, %u words left\n",
+				sr, words);
+			return -ETIMEDOUT;
+		}
+		cpu_relax();
+	}
+}
+
 static int ingenic_sfc_exec_op_pio(struct ingenic_sfc *sfc, const struct spi_mem_op *op)
 {
 	bool poll_rx = op->data.dir == SPI_MEM_DATA_IN && op->data.nbytes;
+	bool poll_tx = op->data.dir == SPI_MEM_DATA_OUT && op->data.nbytes;
 	int ret, val;
 
 	val = readl(sfc->base + SFC_REG_GLB);
@@ -373,8 +417,8 @@ static int ingenic_sfc_exec_op_pio(struct ingenic_sfc *sfc, const struct spi_mem
 	ingenic_sfc_set_transfer_mode(sfc, op);
 
 	writel(0x1f, sfc->base + SFC_REG_SCR);
-	/* a read is polled, its requests come many times in a transfer */
-	if (poll_rx)
+	/* data is polled, its requests come many times in a transfer */
+	if (poll_rx || poll_tx)
 		writel(0x1f, sfc->base + SFC_REG_INTC);
 	else
 		writel(~(INTC_MASK_END | INTC_MASK_RREQ), sfc->base + SFC_REG_INTC);
@@ -391,8 +435,12 @@ static int ingenic_sfc_exec_op_pio(struct ingenic_sfc *sfc, const struct spi_mem
 		return ret;
 	}
 
-	if (op->data.dir == SPI_MEM_DATA_OUT)
-		ingenic_sfc_write_txfifo(sfc, op->data.buf.out, op->data.nbytes);
+	if (poll_tx) {
+		ret = ingenic_sfc_pio_write(sfc, op->data.buf.out, op->data.nbytes);
+		writel(0x1f, sfc->base + SFC_REG_SCR);
+		writel(TRIG_STOP, sfc->base + SFC_REG_TRIG);
+		return ret;
+	}
 
 	ret = wait_for_completion_timeout(&sfc->completion, msecs_to_jiffies(SFC_TRANSFER_TIMEOUT));
 	if (!ret) {
