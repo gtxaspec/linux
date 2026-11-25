@@ -87,4 +87,7 @@
 #define T32_CLK_DIV_I2SR	65
 #define T32_CLK_CE_I2ST		66
 #define T32_CLK_CE_I2SR		67
+
+/* T33 only */
+#define T33_CLK_RISCV		68
 #endif /* __DT_BINDINGS_CLOCK_T32_CGU_H__ */
