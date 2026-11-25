@@ -1,0 +1,139 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "t40.dtsi"
+
+/ {
+	compatible = "thingino,t40", "ingenic,t40";
+	model = "Thingino T40 Generic Board";
+
+	aliases {
+		serial1 = &uart1;
+	};
+
+	chosen {
+		stdout-path = "serial1:115200n8";
+	};
+
+	/* the smallest RAM a T40 comes with; the boot loader's mem= has the real map */
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x8000000>;
+	};
+
+	/*
+	 * The media memory of the out-of-tree camera stack, where thingino's
+	 * U-Boot puts it on this RAM size; its rmem= places and enables it
+	 */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		rmem: rmem@4000000 {
+			reg = <0x4000000 0x4000000>;
+			no-map;
+			status = "disabled";
+		};
+	};
+};
+
+&exclk {
+	clock-frequency = <24000000>;
+};
+
+&uart1 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_uart1>;
+};
+
+&sfc {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_sfc>;
+
+	/* partitions come from the mtdparts= the boot loader passes */
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <25000000>;
+	};
+};
+
+&msc0 {
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	broken-cd;
+	no-1-8-v;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc0>;
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_i2c0>;
+};
+
+&dtrng {
+	status = "okay";
+};
+
+&efuse {
+	status = "okay";
+};
+
+&mac {
+	status = "okay";
+
+	phy-mode = "rmii";
+	phy-handle = <&eth_phy>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mac>;
+};
+
+&mdio {
+	eth_phy: ethernet-phy@0 {
+		reg = <0>;
+	};
+};
+
+&pinctrl {
+	pins_uart1: uart1 {
+		function = "uart1";
+		groups = "uart1-data";
+	};
+
+	pins_sfc: sfc0 {
+		function = "sfc";
+		groups = "sfc-data", "sfc-clk", "sfc-ce";
+	};
+
+	pins_mmc0: mmc0 {
+		function = "mmc0";
+		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_i2c0: i2c0 {
+		function = "i2c0";
+		groups = "i2c0-data-a";
+	};
+
+	pins_mac: mac {
+		function = "mac";
+		groups = "mac-rmii", "mac-mdio";
+	};
+
+	pins_cim0_mclk: cim0-mclk {
+		function = "cim";
+		groups = "cim0-mclk";
+	};
+};
