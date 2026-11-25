@@ -37,6 +37,9 @@ properties:
               - ingenic,t32-dma
               - ingenic,t33-dma
           - const: ingenic,x1000-dma
+      - items:
+          - const: ingenic,t41-dma
+          - const: ingenic,x1830-dma
 
   reg:
     items:
