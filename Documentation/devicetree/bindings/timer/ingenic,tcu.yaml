@@ -85,7 +85,9 @@ properties:
           - const: ingenic,t32-tcu
           - const: simple-mfd
       - items:
-          - const: ingenic,t33-tcu
+          - enum:
+              - ingenic,t33-tcu
+              - ingenic,t41-tcu
           - const: ingenic,t32-tcu
           - const: simple-mfd
 
@@ -164,7 +166,9 @@ patternProperties:
               - const: ingenic,jz4780-watchdog
           - const: ingenic,t32-watchdog
           - items:
-              - const: ingenic,t33-watchdog
+              - enum:
+                  - ingenic,t33-watchdog
+                  - ingenic,t41-watchdog
               - const: ingenic,t32-watchdog
 
       reg:
