@@ -5268,6 +5268,20 @@ static int t32_cim_mclk0_pins[] = { 0x10, };
 static int t32_cim_mclk1_pins[] = { 0x11, };
 static int t32_dmic_pins[] = { 0x3c, 0x3d, 0x3e, };
 
+static int t32_pwm0_pa17_pins[] = { 0x11, };
+static int t32_pwm0_pb30_pins[] = { 0x3e, };
+static int t32_pwm0_pc08_pins[] = { 0x48, };
+static int t32_pwm1_pa19_pins[] = { 0x13, };
+static int t32_pwm1_pb26_pins[] = { 0x3a, };
+static int t32_pwm2_pa15_pins[] = { 0x0f, };
+static int t32_pwm2_pb11_pins[] = { 0x2b, };
+static int t32_pwm2_pb27_pins[] = { 0x3b, };
+static int t32_pwm2_pc09_pins[] = { 0x49, };
+static int t32_pwm3_pa14_pins[] = { 0x0e, };
+static int t32_pwm3_pb13_pins[] = { 0x2d, };
+static int t32_pwm3_pb28_pins[] = { 0x3c, };
+static int t32_pwm3_pb31_pins[] = { 0x3f, };
+
 static const struct group_desc t32_groups[] = {
 	INGENIC_PIN_GROUP("uart0-data-b", t32_uart0_data_b, 2),
 	INGENIC_PIN_GROUP("uart0-hwflow-b", t32_uart0_hwflow_b, 2),
@@ -5307,6 +5321,19 @@ static const struct group_desc t32_groups[] = {
 	INGENIC_PIN_GROUP("cim-mclk0", t32_cim_mclk0, 0),
 	INGENIC_PIN_GROUP("cim-mclk1", t32_cim_mclk1, 0),
 	INGENIC_PIN_GROUP("dmic", t32_dmic, 0),
+	INGENIC_PIN_GROUP("pwm0-pa17", t32_pwm0_pa17, 3),
+	INGENIC_PIN_GROUP("pwm0-pb30", t32_pwm0_pb30, 2),
+	INGENIC_PIN_GROUP("pwm0-pc08", t32_pwm0_pc08, 2),
+	INGENIC_PIN_GROUP("pwm1-pa19", t32_pwm1_pa19, 3),
+	INGENIC_PIN_GROUP("pwm1-pb26", t32_pwm1_pb26, 1),
+	INGENIC_PIN_GROUP("pwm2-pa15", t32_pwm2_pa15, 3),
+	INGENIC_PIN_GROUP("pwm2-pb11", t32_pwm2_pb11, 2),
+	INGENIC_PIN_GROUP("pwm2-pb27", t32_pwm2_pb27, 1),
+	INGENIC_PIN_GROUP("pwm2-pc09", t32_pwm2_pc09, 2),
+	INGENIC_PIN_GROUP("pwm3-pa14", t32_pwm3_pa14, 3),
+	INGENIC_PIN_GROUP("pwm3-pb13", t32_pwm3_pb13, 2),
+	INGENIC_PIN_GROUP("pwm3-pb28", t32_pwm3_pb28, 1),
+	INGENIC_PIN_GROUP("pwm3-pb31", t32_pwm3_pb31, 0),
 };
 
 static const char * const t32_uart0_groups[] = {
@@ -5347,6 +5374,16 @@ static const char * const t32_cim_groups[] = { "cim-mclk0", "cim-mclk1", };
 
 static const char * const t32_dmic_groups[] = { "dmic", };
 
+static const char * const t32_pwm0_groups[] = { "pwm0-pa17", "pwm0-pb30", "pwm0-pc08", };
+static const char * const t32_pwm1_groups[] = { "pwm1-pa19", "pwm1-pb26", };
+static const char * const t32_pwm2_groups[] = {
+	"pwm2-pa15", "pwm2-pb11", "pwm2-pb27", "pwm2-pc09",
+};
+
+static const char * const t32_pwm3_groups[] = {
+	"pwm3-pa14", "pwm3-pb13", "pwm3-pb28", "pwm3-pb31",
+};
+
 static const struct pinfunction t32_functions[] = {
 	INGENIC_PIN_FUNCTION("uart0", t32_uart0),
 	INGENIC_PIN_FUNCTION("uart1", t32_uart1),
@@ -5361,6 +5398,10 @@ static const struct pinfunction t32_functions[] = {
 	INGENIC_PIN_FUNCTION("mac", t32_mac),
 	INGENIC_PIN_FUNCTION("cim", t32_cim),
 	INGENIC_PIN_FUNCTION("dmic", t32_dmic),
+	INGENIC_PIN_FUNCTION("pwm0", t32_pwm0),
+	INGENIC_PIN_FUNCTION("pwm1", t32_pwm1),
+	INGENIC_PIN_FUNCTION("pwm2", t32_pwm2),
+	INGENIC_PIN_FUNCTION("pwm3", t32_pwm3),
 };
 
 static const struct group_desc t33_groups[] = {
