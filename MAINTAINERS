@@ -13150,6 +13150,7 @@ M:	Paul Cercueil <paul@crapouillou.net>
 L:	linux-mips@vger.kernel.org
 S:	Maintained
 F:	Documentation/devicetree/bindings/mmc/ingenic,t32-sdhci.yaml
+F:	Documentation/devicetree/bindings/pwm/ingenic,t32-pwm.yaml
 F:	Documentation/devicetree/bindings/reset/ingenic,t21-reset.yaml
 F:	Documentation/devicetree/bindings/spi/ingenic,sfc.yaml
 F:	arch/mips/boot/dts/ingenic/
