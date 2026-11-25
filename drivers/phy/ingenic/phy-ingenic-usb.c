@@ -360,6 +360,20 @@ static u32 t21_usb_phy_setup(struct regmap *map)
 	       FIELD_PREP(USBPCR_TXVREFTUNE_MASK, USBPCR_TXVREFTUNE_T21);
 }
 
+/* The T32 and T33 keep the PHY's tuning and the VBUS filter as they reset */
+static u32 t32_usb_phy_setup(struct regmap *map)
+{
+	u32 reg;
+
+	regmap_set_bits(map, REG_USBPCR1_OFFSET, USBPCR1_DPPD | USBPCR1_DMPD);
+	regmap_clear_bits(map, REG_USBRDT_OFFSET, USBRDT_UTMI_RST);
+
+	regmap_read(map, REG_USBPCR_OFFSET, &reg);
+	u32p_replace_bits(&reg, USBPCR_IDPULLUP_OTG, USBPCR_IDPULLUP_MASK);
+
+	return reg | USBPCR_USB_MODE;
+}
+
 static int t21_usb_phy_init(struct phy *phy)
 {
 	struct ingenic_usb_phy *priv = phy_get_drvdata(phy);
@@ -416,6 +430,11 @@ static const struct phy_ops t21_usb_phy_ops = {
 
 static const struct ingenic_soc_info t21_soc_info = {
 	.usb_phy_setup = t21_usb_phy_setup,
+	.ops = &t21_usb_phy_ops,
+};
+
+static const struct ingenic_soc_info t32_soc_info = {
+	.usb_phy_setup = t32_usb_phy_setup,
 	.ops = &t21_usb_phy_ops,
 };
 
@@ -484,6 +503,7 @@ static const struct of_device_id ingenic_usb_phy_of_matches[] = {
 	{ .compatible = "ingenic,jz4775-phy", .data = &jz4775_soc_info },
 	{ .compatible = "ingenic,jz4780-phy", .data = &jz4780_soc_info },
 	{ .compatible = "ingenic,t21-phy", .data = &t21_soc_info },
+	{ .compatible = "ingenic,t32-phy", .data = &t32_soc_info },
 	{ .compatible = "ingenic,x1000-phy", .data = &x1000_soc_info },
 	{ .compatible = "ingenic,x1830-phy", .data = &x1830_soc_info },
 	{ .compatible = "ingenic,x2000-phy", .data = &x2000_soc_info },
