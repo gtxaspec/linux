@@ -90,6 +90,10 @@
 	status = "okay";
 };
 
+&ipu {
+	status = "okay";
+};
+
 &dtrng {
 	status = "okay";
 };

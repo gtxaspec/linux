@@ -517,8 +517,13 @@
 		interrupt-parent = <&intc>;
 		interrupts = <46>;
 
-		clocks = <&cgu A1_CLK_IPU>, <&cgu A1_CLK_IPU_GATE>;
-		clock-names = "div_ipu", "gate_ipu";
+		/* the vendor stack names the mux and the divider apart; here they are one clock */
+		clocks = <&cgu A1_CLK_IPU>, <&cgu A1_CLK_IPU>,
+			 <&cgu A1_CLK_IPU_GATE>, <&cgu A1_CLK_SCLKA>,
+			 <&cgu A1_CLK_MPLL>, <&cgu A1_CLK_VPLL>,
+			 <&cgu A1_CLK_EPLL>;
+		clock-names = "mux_ipu", "div_ipu", "gate_ipu", "sclka",
+			      "mpll", "vpll", "epll";
 
 		status = "disabled";
 	};
