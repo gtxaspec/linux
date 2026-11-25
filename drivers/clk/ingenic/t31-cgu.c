@@ -53,6 +53,7 @@
 #define CGU_REG_T32_ISPACDR	0x94
 #define CGU_REG_T32_TNPUCDR	0x98
 #define CGU_REG_T32_SFC1CDR	0xac
+#define CGU_REG_T33_RISCVCDR	0x9c
 #define CGU_REG_MACPHYC		0xe8
 
 /*
@@ -1738,6 +1739,16 @@ static const struct ingenic_cgu_clk_info t33_cgu_clocks[] = {
 		.parents = { T32_CLK_SCLKA, T32_CLK_MPLL, -1, -1 },
 		.mux = { CGU_REG_T32_ISPACDR, 30, 2 },
 		.div = { CGU_REG_T32_ISPACDR, 0, 1, 4, T32_CDR_CE, T32_CDR_BUSY, T32_CDR_STOP },
+	},
+
+	/* The vendor keeps the gate on when unused: its RISC-V core may run from the boot loader */
+	[T33_CLK_RISCV] = {
+		"riscv", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
+		.flags = CLK_IGNORE_UNUSED,
+		.parents = { T32_CLK_SCLKA, T32_CLK_MPLL, -1, -1 },
+		.mux = { CGU_REG_T33_RISCVCDR, 30, 2 },
+		.div = { CGU_REG_T33_RISCVCDR, 0, 1, 4, T32_CDR_CE, T32_CDR_BUSY, T32_CDR_STOP },
+		.gate = { CGU_REG_CLKGR0, 22 },
 	},
 
 	[T32_CLK_TNPU] = {
