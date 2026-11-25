@@ -37,6 +37,7 @@ select:
           - ingenic,t31-cgu
           - ingenic,t32-cgu
           - ingenic,t33-cgu
+          - ingenic,t41-cgu
   required:
     - compatible
 
@@ -75,6 +76,7 @@ properties:
           - ingenic,t31-cgu
           - ingenic,t32-cgu
           - ingenic,t33-cgu
+          - ingenic,t41-cgu
       - const: simple-mfd
     minItems: 1
 
