@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/rtc/ingenic,a1-rtc.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic A1 Real-Time Clock
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description:
+  The A1's RTC is a free running seconds counter. It has no register to set
+  the time or an alarm, so the driver keeps the offset to the wall time itself.
+
+allOf:
+  - $ref: rtc.yaml#
+
+properties:
+  compatible:
+    const: ingenic,a1-rtc
+
+  reg:
+    maxItems: 1
+
+  clocks:
+    maxItems: 1
+
+required:
+  - compatible
+  - reg
+  - clocks
+
+unevaluatedProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/ingenic,a1-cgu.h>
+
+    rtc@10003000 {
+        compatible = "ingenic,a1-rtc";
+        reg = <0x10003000 0x1000>;
+        clocks = <&cgu A1_CLK_RTC>;
+    };
