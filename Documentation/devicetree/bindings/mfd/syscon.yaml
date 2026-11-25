@@ -73,6 +73,7 @@ properties:
               - hisilicon,pcie-sas-subctrl
               - hisilicon,peri-subctrl
               - hpe,gxp-sysreg
+              - ingenic,a1-srbc
               - ingenic,t21-mac-phy-id
               - ingenic,t21-usb-phy-ctrl
               - ingenic,t23-usb-phy-ctrl
