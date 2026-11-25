@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 #include <dt-bindings/clock/ingenic,t32-cgu.h>
+#include <dt-bindings/clock/ingenic,tcu.h>
 
 / {
 	#address-cells = <1>;
@@ -48,6 +49,15 @@
 		clock-frequency = <32768>;
 	};
 
+	/* RTC_EN of the TCU clocks EXCLK / 512 on the T32 and T33, not the 32 kHz */
+	tcu_rtc: clock-tcu-rtc {
+		compatible = "fixed-factor-clock";
+		clocks = <&exclk>;
+		clock-mult = <1>;
+		clock-div = <512>;
+		#clock-cells = <0>;
+	};
+
 	cgu: clock-controller@10000000 {
 		compatible = "ingenic,t33-cgu", "simple-mfd";
 		reg = <0x10000000 0x100>;
@@ -88,6 +98,30 @@
 
 		interrupt-parent = <&cpuintc>;
 		interrupts = <4>;
+	};
+
+	tcu: timer@10002000 {
+		compatible = "ingenic,t33-tcu", "ingenic,t32-tcu", "simple-mfd";
+		reg = <0x10002000 0x1000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x10002000 0x1000>;
+
+		#clock-cells = <1>;
+
+		clocks = <&tcu_rtc>,
+			 <&cgu T32_CLK_EXCLK>,
+			 <&cgu T32_CLK_PCLK>,
+			 <&cgu T32_CLK_TCU>;
+		clock-names = "rtc", "ext", "pclk", "tcu";
+
+		watchdog: watchdog@0 {
+			compatible = "ingenic,t33-watchdog", "ingenic,t32-watchdog";
+			reg = <0x0 0x10>;
+
+			clocks = <&tcu TCU_CLK_WDT>;
+			clock-names = "wdt";
+		};
 	};
 
 	pinctrl: pinctrl@10010000 {
