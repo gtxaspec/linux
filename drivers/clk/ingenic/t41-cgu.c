@@ -43,7 +43,8 @@
 /*
  * Every peripheral has a CDR of its own: mux in bits 31:30, change enable
  * 29, busy 28, stop 27 and the divider in the low bits. The MSC dividers
- * count in fours.
+ * count in fours, and their mux takes the PLLs only, as the vendor U-Boot's
+ * table has it (no EXCLK at index 2).
  */
 #define T41_CDR_CE		29
 #define T41_CDR_BUSY		28
@@ -214,7 +215,7 @@ static const struct ingenic_cgu_clk_info t41_cgu_clocks[] = {
 
 	[T41_CLK_MSC0] = {
 		"msc0", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
-		.parents = { T41_CLK_SCLKA, T41_CLK_MPLL, T41_CLK_EXCLK, -1 },
+		.parents = { T41_CLK_SCLKA, T41_CLK_MPLL, T41_CLK_VPLL, -1 },
 		.mux = { CGU_REG_MSC0CDR, 30, 2 },
 		.div = { CGU_REG_MSC0CDR, 0, 4, 8, T41_CDR_CE, T41_CDR_BUSY, T41_CDR_STOP },
 		.gate = { CGU_REG_CLKGR0, 4 },
@@ -222,7 +223,7 @@ static const struct ingenic_cgu_clk_info t41_cgu_clocks[] = {
 
 	[T41_CLK_MSC1] = {
 		"msc1", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
-		.parents = { T41_CLK_SCLKA, T41_CLK_MPLL, T41_CLK_EXCLK, -1 },
+		.parents = { T41_CLK_SCLKA, T41_CLK_MPLL, T41_CLK_VPLL, -1 },
 		.mux = { CGU_REG_MSC1CDR, 30, 2 },
 		.div = { CGU_REG_MSC1CDR, 0, 4, 8, T41_CDR_CE, T41_CDR_BUSY, T41_CDR_STOP },
 		.gate = { CGU_REG_CLKGR0, 5 },
