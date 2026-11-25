@@ -35,6 +35,12 @@
 			no-map;
 			status = "disabled";
 		};
+
+		/* the decoder MMU's 4 MiB + 4 KiB contiguous page table */
+		vdec_mmu: vdec-mmu@b800000 {
+			reg = <0xb800000 0x402000>;
+			no-map;
+		};
 	};
 };
 
@@ -83,6 +89,11 @@
 };
 
 &helix {
+	status = "okay";
+};
+
+&vdec {
+	memory-region = <&vdec_mmu>;
 	status = "okay";
 };
 
