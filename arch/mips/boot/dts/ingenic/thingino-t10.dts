@@ -123,6 +123,17 @@
 	pinctrl-0 = <&pins_mmc0>;
 };
 
+&msc1 {
+	/* SDIO Wi-Fi: a board enables it with its power sequence */
+	status = "disabled";
+	bus-width = <4>;
+	non-removable;
+	cap-sdio-irq;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc1>;
+};
+
 &i2c0 {
 	status = "okay";
 	clock-frequency = <100000>;
@@ -158,6 +169,11 @@
 	pins_mmc0: mmc0 {
 		function = "mmc0";
 		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_mmc1: mmc1 {
+		function = "mmc1";
+		groups = "mmc1-4bit";
 	};
 
 	pins_sfc: sfc {
