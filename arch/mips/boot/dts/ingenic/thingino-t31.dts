@@ -119,6 +119,7 @@
 	status = "disabled";
 	bus-width = <4>;
 	non-removable;
+	cap-sdio-irq;
 
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_mmc1>, <&pins_mmc1_c_idle>;
