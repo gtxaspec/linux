@@ -88,7 +88,7 @@
 	no-1-8-v;
 
 	pinctrl-names = "default";
-	pinctrl-0 = <&pins_mmc1>;
+	pinctrl-0 = <&pins_mmc1>, <&pins_mmc1_c_idle>;
 };
 
 &i2c0 {
@@ -180,6 +180,16 @@
 	pins_mmc1: mmc1 {
 		function = "mmc1";
 		groups = "mmc1-1bit-b", "mmc1-4bit-b";
+	};
+
+	/*
+	 * MSC1 can also come out on PC8..PC13, and the boot loader may leave
+	 * them muxed to it: as inputs they cannot take over CMD and DAT from
+	 * the group in use
+	 */
+	pins_mmc1_c_idle: mmc1-c-idle {
+		pins = "PC8", "PC9", "PC10", "PC11", "PC12", "PC13";
+		input-enable;
 	};
 
 	pins_i2c0: i2c0 {
