@@ -691,6 +691,37 @@ static int ingenic_clk_enable(struct clk_hw *hw)
 	const struct ingenic_cgu_clk_info *clk_info = to_clk_info(ingenic_clk);
 	struct ingenic_cgu *cgu = ingenic_clk->cgu;
 	unsigned long flags;
+	u32 reg;
+	int ret;
+
+	/*
+	 * A divider can come out of reset or the boot loader stopped. Its stop
+	 * bit is otherwise only cleared by a rate change, which the clock
+	 * framework skips when the rate already matches.
+	 */
+	if ((clk_info->type & CGU_CLK_DIV) && clk_info->div.stop_bit != -1) {
+		spin_lock_irqsave(&cgu->lock, flags);
+		reg = readl(cgu->base + clk_info->div.reg);
+		if (reg & BIT(clk_info->div.stop_bit)) {
+			reg &= ~BIT(clk_info->div.stop_bit);
+			if (clk_info->div.ce_bit != -1)
+				reg |= BIT(clk_info->div.ce_bit);
+			writel(reg, cgu->base + clk_info->div.reg);
+
+			ret = 0;
+			if (clk_info->div.busy_bit != -1)
+				ret = ingenic_clk_check_stable(cgu, clk_info);
+
+			if (cgu->clear_ce && clk_info->div.ce_bit != -1)
+				writel(reg & ~BIT(clk_info->div.ce_bit),
+				       cgu->base + clk_info->div.reg);
+			if (ret) {
+				spin_unlock_irqrestore(&cgu->lock, flags);
+				return ret;
+			}
+		}
+		spin_unlock_irqrestore(&cgu->lock, flags);
+	}
 
 	if (clk_info->type & CGU_CLK_GATE) {
 		/* ungate the clock */
