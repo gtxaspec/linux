@@ -50,6 +50,15 @@
 		clock-frequency = <32768>;
 	};
 
+	/* RTC_EN of the TCU clocks EXCLK / 512, not the 32 kHz */
+	tcu_rtc: clock-tcu-rtc {
+		compatible = "fixed-factor-clock";
+		clocks = <&exclk>;
+		clock-mult = <1>;
+		clock-div = <512>;
+		#clock-cells = <0>;
+	};
+
 	cgu: clock-controller@10000000 {
 		compatible = "ingenic,t31-cgu", "simple-mfd";
 		reg = <0x10000000 0x100>;
@@ -102,7 +111,7 @@
 
 		#clock-cells = <1>;
 
-		clocks = <&cgu T31_CLK_RTCLK>,
+		clocks = <&tcu_rtc>,
 			 <&cgu T31_CLK_EXCLK>,
 			 <&cgu T31_CLK_PCLK>,
 			 <&cgu T31_CLK_TCU>;
