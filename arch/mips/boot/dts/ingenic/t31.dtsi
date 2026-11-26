@@ -450,6 +450,9 @@
 		interrupt-parent = <&intc>;
 		interrupts = <11>;
 
+		clocks = <&cgu T31_CLK_DMIC>;
+		clock-names = "gate_dmic";
+
 		dmas = <&pdma 0x0d 0xffffffff>;
 		dma-names = "rx";
 
