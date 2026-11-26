@@ -75,5 +75,19 @@
 #define A1_CLK_VGA	60
 #define A1_CLK_IPU_GATE	61
 #define A1_CLK_AIP	62
+#define A1_CLK_I2S0T_MUX	63
+#define A1_CLK_I2S0R_MUX	64
+#define A1_CLK_I2S1T_MUX	65
+#define A1_CLK_I2S1R_MUX	66
+#define A1_CLK_DIV_I2S0T	67
+#define A1_CLK_DIV_I2S0R	68
+#define A1_CLK_DIV_I2S1T	69
+#define A1_CLK_DIV_I2S1R	70
+#define A1_CLK_CE_I2S0T	71
+#define A1_CLK_CE_I2S0R	72
+#define A1_CLK_CE_I2S1T	73
+#define A1_CLK_CE_I2S1R	74
+#define A1_CLK_AIC0	75
+#define A1_CLK_AIC1	76
 
 #endif /* __DT_BINDINGS_CLOCK_A1_CGU_H__ */
