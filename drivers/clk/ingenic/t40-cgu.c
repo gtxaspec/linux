@@ -521,7 +521,7 @@ static const struct ingenic_cgu_clk_info t40_cgu_clocks[] = {
 
 	[T40_CLK_OTG] = {
 		"otg", CGU_CLK_GATE,
-		.parents = { T40_CLK_PCLK, -1, -1, -1 },
+		.parents = { T40_CLK_AHB2, -1, -1, -1 },
 		.gate = { CGU_REG_CLKGR0, 3 },
 	},
 
