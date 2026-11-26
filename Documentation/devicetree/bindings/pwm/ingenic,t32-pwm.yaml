@@ -4,15 +4,15 @@
 $id: http://devicetree.org/schemas/pwm/ingenic,t32-pwm.yaml#
 $schema: http://devicetree.org/meta-schemas/core.yaml#
 
-title: Ingenic T32 and T33 PWM controller
+title: Ingenic T32, T33 and T41 PWM controller
 
 maintainers:
   - Paul Cercueil <paul@crapouillou.net>
 
 description:
-  The dedicated PWM controller of the T32 and T33 SoCs, with four channels.
-  It is separate from the TCU, whose channels have no PWM output pin on
-  these SoCs.
+  The dedicated PWM controller of the T32 and T33 SoCs, with four channels,
+  and of the T41, with eight. It is separate from the TCU, whose channels
+  have no PWM output pin on these SoCs.
 
 allOf:
   - $ref: pwm.yaml#
@@ -20,7 +20,9 @@ allOf:
 properties:
   compatible:
     oneOf:
-      - const: ingenic,t32-pwm
+      - enum:
+          - ingenic,t32-pwm
+          - ingenic,t41-pwm
       - items:
           - const: ingenic,t33-pwm
           - const: ingenic,t32-pwm
