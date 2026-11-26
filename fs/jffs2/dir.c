@@ -620,8 +620,14 @@ static int jffs2_rmdir (struct inode *dir_i, struct dentry *dentry)
 	return ret;
 }
 
-static int jffs2_mknod (const struct mnt_idmap *idmap, struct inode *dir_i,
-		        struct dentry *dentry, umode_t mode, dev_t rdev)
+/*
+ * Create a device or special inode and the dirent @name for it in @dir_i,
+ * replacing any older dirent of that name. Returns the new inode, still
+ * I_NEW, for the caller to instantiate or release.
+ */
+static struct inode *jffs2_new_special(struct inode *dir_i,
+				       const struct qstr *name, umode_t mode,
+				       dev_t rdev)
 {
 	struct jffs2_inode_info *f, *dir_f;
 	struct jffs2_sb_info *c;
@@ -638,7 +644,7 @@ static int jffs2_mknod (const struct mnt_idmap *idmap, struct inode *dir_i,
 
 	ri = jffs2_alloc_raw_inode();
 	if (!ri)
-		return -ENOMEM;
+		return ERR_PTR(-ENOMEM);
 
 	c = JFFS2_SB_INFO(dir_i->i_sb);
 
@@ -648,13 +654,13 @@ static int jffs2_mknod (const struct mnt_idmap *idmap, struct inode *dir_i,
 	/* Try to reserve enough space for both node and dirent.
 	 * Just the node will do for now, though
 	 */
-	namelen = dentry->d_name.len;
+	namelen = name->len;
 	ret = jffs2_reserve_space(c, sizeof(*ri) + devlen, &alloclen,
 				  ALLOC_NORMAL, JFFS2_SUMMARY_INODE_SIZE);
 
 	if (ret) {
 		jffs2_free_raw_inode(ri);
-		return ret;
+		return ERR_PTR(ret);
 	}
 
 	inode = jffs2_new_inode(dir_i, mode, ri);
@@ -662,7 +668,7 @@ static int jffs2_mknod (const struct mnt_idmap *idmap, struct inode *dir_i,
 	if (IS_ERR(inode)) {
 		jffs2_free_raw_inode(ri);
 		jffs2_complete_reservation(c);
-		return PTR_ERR(inode);
+		return inode;
 	}
 	inode->i_op = &jffs2_file_inode_operations;
 	init_special_inode(inode, inode->i_mode, rdev);
@@ -696,7 +702,7 @@ static int jffs2_mknod (const struct mnt_idmap *idmap, struct inode *dir_i,
 
 	jffs2_complete_reservation(c);
 
-	ret = jffs2_init_security(inode, dir_i, &dentry->d_name);
+	ret = jffs2_init_security(inode, dir_i, name);
 	if (ret)
 		goto fail;
 
@@ -735,9 +741,9 @@ static int jffs2_mknod (const struct mnt_idmap *idmap, struct inode *dir_i,
 	rd->type = (mode & S_IFMT) >> 12;
 
 	rd->node_crc = cpu_to_je32(crc32(0, rd, sizeof(*rd)-8));
-	rd->name_crc = cpu_to_je32(crc32(0, dentry->d_name.name, namelen));
+	rd->name_crc = cpu_to_je32(crc32(0, name->name, namelen));
 
-	fd = jffs2_write_dirent(c, dir_f, rd, dentry->d_name.name, namelen, ALLOC_NORMAL);
+	fd = jffs2_write_dirent(c, dir_f, rd, name->name, namelen, ALLOC_NORMAL);
 
 	if (IS_ERR(fd)) {
 		/* dirent failed to write. Delete the inode normally
@@ -761,12 +767,24 @@ static int jffs2_mknod (const struct mnt_idmap *idmap, struct inode *dir_i,
 	mutex_unlock(&dir_f->sem);
 	jffs2_complete_reservation(c);
 
-	d_instantiate_new(dentry, inode);
-	return 0;
+	return inode;
 
  fail:
 	iget_failed(inode);
-	return ret;
+	return ERR_PTR(ret);
+}
+
+static int jffs2_mknod(const struct mnt_idmap *idmap, struct inode *dir_i,
+		       struct dentry *dentry, umode_t mode, dev_t rdev)
+{
+	struct inode *inode;
+
+	inode = jffs2_new_special(dir_i, &dentry->d_name, mode, rdev);
+	if (IS_ERR(inode))
+		return PTR_ERR(inode);
+
+	d_instantiate_new(dentry, inode);
+	return 0;
 }
 
 static int jffs2_rename (const struct mnt_idmap *idmap,
