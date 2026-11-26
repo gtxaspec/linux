@@ -592,6 +592,24 @@
 		status = "disabled";
 	};
 
+	aic1: audio-controller@10021000 {
+		compatible = "ingenic,a1-aic1";
+		reg = <0x10021000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <0>;
+
+		clocks = <&cgu A1_CLK_AIC1>,
+			 <&cgu A1_CLK_DIV_I2S1T>,
+			 <&cgu A1_CLK_CE_I2S1T>;
+		clock-names = "gate_aic", "div_i2st", "ce_i2st";
+
+		dmas = <&pdma 0x04 0xffffffff>;
+		dma-names = "tx";
+
+		status = "disabled";
+	};
+
 	efuse: efuse@13540000 {
 		compatible = "ingenic,a1-efuse";
 		reg = <0x13540000 0x300>;
