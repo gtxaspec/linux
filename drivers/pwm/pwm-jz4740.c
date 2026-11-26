@@ -21,10 +21,18 @@
 
 struct soc_info {
 	unsigned int num_pwms;
+	/*
+	 * The counter runs from 0 to TDFR inclusive, and the output turns
+	 * after the count leaves TDHR: TDFR and TDHR are one tick short of
+	 * the period and duty, and a TDHR of TDFR keeps the output in its
+	 * initial level.
+	 */
+	bool count_includes_tdfr;
 };
 
 struct jz4740_pwm_chip {
 	struct regmap *map;
+	const struct soc_info *info;
 	struct clk *clk[];
 };
 
@@ -126,6 +134,7 @@ static int jz4740_pwm_apply(struct pwm_chip *chip, struct pwm_device *pwm,
 	unsigned long long tmp = 0xffffull * NSEC_PER_SEC;
 	struct clk *clk = jz->clk[pwm->hwpwm];
 	unsigned long period, duty;
+	bool enabled = state->enabled;
 	long rate;
 	int err;
 
@@ -162,8 +171,19 @@ static int jz4740_pwm_apply(struct pwm_chip *chip, struct pwm_device *pwm,
 	do_div(tmp, NSEC_PER_SEC);
 	duty = tmp;
 
-	if (duty >= period)
+	if (jz->info->count_includes_tdfr) {
+		if (!period)
+			return -EINVAL;
+
+		/* A duty of 0 is the output left off, in its inactive level */
+		if (!duty)
+			enabled = false;
+
+		period--;
+		duty = duty ? duty - 1 : 0;
+	} else if (duty >= period) {
 		duty = period - 1;
+	}
 
 	jz4740_pwm_disable(chip, pwm);
 
@@ -199,14 +219,14 @@ static int jz4740_pwm_apply(struct pwm_chip *chip, struct pwm_device *pwm,
 	 * when it is active. This trick makes the PWM start with its active
 	 * state instead of its inactive state.
 	 */
-	if ((state->polarity == PWM_POLARITY_NORMAL) ^ state->enabled)
+	if ((state->polarity == PWM_POLARITY_NORMAL) ^ enabled)
 		regmap_clear_bits(jz->map, TCU_REG_TCSRc(pwm->hwpwm),
 				  TCU_TCSR_PWM_INITL_HIGH);
 	else
 		regmap_set_bits(jz->map, TCU_REG_TCSRc(pwm->hwpwm),
 				TCU_TCSR_PWM_INITL_HIGH);
 
-	if (state->enabled)
+	if (enabled)
 		jz4740_pwm_enable(chip, pwm);
 
 	return 0;
@@ -233,6 +253,7 @@ static int jz4740_pwm_probe(struct platform_device *pdev)
 	if (IS_ERR(chip))
 		return PTR_ERR(chip);
 	jz = to_jz4740(chip);
+	jz->info = info;
 
 	jz->map = device_node_to_regmap(dev->parent->of_node);
 	if (IS_ERR(jz->map)) {
@@ -257,10 +278,16 @@ static const struct soc_info x1000_soc_info = {
 	.num_pwms = 5,
 };
 
+static const struct soc_info t40_soc_info = {
+	.num_pwms = 8,
+	.count_includes_tdfr = true,
+};
+
 static const struct of_device_id jz4740_pwm_dt_ids[] = {
 	{ .compatible = "ingenic,jz4740-pwm", .data = &jz4740_soc_info },
 	{ .compatible = "ingenic,jz4725b-pwm", .data = &jz4725b_soc_info },
 	{ .compatible = "ingenic,x1000-pwm", .data = &x1000_soc_info },
+	{ .compatible = "ingenic,t40-pwm", .data = &t40_soc_info },
 	{ }
 };
 MODULE_DEVICE_TABLE(of, jz4740_pwm_dt_ids);
