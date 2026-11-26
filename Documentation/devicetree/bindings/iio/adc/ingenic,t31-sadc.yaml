@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/iio/adc/ingenic,t31-sadc.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic T-series SAR ADC
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description:
+  The SAR ADC (SADC) of the Ingenic T-series SoCs converts up to eight
+  auxiliary inputs with one 12-bit converter, a channel at a time. Packages
+  bond out a subset of the inputs.
+
+properties:
+  compatible:
+    oneOf:
+      - enum:
+          - ingenic,t20-sadc
+          - ingenic,t21-sadc
+          - ingenic,t23-sadc
+          - ingenic,t30-sadc
+          - ingenic,t31-sadc
+          - ingenic,t32-sadc
+          - ingenic,t40-sadc
+      - items:
+          - const: ingenic,t10-sadc
+          - const: ingenic,t20-sadc
+      - items:
+          - const: ingenic,t33-sadc
+          - const: ingenic,t32-sadc
+      - items:
+          - const: ingenic,t41-sadc
+          - const: ingenic,t40-sadc
+
+  reg:
+    maxItems: 1
+
+  interrupts:
+    maxItems: 1
+
+  clocks:
+    maxItems: 1
+
+  clock-names:
+    const: adc
+
+  vref-supply:
+    description: The SADC_VREF reference input.
+
+  '#io-channel-cells':
+    const: 1
+
+required:
+  - compatible
+  - reg
+  - interrupts
+  - clocks
+  - clock-names
+  - '#io-channel-cells'
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/ingenic,t31-cgu.h>
+
+    adc@10070000 {
+        compatible = "ingenic,t31-sadc";
+        reg = <0x10070000 0x30>;
+        interrupts = <18>;
+        clocks = <&cgu T31_CLK_SADC>;
+        clock-names = "adc";
+        #io-channel-cells = <1>;
+    };
