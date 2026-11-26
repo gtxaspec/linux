@@ -9,6 +9,8 @@
 	model = "Thingino T10L";
 
 	aliases {
+		mmc0 = &msc0;
+		mmc1 = &msc1;
 		serial1 = &uart1;
 	};
 
