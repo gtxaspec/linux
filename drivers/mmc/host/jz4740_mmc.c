@@ -161,6 +161,8 @@ struct jz4740_mmc_host {
 	struct mmc_command *cmd;
 
 	bool vqmmc_enabled;
+	/* the card clock must keep running: SDIO interrupts need it */
+	bool keep_clock;
 
 	unsigned long waiting;
 
@@ -682,7 +684,8 @@ static void jz4740_mmc_send_command(struct jz4740_mmc_host *host,
 	uint32_t cmdat = host->cmdat;
 
 	host->cmdat &= ~JZ_MMC_CMDAT_INIT;
-	jz4740_mmc_clock_disable(host);
+	if (!host->keep_clock)
+		jz4740_mmc_clock_disable(host);
 
 	host->cmd = cmd;
 
@@ -890,6 +893,7 @@ static int jz4740_mmc_set_clock_rate(struct jz4740_mmc_host *host, int rate)
 {
 	int div = 0;
 	int real_rate;
+	u32 lpm;
 
 	jz4740_mmc_clock_disable(host);
 	clk_set_rate(host->clk, host->mmc->f_max);
@@ -903,19 +907,27 @@ static int jz4740_mmc_set_clock_rate(struct jz4740_mmc_host *host, int rate)
 
 	writew(div, host->base + JZ_REG_MMC_CLKRT);
 
+	lpm = 0;
 	if (real_rate > 25000000) {
-		if (host->version >= JZ_MMC_JZ4780) {
-			writel(JZ_MMC_LPM_DRV_RISING_QTR_PHASE_DLY |
-				   JZ_MMC_LPM_SMP_RISING_QTR_OR_HALF_PHASE_DLY |
-				   JZ_MMC_LPM_LOW_POWER_MODE_EN,
-				   host->base + JZ_REG_MMC_LPM);
-		} else if (host->version >= JZ_MMC_JZ4760) {
-			writel(JZ_MMC_LPM_DRV_RISING |
-				   JZ_MMC_LPM_LOW_POWER_MODE_EN,
-				   host->base + JZ_REG_MMC_LPM);
-		} else if (host->version >= JZ_MMC_JZ4725B)
-			writel(JZ_MMC_LPM_LOW_POWER_MODE_EN,
-				   host->base + JZ_REG_MMC_LPM);
+		if (host->version >= JZ_MMC_JZ4780)
+			lpm = JZ_MMC_LPM_DRV_RISING_QTR_PHASE_DLY |
+			      JZ_MMC_LPM_SMP_RISING_QTR_OR_HALF_PHASE_DLY |
+			      JZ_MMC_LPM_LOW_POWER_MODE_EN;
+		else if (host->version >= JZ_MMC_JZ4760)
+			lpm = JZ_MMC_LPM_DRV_RISING |
+			      JZ_MMC_LPM_LOW_POWER_MODE_EN;
+		else if (host->version >= JZ_MMC_JZ4725B)
+			lpm = JZ_MMC_LPM_LOW_POWER_MODE_EN;
+	}
+
+	if (host->keep_clock) {
+		/* low power mode would stop the clock between commands */
+		lpm &= ~JZ_MMC_LPM_LOW_POWER_MODE_EN;
+		if (host->version >= JZ_MMC_JZ4725B)
+			writel(lpm, host->base + JZ_REG_MMC_LPM);
+		jz4740_mmc_clock_enable(host, false);
+	} else if (lpm) {
+		writel(lpm, host->base + JZ_REG_MMC_LPM);
 	}
 
 	return real_rate;
@@ -1060,6 +1072,7 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
 				     "could not parse device properties\n");
 
 	mmc_regulator_get_supply(mmc);
+	host->keep_clock = !!(mmc->caps & MMC_CAP_SDIO_IRQ);
 
 	host->irq = platform_get_irq(pdev, 0);
 	if (host->irq < 0)
