@@ -498,4 +498,20 @@
 
 		status = "disabled";
 	};
+
+	dmic: audio-controller@10034000 {
+		compatible = "ingenic,t40-dmic";
+		reg = <0x10034000 0x54>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <12>;
+
+		clocks = <&cgu T40_CLK_DMIC>;
+		clock-names = "gate_dmic";
+
+		dmas = <&pdma 0x0d 0xffffffff>;
+		dma-names = "rx";
+
+		status = "disabled";
+	};
 };

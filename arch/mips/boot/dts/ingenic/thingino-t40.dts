@@ -117,6 +117,12 @@
 	status = "okay";
 };
 
+/* left disabled: a profile with a DMIC enables it, the pins may be GPIOs elsewhere */
+&dmic {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_dmic>;
+};
+
 &dtrng {
 	status = "okay";
 };
@@ -175,6 +181,11 @@
 	pins_mac: mac {
 		function = "mac";
 		groups = "mac-rmii", "mac-mdio";
+	};
+
+	pins_dmic: dmic {
+		function = "dmic";
+		groups = "dmic";
 	};
 
 	/* the sensor's MCLK source is picked at run time: all three pads get the CIM function */
