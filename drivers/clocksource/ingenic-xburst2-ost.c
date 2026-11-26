@@ -102,12 +102,20 @@ static int xb2_cost_set_next_event(unsigned long delta,
 	return 0;
 }
 
+static void xb2_cost_stop(void __iomem *base)
+{
+	writel(0, base + COST_ER);
+	/*
+	 * Drop an expiry nobody will handle: with it left set, the next
+	 * event is never programmed and the core loses its timer.
+	 */
+	writel(0, base + COST_FR);
+	writel(1, base + COST_MR);
+}
+
 static int xb2_cost_shutdown(struct clock_event_device *evt)
 {
-	void __iomem *base = xb2_cost_base(smp_processor_id());
-
-	writel(0, base + COST_ER);
-	writel(1, base + COST_MR);
+	xb2_cost_stop(xb2_cost_base(smp_processor_id()));
 
 	return 0;
 }
@@ -134,10 +142,10 @@ static int xb2_cost_starting(unsigned int cpu)
 	struct clock_event_device *evt = this_cpu_ptr(&xb2_ost_clkevt);
 	void __iomem *base = xb2_cost_base(cpu);
 
-	writel(0, base + COST_ER);
+	/* A core back from reset finds its OST as it left it */
+	xb2_cost_stop(base);
 	writel(OST_CCR_DIV1, base + COST_CCR);
 	writel(1, base + COST_CR);
-	writel(1, base + COST_MR);
 
 	evt->name = "ingenic-xburst2-ost";
 	evt->features = CLOCK_EVT_FEAT_ONESHOT;
