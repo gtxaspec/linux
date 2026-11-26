@@ -108,6 +108,11 @@
 	status = "okay";
 };
 
+/* The pins stay in GPIO mode until a board user selects a PWM pin group */
+&pwm {
+	status = "okay";
+};
+
 &efuse {
 	status = "okay";
 };
