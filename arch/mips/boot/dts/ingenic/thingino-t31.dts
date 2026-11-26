@@ -121,7 +121,7 @@
 	non-removable;
 
 	pinctrl-names = "default";
-	pinctrl-0 = <&pins_mmc1>;
+	pinctrl-0 = <&pins_mmc1>, <&pins_mmc1_c_idle>;
 };
 
 &isp {
@@ -224,6 +224,16 @@
 	pins_mmc1: mmc1 {
 		function = "mmc1";
 		groups = "mmc1-1bit-b", "mmc1-4bit-b";
+	};
+
+	/*
+	 * MSC1 can also come out on PC2..PC7 in function 0, which is how the
+	 * pins may be left: as inputs they cannot take over CMD and DAT from
+	 * the group in use
+	 */
+	pins_mmc1_c_idle: mmc1-c-idle {
+		pins = "PC2", "PC3", "PC4", "PC5", "PC6", "PC7";
+		input-enable;
 	};
 
 	pins_cim_mclk: cim-mclk {
