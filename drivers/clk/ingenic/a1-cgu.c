@@ -29,6 +29,8 @@
 #define CGU_REG_SFC1CDR		0x94
 #define CGU_REG_MSC0CDR		0x98
 #define CGU_REG_MSC1CDR		0x9c
+#define CGU_REG_I2S0TCDR	0xa0
+#define CGU_REG_I2S0RCDR	0xa8
 #define CGU_REG_VDEVCDR		0xb0
 #define CGU_REG_VDEACDR		0xb4
 #define CGU_REG_VDEMCDR		0xb8
@@ -40,6 +42,8 @@
 #define CGU_REG_MAC1TXCDR	0xd4
 #define CGU_REG_BT0CDR		0xf8
 #define CGU_REG_PWMCDR		0xfc
+#define CGU_REG_I2S1TCDR	0x100
+#define CGU_REG_I2S1RCDR	0x108
 
 /*
  * Every peripheral has a CDR of its own: mux in bits 31:30, change enable
@@ -52,6 +56,18 @@
 #define A1_CDR_CE		29
 #define A1_CDR_BUSY		28
 #define A1_CDR_STOP		27
+
+/*
+ * I2S{0,1}{T,R}CDR, parent * M / N: the source select, a 9 bit M at bit 20,
+ * a 20 bit N and the clock enable at bit 29, as the vendor kernel's
+ * clk-a1.c has them. The registers 4 bytes above each are left alone.
+ */
+#define I2SCDR_PCS_SHIFT	30
+#define I2SCDR_CE_BIT		29
+#define I2SCDR_M_SHIFT		20
+#define I2SCDR_M_BITS		9
+#define I2SCDR_N_SHIFT		0
+#define I2SCDR_N_BITS		20
 
 /*
  * The PLLs: EXCLK * M / (N * OD0 * OD1), all four fields as they read, with
@@ -509,6 +525,95 @@ static const struct ingenic_cgu_clk_info a1_cgu_clocks[] = {
 		.gate = { CGU_REG_CLKGR0, 18 },
 	},
 
+	/* the I2S clocks: AIC0 (inner codec) on I2S0, AIC1 (HDMI) on I2S1 */
+
+	[A1_CLK_I2S0T_MUX] = {
+		"i2s0t_mux", CGU_CLK_MUX,
+		.parents = A1_PLL_PARENTS,
+		.mux = { CGU_REG_I2S0TCDR, I2SCDR_PCS_SHIFT, 2 },
+	},
+
+	[A1_CLK_DIV_I2S0T] = {
+		"div_i2s0t", CGU_CLK_FRAC,
+		.parents = { A1_CLK_I2S0T_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2S0TCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[A1_CLK_CE_I2S0T] = {
+		"ce_i2s0t", CGU_CLK_GATE,
+		.parents = { A1_CLK_DIV_I2S0T, -1, -1, -1 },
+		.gate = { CGU_REG_I2S0TCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+	[A1_CLK_I2S0R_MUX] = {
+		"i2s0r_mux", CGU_CLK_MUX,
+		.parents = A1_PLL_PARENTS,
+		.mux = { CGU_REG_I2S0RCDR, I2SCDR_PCS_SHIFT, 2 },
+	},
+
+	[A1_CLK_DIV_I2S0R] = {
+		"div_i2s0r", CGU_CLK_FRAC,
+		.parents = { A1_CLK_I2S0R_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2S0RCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[A1_CLK_CE_I2S0R] = {
+		"ce_i2s0r", CGU_CLK_GATE,
+		.parents = { A1_CLK_DIV_I2S0R, -1, -1, -1 },
+		.gate = { CGU_REG_I2S0RCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+	[A1_CLK_I2S1T_MUX] = {
+		"i2s1t_mux", CGU_CLK_MUX,
+		.parents = A1_PLL_PARENTS,
+		.mux = { CGU_REG_I2S1TCDR, I2SCDR_PCS_SHIFT, 2 },
+	},
+
+	[A1_CLK_DIV_I2S1T] = {
+		"div_i2s1t", CGU_CLK_FRAC,
+		.parents = { A1_CLK_I2S1T_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2S1TCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[A1_CLK_CE_I2S1T] = {
+		"ce_i2s1t", CGU_CLK_GATE,
+		.parents = { A1_CLK_DIV_I2S1T, -1, -1, -1 },
+		.gate = { CGU_REG_I2S1TCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+	[A1_CLK_I2S1R_MUX] = {
+		"i2s1r_mux", CGU_CLK_MUX,
+		.parents = A1_PLL_PARENTS,
+		.mux = { CGU_REG_I2S1RCDR, I2SCDR_PCS_SHIFT, 2 },
+	},
+
+	[A1_CLK_DIV_I2S1R] = {
+		"div_i2s1r", CGU_CLK_FRAC,
+		.parents = { A1_CLK_I2S1R_MUX, -1, -1, -1 },
+		.frac = { CGU_REG_I2S1RCDR, I2SCDR_M_SHIFT, I2SCDR_M_BITS,
+			  I2SCDR_N_SHIFT, I2SCDR_N_BITS },
+	},
+
+	[A1_CLK_CE_I2S1R] = {
+		"ce_i2s1r", CGU_CLK_GATE,
+		.parents = { A1_CLK_DIV_I2S1R, -1, -1, -1 },
+		.gate = { CGU_REG_I2S1RCDR, I2SCDR_CE_BIT, .clear_to_gate = true },
+	},
+
+	[A1_CLK_AIC0] = {
+		"gate_aic0", CGU_CLK_GATE,
+		.parents = { A1_CLK_DIV_I2S0T, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 30 },
+	},
+
+	[A1_CLK_AIC1] = {
+		"gate_aic1", CGU_CLK_GATE,
+		.parents = { A1_CLK_DIV_I2S1T, -1, -1, -1 },
+		.gate = { CGU_REG_CLKGR0, 23 },
+	},
 };
 
 static struct ingenic_cgu *cgu;
