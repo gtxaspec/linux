@@ -153,6 +153,10 @@
 	pinctrl-0 = <&pins_i2c1>;
 };
 
+&sadc {
+	status = "okay";
+};
+
 &dtrng {
 	status = "okay";
 };
