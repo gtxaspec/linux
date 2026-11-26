@@ -3045,6 +3045,7 @@ static int t31_pwm_pwm0_pins[] = { 0x51, };
 static int t31_pwm_pwm1_pins[] = { 0x52, };
 static int t31_pwm_pwm2_pins[] = { 0x53, };
 static int t31_pwm_pwm3_pins[] = { 0x54, };
+static int t31_dmic_pins[] = { 0x3c, 0x3d, 0x3e, };
 
 /* CIM (camera) MCLK pin - sensor master clock output, needed for both
  * MIPI and DVP cameras. PA15 = DVP_MCLK at FUNC0 per T31X pinout.
@@ -3083,6 +3084,7 @@ static const struct group_desc t31_groups[] = {
 	INGENIC_PIN_GROUP("pwm1", t31_pwm_pwm1, 0),
 	INGENIC_PIN_GROUP("pwm2", t31_pwm_pwm2, 0),
 	INGENIC_PIN_GROUP("pwm3", t31_pwm_pwm3, 0),
+	INGENIC_PIN_GROUP("dmic", t31_dmic, 3),
 	INGENIC_PIN_GROUP("cim-mclk", t31_cim_mclk, 1),
 };
 
@@ -3110,6 +3112,7 @@ static const char *t31_pwm0_groups[] = { "pwm0", };
 static const char *t31_pwm1_groups[] = { "pwm1", };
 static const char *t31_pwm2_groups[] = { "pwm2", };
 static const char *t31_pwm3_groups[] = { "pwm3", };
+static const char * const t31_dmic_groups[] = { "dmic", };
 static const char *t31_cim_groups[] = { "cim-mclk", };
 
 static const struct pinfunction t31_functions[] = {
@@ -3127,6 +3130,7 @@ static const struct pinfunction t31_functions[] = {
 	INGENIC_PIN_FUNCTION("pwm1", t31_pwm1),
 	INGENIC_PIN_FUNCTION("pwm2", t31_pwm2),
 	INGENIC_PIN_FUNCTION("pwm3", t31_pwm3),
+	INGENIC_PIN_FUNCTION("dmic", t31_dmic),
 	INGENIC_PIN_FUNCTION("cim", t31_cim),
 };
 
