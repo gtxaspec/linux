@@ -3348,6 +3348,15 @@ static int t23_cim_data_12bit_pins[] = {
 	0x0c, 0x0d, 0x0e,
 };
 
+/*
+ * With two or three sensors behind one MIPI input the VIC drives the
+ * external MIPI switch itself, on one of these pads (the vendor ISP
+ * firmware's choices).
+ */
+static int t23_cim_mipi_switch_a7_pins[] = { 0x07, };
+static int t23_cim_mipi_switch_b22_pins[] = { 0x36, };
+static int t23_cim_mipi_switch_b30_pins[] = { 0x3e, };
+
 static const struct group_desc t23_groups[] = {
 	INGENIC_PIN_GROUP("uart0-data", t23_uart0_data, 0),
 	INGENIC_PIN_GROUP("uart0-hwflow", t23_uart0_hwflow, 0),
@@ -3373,6 +3382,9 @@ static const struct group_desc t23_groups[] = {
 	INGENIC_PIN_GROUP("cim-data-10bit-low", t23_cim_data_10bit_low, 0),
 	INGENIC_PIN_GROUP("cim-data-10bit-high", t23_cim_data_10bit_high, 0),
 	INGENIC_PIN_GROUP("cim-data-12bit", t23_cim_data_12bit, 0),
+	INGENIC_PIN_GROUP("cim-mipi-switch-a7", t23_cim_mipi_switch_a7, 0),
+	INGENIC_PIN_GROUP("cim-mipi-switch-b22", t23_cim_mipi_switch_b22, 1),
+	INGENIC_PIN_GROUP("cim-mipi-switch-b30", t23_cim_mipi_switch_b30, 0),
 };
 
 static const char *t23_uart0_groups[] = { "uart0-data", "uart0-hwflow", };
@@ -3390,7 +3402,8 @@ static const char *t23_pwm0_groups[] = { "pwm0", };
 static const char *t23_dmic_groups[] = { "dmic", };
 static const char *t23_cim_groups[] = {
 	"cim-mclk", "cim-data-10bit-low", "cim-data-10bit-high",
-	"cim-data-12bit",
+	"cim-data-12bit", "cim-mipi-switch-a7", "cim-mipi-switch-b22",
+	"cim-mipi-switch-b30",
 };
 
 static const struct pinfunction t23_functions[] = {
