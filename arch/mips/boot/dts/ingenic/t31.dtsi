@@ -448,7 +448,7 @@
 		reg = <0x10034000 0x40>;
 
 		interrupt-parent = <&intc>;
-		interrupts = <11>;
+		interrupts = <12>;
 
 		clocks = <&cgu T31_CLK_DMIC>;
 		clock-names = "gate_dmic";
