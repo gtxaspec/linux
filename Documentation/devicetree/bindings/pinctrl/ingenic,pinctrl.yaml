@@ -166,6 +166,7 @@ additionalProperties:
         bias-disable: true
         bias-pull-up: true
         bias-pull-down: true
+        input-enable: true
         output-low: true
         output-high: true
       additionalProperties: false
@@ -184,6 +185,7 @@ additionalProperties:
           bias-disable: true
           bias-pull-up: true
           bias-pull-down: true
+          input-enable: true
           output-low: true
           output-high: true
         additionalProperties: false
