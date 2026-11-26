@@ -331,7 +331,7 @@ static const struct ingenic_cgu_clk_info t41_cgu_clocks[] = {
 
 	[T41_CLK_PWM] = {
 		"pwm", CGU_CLK_GATE,
-		.parents = { T41_CLK_AHB2, -1, -1, -1 },
+		.parents = { T41_CLK_PWMDIV, -1, -1, -1 },
 		.gate = { CGU_REG_CLKGR1, 7 },
 	},
 
