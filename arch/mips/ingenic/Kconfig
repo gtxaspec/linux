@@ -151,6 +151,7 @@ config MACH_A1
 	select MIPS_CPU_SCACHE
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
+	select SYS_SUPPORTS_HOTPLUG_CPU
 	select SYS_SUPPORTS_SMP
 
 config MACH_T40
@@ -158,6 +159,7 @@ config MACH_T40
 	select MIPS_CPU_SCACHE
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
+	select SYS_SUPPORTS_HOTPLUG_CPU
 	select SYS_SUPPORTS_SMP
 
 config MACH_T41
@@ -165,16 +167,20 @@ config MACH_T41
 	select MIPS_CPU_SCACHE
 	select SYS_HAS_CPU_MIPS32_R2
 	select SYS_SUPPORTS_HIGHMEM
+	select SYS_SUPPORTS_HOTPLUG_CPU
 	select SYS_SUPPORTS_SMP
 
 config INGENIC_XBURST2_SMP
 	bool
 	depends on (MACH_A1 || MACH_T40 || MACH_T41) && SMP
 	default y
+	select GENERIC_IRQ_MIGRATION if HOTPLUG_CPU
+	select HOTPLUG_CORE_SYNC_DEAD if HOTPLUG_CPU
 	help
 	  Starts the second core of the XBurst2 CPU (A1, T40, T41) through the core
 	  control unit and sends it inter-processor interrupts through the
-	  CCU mailboxes. CPU hotplug is not supported.
+	  CCU mailboxes. With CPU hotplug, a core taken offline is put back
+	  into reset and released again when it is brought back online.
 
 config INGENIC_XBURST_MXU2
 	bool "XBurst MXU2 SIMD unit"

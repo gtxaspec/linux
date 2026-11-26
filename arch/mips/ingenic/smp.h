@@ -12,6 +12,8 @@ struct xb2_smp_ctx {
 extern struct xb2_smp_ctx xb2_smp_ctx;
 extern void xb2_secondary_entry(void);
 extern char xb2_secondary_entry_end[];
+void __noreturn xb2_cpu_park(unsigned long start, unsigned long size,
+			     unsigned long linesz);
 #endif
 
 #endif

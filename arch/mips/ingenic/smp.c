@@ -8,36 +8,51 @@
  * interrupt controller and of the core OSTs reach a core only if its bit is
  * set in the CCU's peripheral and OST masks.
  *
+ * A core taken offline writes its data cache back, masks itself in the CCU
+ * and executes WAIT; once the CCU reports it asleep it is put back into
+ * reset, from which it is released again like at boot.
+ *
  * Copyright (C) 2026 Alfonso Gamboa <gtxent@gmail.com>
  */
 
 #include <linux/atomic.h>
 #include <linux/bitops.h>
+#include <linux/cpu.h>
+#include <linux/cpuhotplug.h>
 #include <linux/cpumask.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
+#include <linux/iopoll.h>
 #include <linux/irq.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <linux/of_irq.h>
+#include <linux/sched/hotplug.h>
 #include <linux/sched/task_stack.h>
 #include <linux/smp.h>
 #include <linux/spinlock.h>
 
+#include <asm/addrspace.h>
+#include <asm/cpu-info.h>
 #include <asm/mipsregs.h>
 #include <asm/smp.h>
 #include <asm/smp-ops.h>
+#include <asm/tlbflush.h>
 
 #include "smp.h"
 
 /* CCU registers */
+#define CCU_CSSR		0x020	/* bit n: core n asleep in WAIT */
 #define CCU_CSRR		0x040	/* bit n: core n held in reset */
 #define CCU_PIMR		0x120	/* peripheral interrupt, bit n: core n */
 #define CCU_MIMR		0x160	/* mailbox interrupt */
 #define CCU_OIMR		0x1a0	/* core OST interrupt */
 #define CCU_RER			0xf00	/* reset entry, a kernel virtual address */
 #define CCU_MBR(cpu)		(0x1000 + (cpu) * 4)
+
+#define CCU_SLEEP_POLL_US	10
+#define CCU_SLEEP_TIMEOUT_US	100000
 
 struct xb2_smp_ctx xb2_smp_ctx;
 
@@ -54,6 +69,17 @@ static void xb2_ccu_set_masks(unsigned int cpu)
 	writel(readl(ccu + CCU_MIMR) | BIT(cpu), ccu + CCU_MIMR);
 	writel(readl(ccu + CCU_OIMR) | BIT(cpu), ccu + CCU_OIMR);
 }
+
+#ifdef CONFIG_HOTPLUG_CPU
+static void xb2_ccu_clear_masks(unsigned int cpu)
+{
+	guard(raw_spinlock_irqsave)(&ccu_lock);
+
+	writel(readl(ccu + CCU_PIMR) & ~BIT(cpu), ccu + CCU_PIMR);
+	writel(readl(ccu + CCU_MIMR) & ~BIT(cpu), ccu + CCU_MIMR);
+	writel(readl(ccu + CCU_OIMR) & ~BIT(cpu), ccu + CCU_OIMR);
+}
+#endif
 
 static void xb2_send_ipi_single(int cpu, unsigned int action)
 {
@@ -194,6 +220,67 @@ static int xb2_boot_secondary(int cpu, struct task_struct *idle)
 	return 0;
 }
 
+#ifdef CONFIG_HOTPLUG_CPU
+static int xb2_cpu_disable(void)
+{
+	unsigned int cpu = smp_processor_id();
+
+	if (!cpu)
+		return -EBUSY;
+
+	set_cpu_online(cpu, false);
+	calculate_cpu_foreign_map();
+	irq_migrate_all_off_this_cpu();
+	local_flush_tlb_all();
+
+	return 0;
+}
+
+static void xb2_cpu_die(unsigned int cpu)
+{
+	/* The core reports itself dead; xb2_cleanup_dead_cpu() stops it */
+}
+
+static void xb2_cleanup_dead_cpu(unsigned int cpu)
+{
+	u32 cssr;
+
+	/*
+	 * A core reset with a bus access in flight deadlocks the bus; a core
+	 * asleep in WAIT has none left.
+	 */
+	if (readl_poll_timeout(ccu + CCU_CSSR, cssr, cssr & BIT(cpu),
+			       CCU_SLEEP_POLL_US, CCU_SLEEP_TIMEOUT_US)) {
+		pr_err("XBurst2 SMP: CPU%u did not go to sleep, not resetting it\n",
+		       cpu);
+		return;
+	}
+
+	scoped_guard(raw_spinlock_irqsave, &ccu_lock)
+		writel(readl(ccu + CCU_CSRR) | BIT(cpu), ccu + CCU_CSRR);
+
+	writel(0, ccu + CCU_MBR(cpu));
+	atomic_set(&ipi_action[cpu], 0);
+}
+
+void __noreturn play_dead(void)
+{
+	unsigned int cpu = smp_processor_id();
+	struct cache_desc *dc = &current_cpu_data.dcache;
+
+	idle_task_exit();
+
+	/* Nothing may wake the core from the WAIT below */
+	xb2_ccu_clear_masks(cpu);
+	clear_c0_status(ST0_IM);
+
+	cpuhp_ap_report_dead();
+
+	/* The reset drops the data cache, so nothing is stored after this */
+	xb2_cpu_park(CKSEG0, dc->waysize * dc->ways, dc->linesz);
+}
+#endif
+
 static const struct plat_smp_ops xb2_smp_ops = {
 	.send_ipi_single	= xb2_send_ipi_single,
 	.send_ipi_mask		= xb2_send_ipi_mask,
@@ -202,6 +289,11 @@ static const struct plat_smp_ops xb2_smp_ops = {
 	.boot_secondary		= xb2_boot_secondary,
 	.smp_setup		= xb2_smp_setup,
 	.prepare_cpus		= xb2_prepare_cpus,
+#ifdef CONFIG_HOTPLUG_CPU
+	.cpu_disable		= xb2_cpu_disable,
+	.cpu_die		= xb2_cpu_die,
+	.cleanup_dead_cpu	= xb2_cleanup_dead_cpu,
+#endif
 };
 
 int __init register_xburst2_smp_ops(void)
