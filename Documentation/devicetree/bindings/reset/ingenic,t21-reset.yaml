@@ -28,6 +28,8 @@ properties:
               - ingenic,t31-reset
               - ingenic,t32-reset
               - ingenic,t33-reset
+              - ingenic,t40-reset
+              - ingenic,t41-reset
           - const: ingenic,t21-reset
 
   reg:
