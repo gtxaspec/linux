@@ -17,10 +17,12 @@
 /* CGU register offsets */
 #define CGU_REG_CPCCR		0x00
 #define CGU_REG_CLKGR0		0x20
+#define CGU_REG_OPCR		0x24
 #define CGU_REG_CLKGR1		0x28
 #define CGU_REG_APLL		0x10
 #define CGU_REG_MPLL		0x14
 #define CGU_REG_DDRCDR		0x2c
+#define CGU_REG_USBPCR		0x3c
 #define CGU_REG_RSACDR		0x4c
 #define CGU_REG_SSISLVCDR	0x50
 #define CGU_REG_MACCDR		0x54
@@ -88,6 +90,65 @@
 	.enable_bit = 0,			\
 	.stable_bit = 3,			\
 }
+
+/* bits within the OPCR register */
+#define OPCR_GATE_USBPHYCLK	BIT(23)
+#define OPCR_SPENDN0		BIT(7)
+
+/* bits within the USBPCR register */
+#define USBPCR_SIDDQ		BIT(21)
+#define USBPCR_OTG_DISABLE	BIT(20)
+
+/*
+ * The OTG PHY clock: OPCR ungates the PHY clock and takes the PHY out of
+ * suspend, USBPCR powers its analogue part up.
+ */
+static int t41_otg_phy_enable(struct clk_hw *hw)
+{
+	struct ingenic_cgu *cgu = to_ingenic_clk(hw)->cgu;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cgu->lock, flags);
+	writel((readl(cgu->base + CGU_REG_OPCR) | OPCR_SPENDN0) &
+	       ~OPCR_GATE_USBPHYCLK, cgu->base + CGU_REG_OPCR);
+	writel(readl(cgu->base + CGU_REG_USBPCR) &
+	       ~(USBPCR_OTG_DISABLE | USBPCR_SIDDQ),
+	       cgu->base + CGU_REG_USBPCR);
+	spin_unlock_irqrestore(&cgu->lock, flags);
+
+	return 0;
+}
+
+static void t41_otg_phy_disable(struct clk_hw *hw)
+{
+	struct ingenic_cgu *cgu = to_ingenic_clk(hw)->cgu;
+	unsigned long flags;
+
+	/* OPCR also holds the TCU and RTC clock controls */
+	spin_lock_irqsave(&cgu->lock, flags);
+	writel((readl(cgu->base + CGU_REG_OPCR) & ~OPCR_SPENDN0) |
+	       OPCR_GATE_USBPHYCLK, cgu->base + CGU_REG_OPCR);
+	writel(readl(cgu->base + CGU_REG_USBPCR) |
+	       USBPCR_OTG_DISABLE | USBPCR_SIDDQ,
+	       cgu->base + CGU_REG_USBPCR);
+	spin_unlock_irqrestore(&cgu->lock, flags);
+}
+
+static int t41_otg_phy_is_enabled(struct clk_hw *hw)
+{
+	struct ingenic_cgu *cgu = to_ingenic_clk(hw)->cgu;
+	u32 opcr = readl(cgu->base + CGU_REG_OPCR);
+	u32 usbpcr = readl(cgu->base + CGU_REG_USBPCR);
+
+	return (opcr & OPCR_SPENDN0) && !(opcr & OPCR_GATE_USBPHYCLK) &&
+	       !(usbpcr & (USBPCR_SIDDQ | USBPCR_OTG_DISABLE));
+}
+
+static const struct clk_ops t41_otg_phy_ops = {
+	.enable		= t41_otg_phy_enable,
+	.disable	= t41_otg_phy_disable,
+	.is_enabled	= t41_otg_phy_is_enabled,
+};
 
 /* OD0 is a power of two: the register holds its logarithm */
 static const s8 t41_pll_od_encoding[128] = {
@@ -448,6 +509,12 @@ static const struct ingenic_cgu_clk_info t41_cgu_clocks[] = {
 		"otg", CGU_CLK_GATE,
 		.parents = { T41_CLK_PCLK, -1, -1, -1 },
 		.gate = { CGU_REG_CLKGR0, 3 },
+	},
+
+	[T41_CLK_OTGPHY] = {
+		"otg_phy", CGU_CLK_CUSTOM,
+		.parents = { T41_CLK_EXCLK, -1, -1, -1 },
+		.custom = { &t41_otg_phy_ops },
 	},
 
 	[T41_CLK_HASH] = {
