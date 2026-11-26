@@ -214,6 +214,7 @@ patternProperties:
                   - ingenic,t23-pwm
                   - ingenic,t30-pwm
                   - ingenic,t31-pwm
+                  - ingenic,t40-pwm
               - const: ingenic,jz4740-pwm
 
       reg:
