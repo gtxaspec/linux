@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: GPL-2.0
+#include "thingino-t40.dts"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	compatible = "thingino,t40-wyze-cam3pro", "thingino,t40", "ingenic,t40";
+	model = "Wyze Cam v3 Pro (T40XP)";
+};
+
+&i2c3 {
+	/* the speaker amplifier; PB31 is its enable pin, high enables it */
+	amplifier@58 {
+		compatible = "awinic,aw87xxx_pa";
+		reg = <0x58>;
+		reset-gpio = <&gpb 31 GPIO_ACTIVE_HIGH>;
+		pa-channel = <0>;
+	};
+};
