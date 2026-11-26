@@ -881,6 +881,16 @@ config INGENIC_ADC
 	  This driver can also be built as a module. If so, the module will be
 	  called ingenic_adc.
 
+config INGENIC_SADC
+	tristate "Ingenic T-series SoCs SAR ADC driver"
+	depends on MACH_INGENIC || COMPILE_TEST
+	help
+	  Say yes here to build support for the SAR ADC (SADC) of the Ingenic
+	  T10 to T41 SoCs: eight auxiliary channels on one 12-bit converter.
+
+	  This driver can also be built as a module. If so, the module will be
+	  called ingenic-sadc.
+
 config INTEL_DC_TI_ADC
 	tristate "Intel Bay Trail / Cherry Trail Dollar Cove TI ADC driver"
 	depends on INTEL_SOC_PMIC_CHTDC_TI

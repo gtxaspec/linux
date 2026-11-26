@@ -13163,6 +13163,7 @@ F:	drivers/dma/dma-jz4780.c
 F:	drivers/gpu/drm/ingenic/
 F:	drivers/i2c/busses/i2c-jz4780.c
 F:	drivers/iio/adc/ingenic-adc.c
+F:	drivers/iio/adc/ingenic-sadc.c
 F:	drivers/irqchip/irq-ingenic.c
 F:	drivers/memory/jz4780-nemc.c
 F:	drivers/mmc/host/jz4740_mmc.c
