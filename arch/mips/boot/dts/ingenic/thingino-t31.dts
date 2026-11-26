@@ -200,6 +200,12 @@
 	status = "okay";
 };
 
+/* left disabled: a profile with a DMIC enables it, the pins may be GPIOs elsewhere */
+&dmic {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_dmic>;
+};
+
 &mdio {
 	eth_phy: ethernet-phy@0 {
 		reg = <0>;
@@ -250,6 +256,11 @@
 	pins_i2c1: i2c1 {
 		function = "i2c1";
 		groups = "i2c1-data-b";
+	};
+
+	pins_dmic: dmic {
+		function = "dmic";
+		groups = "dmic";
 	};
 };
 
