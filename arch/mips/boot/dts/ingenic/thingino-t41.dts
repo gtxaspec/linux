@@ -98,6 +98,12 @@
 	status = "okay";
 };
 
+/* left disabled: a profile with a DMIC enables it, the pins may be GPIOs elsewhere */
+&dmic {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_dmic>;
+};
+
 &dtrng {
 	status = "okay";
 };
@@ -146,6 +152,11 @@
 	pins_mac: mac {
 		function = "mac";
 		groups = "mac-rmii", "mac-mdio";
+	};
+
+	pins_dmic: dmic {
+		function = "dmic";
+		groups = "dmic-b";
 	};
 
 	pins_cim_mclk: cim-mclk {

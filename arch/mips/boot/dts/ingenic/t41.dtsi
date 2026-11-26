@@ -560,4 +560,17 @@
 
 		status = "disabled";
 	};
+
+	dmic: dmic@134d0000 {
+		compatible = "ingenic,t41-dmic";
+		reg = <0x134d0000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <33>;
+
+		clocks = <&cgu T41_CLK_DMIC>;
+		clock-names = "gate_dmic";
+
+		status = "disabled";
+	};
 };
