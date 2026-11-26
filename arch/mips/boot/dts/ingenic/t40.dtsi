@@ -365,6 +365,15 @@
 		clocks = <&cgu T40_CLK_MSC1>, <&cgu T40_CLK_EXCLK>;
 		clock-names = "mmc", "ext";
 
+		/*
+		 * The boot loader leaves MSC1 alone and its mux can read EXCLK,
+		 * which is not one of its sources here, so the clock would be
+		 * an orphan: take the APLL, the source the vendor kernel's MSC
+		 * dividers read.
+		 */
+		assigned-clocks = <&cgu T40_CLK_MSC1>;
+		assigned-clock-parents = <&cgu T40_CLK_SCLKA>;
+
 		status = "disabled";
 	};
 
