@@ -474,6 +474,15 @@
 		phys = <&otg_phy>;
 		phy-names = "usb2-phy";
 
+		/*
+		 * The vendor kernel's split of the 3576 word FIFO RAM; the
+		 * driver's default receive and non-periodic FIFOs leave the
+		 * eight IN endpoints less than a high-speed bulk packet each
+		 */
+		g-rx-fifo-size = <768>;
+		g-np-tx-fifo-size = <256>;
+		g-tx-fifo-size = <256 256 256 256 256 256 256 512>;
+
 		dr_mode = "host";
 
 		status = "disabled";
