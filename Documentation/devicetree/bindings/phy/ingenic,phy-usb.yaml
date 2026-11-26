@@ -24,6 +24,8 @@ select:
           - ingenic,t31-phy
           - ingenic,t32-phy
           - ingenic,t33-phy
+          - ingenic,t40-phy
+          - ingenic,t41-phy
           - ingenic,x1000-phy
           - ingenic,x1830-phy
           - ingenic,x2000-phy
@@ -52,7 +54,10 @@ properties:
               - ingenic,t31-phy
           - const: ingenic,t21-phy
       - items:
-          - const: ingenic,t33-phy
+          - enum:
+              - ingenic,t33-phy
+              - ingenic,t40-phy
+              - ingenic,t41-phy
           - const: ingenic,t32-phy
 
   reg:
