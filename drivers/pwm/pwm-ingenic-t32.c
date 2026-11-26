@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Ingenic T32 and T33 PWM controller
+ * Ingenic T32, T33 and T41 PWM controller
  *
  * Copyright (C) 2026 Alfonso Gamboa <gtxent@gmail.com>
  *
- * The dedicated PWM block, apart from the TCU. A channel counts its clock
- * divided by 2^PRESCALE (4 bits a channel in CCFG) and runs periods of HIGH
- * plus LOW ticks (16 bits each, in WCFG): first the channel's init level
- * (PWMLVL bits 15:0) for that level's count, then the other level.
+ * The dedicated PWM block, apart from the TCU: four channels on the T32 and
+ * T33, eight on the T41. A channel counts its clock divided by 2^PRESCALE
+ * (4 bits a channel in CCFG) and runs periods of HIGH plus LOW ticks (16 bits
+ * each, in WCFG): first the channel's init level (PWMLVL bits 15:0) for that
+ * level's count, then the other level.
  *
  * Limitations:
  * - A running channel takes a new WCFG, PWMLVL and CCFG only at the end of
@@ -267,6 +268,7 @@ static int t32_pwm_probe(struct platform_device *pdev)
 
 static const struct of_device_id t32_pwm_of_match[] = {
 	{ .compatible = "ingenic,t32-pwm", .data = (void *)4 },
+	{ .compatible = "ingenic,t41-pwm", .data = (void *)8 },
 	{ /* sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, t32_pwm_of_match);
@@ -281,5 +283,5 @@ static struct platform_driver t32_pwm_driver = {
 module_platform_driver(t32_pwm_driver);
 
 MODULE_AUTHOR("Alfonso Gamboa <gtxent@gmail.com>");
-MODULE_DESCRIPTION("Ingenic T32 and T33 PWM driver");
+MODULE_DESCRIPTION("Ingenic T32, T33 and T41 PWM driver");
 MODULE_LICENSE("GPL");

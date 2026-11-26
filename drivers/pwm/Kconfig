@@ -337,12 +337,12 @@ config PWM_IMX_TPM
 	  will be called pwm-imx-tpm.
 
 config PWM_INGENIC_T32
-	tristate "Ingenic T32 and T33 PWM support"
+	tristate "Ingenic T32, T33 and T41 PWM support"
 	depends on MACH_INGENIC || COMPILE_TEST
 	depends on COMMON_CLK && HAS_IOMEM
 	help
 	  Generic PWM framework driver for the dedicated PWM controller of
-	  the Ingenic T32 and T33 SoCs.
+	  the Ingenic T32, T33 and T41 SoCs.
 
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-ingenic-t32.
