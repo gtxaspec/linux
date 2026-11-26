@@ -298,6 +298,16 @@
 		status = "disabled";
 	};
 
+	des: crypto@10061000 {
+		compatible = "ingenic,t31-des";
+		reg = <0x10061000 0x38>;
+
+		clocks = <&cgu T31_CLK_DES>;
+
+		dmas = <&pdma 0x2e 0xffffffff>, <&pdma 0x2f 0xffffffff>;
+		dma-names = "tx", "rx";
+	};
+
 	dtrng: trng@10072000 {
 		compatible = "ingenic,t31-dtrng", "ingenic,x1830-dtrng";
 		reg = <0x10072000 0xc>;
