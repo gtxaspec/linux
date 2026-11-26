@@ -5082,6 +5082,7 @@ static int ingenic_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 		case PIN_CONFIG_BIAS_DISABLE:
 		case PIN_CONFIG_BIAS_PULL_UP:
 		case PIN_CONFIG_BIAS_PULL_DOWN:
+		case PIN_CONFIG_INPUT_ENABLE:
 		case PIN_CONFIG_INPUT_SCHMITT_ENABLE:
 		case PIN_CONFIG_LEVEL:
 		case PIN_CONFIG_SLEW_RATE:
@@ -5115,6 +5116,13 @@ static int ingenic_pinconf_set(struct pinctrl_dev *pctldev, unsigned int pin,
 			dev_dbg(jzpc->dev, "set pull-down for pin P%c%u\n",
 					'A' + offt, idx);
 			ingenic_set_bias(jzpc, pin, GPIO_PULL_DOWN);
+			break;
+
+		case PIN_CONFIG_INPUT_ENABLE:
+			if (!arg)
+				return -EINVAL;
+
+			ingenic_pinmux_gpio_set_direction(pctldev, NULL, pin, true);
 			break;
 
 		case PIN_CONFIG_INPUT_SCHMITT_ENABLE:
