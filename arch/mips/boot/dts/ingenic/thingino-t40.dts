@@ -77,6 +77,18 @@
 	pinctrl-0 = <&pins_mmc0>;
 };
 
+/* The SDIO Wi-Fi sits on MSC1 (PB17 to PB22); enable it with its power sequence */
+&msc1 {
+	status = "disabled";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	non-removable;
+	no-1-8-v;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc1>;
+};
+
 &i2c0 {
 	status = "okay";
 	clock-frequency = <100000>;
@@ -161,6 +173,11 @@
 	pins_mmc0: mmc0 {
 		function = "mmc0";
 		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_mmc1: mmc1 {
+		function = "mmc1";
+		groups = "mmc1-1bit-b", "mmc1-4bit-b";
 	};
 
 	pins_i2c0: i2c0 {
