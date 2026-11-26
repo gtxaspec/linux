@@ -146,6 +146,10 @@
 	pinctrl-0 = <&pins_i2c0>;
 };
 
+&sadc {
+	status = "okay";
+};
+
 &efuse {
 	status = "okay";
 };

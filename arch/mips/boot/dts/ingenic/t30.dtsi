@@ -392,6 +392,21 @@
 		status = "disabled";
 	};
 
+	sadc: adc@10070000 {
+		compatible = "ingenic,t30-sadc";
+		reg = <0x10070000 0x30>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <18>;
+
+		clocks = <&cgu T30_CLK_SADC>;
+		clock-names = "adc";
+
+		#io-channel-cells = <1>;
+
+		status = "disabled";
+	};
+
 	efuse: efuse@13540000 {
 		compatible = "ingenic,t30-efuse";
 		reg = <0x13540000 0x10>;

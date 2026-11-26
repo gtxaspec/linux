@@ -158,6 +158,10 @@
 	status = "okay";
 };
 
+&sadc {
+	status = "okay";
+};
+
 &efuse {
 	status = "okay";
 };

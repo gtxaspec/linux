@@ -126,6 +126,10 @@
 	disable-over-current;
 };
 
+&sadc {
+	status = "okay";
+};
+
 &dtrng {
 	status = "okay";
 };

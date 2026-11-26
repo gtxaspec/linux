@@ -137,6 +137,10 @@
 	pinctrl-0 = <&pins_dmic>;
 };
 
+&sadc {
+	status = "okay";
+};
+
 &dtrng {
 	status = "okay";
 };
