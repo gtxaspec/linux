@@ -19,9 +19,11 @@
 #define CGU_REG_APLL		0x10
 #define CGU_REG_MPLL		0x14
 #define CGU_REG_CLKGR0		0x20
+#define CGU_REG_OPCR		0x24
 #define CGU_REG_CLKGR1		0x28
 #define CGU_REG_DDRCDR		0x2c
 #define CGU_REG_EL150CDR	0x30
+#define CGU_REG_USBPCR		0x3c
 #define CGU_REG_RSACDR		0x4c
 #define CGU_REG_MACCDR		0x54
 #define CGU_REG_EPLL		0x58
@@ -142,6 +144,65 @@ static void t40_epll_calc(const struct ingenic_cgu_pll_info *pll_info,
 /* OD0 is the divider itself; zero, which no running PLL holds, reads as 8 */
 static const s8 t40_pll_od_encoding[8] = {
 	1, 2, 3, 4, 5, 6, 7, 0,
+};
+
+/* bits within the OPCR register */
+#define OPCR_GATE_USBPHYCLK	BIT(23)
+#define OPCR_SPENDN0		BIT(7)
+
+/* bits within the USBPCR register */
+#define USBPCR_SIDDQ		BIT(21)
+#define USBPCR_OTG_DISABLE	BIT(20)
+
+/*
+ * The OTG PHY clock: OPCR ungates the PHY clock and takes the PHY out of
+ * suspend, USBPCR powers its analogue part up.
+ */
+static int t40_otg_phy_enable(struct clk_hw *hw)
+{
+	struct ingenic_cgu *cgu = to_ingenic_clk(hw)->cgu;
+	unsigned long flags;
+
+	spin_lock_irqsave(&cgu->lock, flags);
+	writel((readl(cgu->base + CGU_REG_OPCR) | OPCR_SPENDN0) &
+	       ~OPCR_GATE_USBPHYCLK, cgu->base + CGU_REG_OPCR);
+	writel(readl(cgu->base + CGU_REG_USBPCR) &
+	       ~(USBPCR_OTG_DISABLE | USBPCR_SIDDQ),
+	       cgu->base + CGU_REG_USBPCR);
+	spin_unlock_irqrestore(&cgu->lock, flags);
+
+	return 0;
+}
+
+static void t40_otg_phy_disable(struct clk_hw *hw)
+{
+	struct ingenic_cgu *cgu = to_ingenic_clk(hw)->cgu;
+	unsigned long flags;
+
+	/* OPCR also holds the TCU and RTC clock controls */
+	spin_lock_irqsave(&cgu->lock, flags);
+	writel((readl(cgu->base + CGU_REG_OPCR) & ~OPCR_SPENDN0) |
+	       OPCR_GATE_USBPHYCLK, cgu->base + CGU_REG_OPCR);
+	writel(readl(cgu->base + CGU_REG_USBPCR) |
+	       USBPCR_OTG_DISABLE | USBPCR_SIDDQ,
+	       cgu->base + CGU_REG_USBPCR);
+	spin_unlock_irqrestore(&cgu->lock, flags);
+}
+
+static int t40_otg_phy_is_enabled(struct clk_hw *hw)
+{
+	struct ingenic_cgu *cgu = to_ingenic_clk(hw)->cgu;
+	u32 opcr = readl(cgu->base + CGU_REG_OPCR);
+	u32 usbpcr = readl(cgu->base + CGU_REG_USBPCR);
+
+	return (opcr & OPCR_SPENDN0) && !(opcr & OPCR_GATE_USBPHYCLK) &&
+	       !(usbpcr & (USBPCR_SIDDQ | USBPCR_OTG_DISABLE));
+}
+
+static const struct clk_ops t40_otg_phy_ops = {
+	.enable		= t40_otg_phy_enable,
+	.disable	= t40_otg_phy_disable,
+	.is_enabled	= t40_otg_phy_is_enabled,
 };
 
 static const struct ingenic_cgu_clk_info t40_cgu_clocks[] = {
@@ -462,6 +523,12 @@ static const struct ingenic_cgu_clk_info t40_cgu_clocks[] = {
 		"otg", CGU_CLK_GATE,
 		.parents = { T40_CLK_PCLK, -1, -1, -1 },
 		.gate = { CGU_REG_CLKGR0, 3 },
+	},
+
+	[T40_CLK_OTGPHY] = {
+		"otg_phy", CGU_CLK_CUSTOM,
+		.parents = { T40_CLK_EXCLK, -1, -1, -1 },
+		.custom = { &t40_otg_phy_ops },
 	},
 
 	[T40_CLK_EFUSE] = {
