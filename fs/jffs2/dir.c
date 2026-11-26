@@ -787,6 +787,61 @@ static int jffs2_mknod(const struct mnt_idmap *idmap, struct inode *dir_i,
 	return 0;
 }
 
+static u8 jffs2_dirent_type(struct inode *inode)
+{
+	u8 type = (inode->i_mode & S_IFMT) >> 12;
+
+	return type ? type : DT_REG;
+}
+
+static int jffs2_exchange(struct inode *old_dir_i, struct dentry *old_dentry,
+			  struct inode *new_dir_i, struct dentry *new_dentry)
+{
+	struct jffs2_sb_info *c = JFFS2_SB_INFO(old_dir_i->i_sb);
+	struct inode *old_i = d_inode(old_dentry);
+	struct inode *new_i = d_inode(new_dentry);
+	u32 now = JFFS2_NOW();
+	int ret;
+
+	ret = jffs2_do_link(c, JFFS2_INODE_INFO(new_dir_i), old_i->i_ino,
+			    jffs2_dirent_type(old_i), new_dentry->d_name.name,
+			    new_dentry->d_name.len, now);
+	if (ret)
+		return ret;
+
+	ret = jffs2_do_link(c, JFFS2_INODE_INFO(old_dir_i), new_i->i_ino,
+			    jffs2_dirent_type(new_i), old_dentry->d_name.name,
+			    old_dentry->d_name.len, now);
+	if (ret) {
+		/* Point the new name back at its own inode */
+		if (jffs2_do_link(c, JFFS2_INODE_INFO(new_dir_i), new_i->i_ino,
+				  jffs2_dirent_type(new_i),
+				  new_dentry->d_name.name,
+				  new_dentry->d_name.len, now))
+			pr_notice("%s(): exchange half done (err %d)\n",
+				  __func__, ret);
+		d_invalidate(new_dentry);
+		return ret;
+	}
+
+	if (old_dir_i != new_dir_i) {
+		if (S_ISDIR(old_i->i_mode) && !S_ISDIR(new_i->i_mode)) {
+			inc_nlink(new_dir_i);
+			drop_nlink(old_dir_i);
+		} else if (!S_ISDIR(old_i->i_mode) && S_ISDIR(new_i->i_mode)) {
+			inc_nlink(old_dir_i);
+			drop_nlink(new_dir_i);
+		}
+	}
+
+	inode_set_mtime_to_ts(old_dir_i,
+			      inode_set_ctime_to_ts(old_dir_i, ITIME(now)));
+	inode_set_mtime_to_ts(new_dir_i,
+			      inode_set_ctime_to_ts(new_dir_i, ITIME(now)));
+
+	return 0;
+}
+
 static int jffs2_rename (const struct mnt_idmap *idmap,
 			 struct inode *old_dir_i, struct dentry *old_dentry,
 			 struct inode *new_dir_i, struct dentry *new_dentry,
@@ -798,8 +853,11 @@ static int jffs2_rename (const struct mnt_idmap *idmap,
 	uint8_t type;
 	uint32_t now;
 
-	if (flags & ~RENAME_NOREPLACE)
+	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE | RENAME_WHITEOUT))
 		return -EINVAL;
+
+	if (flags & RENAME_EXCHANGE)
+		return jffs2_exchange(old_dir_i, old_dentry, new_dir_i, new_dentry);
 
 	/* The VFS will check for us and prevent trying to rename a
 	 * file over a directory and vice versa, but if it's a directory,
@@ -864,9 +922,26 @@ static int jffs2_rename (const struct mnt_idmap *idmap,
 	if (d_is_dir(old_dentry) && !victim_f)
 		inc_nlink(new_dir_i);
 
-	/* Unlink the original */
-	ret = jffs2_do_unlink(c, JFFS2_INODE_INFO(old_dir_i),
-			      old_dentry->d_name.name, old_dentry->d_name.len, NULL, now);
+	/*
+	 * Unlink the original, or for a whiteout replace its dirent with
+	 * one for a new whiteout inode, so the name is never missing.
+	 */
+	if (flags & RENAME_WHITEOUT) {
+		struct inode *whiteout;
+
+		whiteout = jffs2_new_special(old_dir_i, &old_dentry->d_name,
+					     S_IFCHR | WHITEOUT_MODE,
+					     WHITEOUT_DEV);
+		ret = PTR_ERR_OR_ZERO(whiteout);
+		if (!ret) {
+			unlock_new_inode(whiteout);
+			iput(whiteout);
+		}
+	} else {
+		ret = jffs2_do_unlink(c, JFFS2_INODE_INFO(old_dir_i),
+				      old_dentry->d_name.name,
+				      old_dentry->d_name.len, NULL, now);
+	}
 
 	/* We don't touch inode->i_nlink */
 
