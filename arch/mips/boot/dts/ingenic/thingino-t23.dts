@@ -137,7 +137,12 @@
 };
 
 &isp {
-	/* consumed by the out-of-tree ISP modules, not bound by a driver */
+	/*
+	 * consumed by the out-of-tree ISP modules, not bound by a driver; a
+	 * board with two or three sensors behind a MIPI switch adds a
+	 * "mipi-switch" state (pins_cim_mclk and pins_cim_mipi_switch), which
+	 * the ISP selects when it hands the switch pad to the VIC
+	 */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pins_cim_mclk>;
 
@@ -205,6 +210,12 @@
 	pins_cim_mclk: cim-mclk {
 		function = "cim";
 		groups = "cim-mclk";
+	};
+
+	/* for a board with sensors behind a MIPI switch, see &isp */
+	pins_cim_mipi_switch: cim-mipi-switch {
+		function = "cim";
+		groups = "cim-mipi-switch-a7";
 	};
 
 	pins_i2c0: i2c0 {
