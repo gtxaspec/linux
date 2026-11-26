@@ -426,6 +426,19 @@
 		status = "disabled";
 	};
 
+	pwm: pwm@13460000 {
+		compatible = "ingenic,t41-pwm";
+		reg = <0x13460000 0x1000>;
+
+		clocks = <&cgu T41_CLK_PWM>;
+		assigned-clocks = <&cgu T41_CLK_PWM>;
+		assigned-clock-rates = <50000000>;
+
+		#pwm-cells = <3>;
+
+		status = "disabled";
+	};
+
 	mac: ethernet@134b0000 {
 		compatible = "ingenic,t41-mac", "snps,dwmac";
 		reg = <0x134b0000 0x2000>;
