@@ -104,8 +104,13 @@ static unsigned int sdhci_ingenic_get_max_clock(struct sdhci_host *host)
 	return clk_round_rate(priv->clk, ULONG_MAX);
 }
 
+/*
+ * The MSC only drives the card when the power register holds a bus voltage,
+ * so write it even when a regulator supplies the card.
+ */
 static const struct sdhci_ops sdhci_ingenic_ops = {
 	.set_clock = sdhci_ingenic_set_clock,
+	.set_power = sdhci_set_power_and_bus_voltage,
 	.get_max_clock = sdhci_ingenic_get_max_clock,
 	.set_bus_width = sdhci_set_bus_width,
 	.reset = sdhci_reset,
