@@ -114,6 +114,16 @@
 	pinctrl-0 = <&pins_mmc0>;
 };
 
+&msc1 {
+	/* SDIO Wi-Fi on most boards: a board enables it with its power sequence */
+	status = "disabled";
+	bus-width = <4>;
+	non-removable;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc1>;
+};
+
 &isp {
 	/* consumed by the out-of-tree ISP modules, not bound by a driver */
 	pinctrl-names = "default";
@@ -209,6 +219,11 @@
 	pins_mmc0: mmc0 {
 		function = "mmc0";
 		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_mmc1: mmc1 {
+		function = "mmc1";
+		groups = "mmc1-1bit-b", "mmc1-4bit-b";
 	};
 
 	pins_cim_mclk: cim-mclk {
