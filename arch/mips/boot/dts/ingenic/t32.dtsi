@@ -601,4 +601,24 @@
 
 		status = "disabled";
 	};
+
+	/*
+	 * The TNPU: a RISC-V core (control at 0x12700000, its boot and
+	 * mailbox RAM at 0x12608000) that runs the NN kernels of a model and
+	 * drives the convolution engine; it interrupts on INTC 0
+	 */
+	tnpu: npu@12700000 {
+		compatible = "ingenic,t32-tnpu";
+		reg = <0x12700000 0x1000>, <0x12608000 0x1000>;
+		reg-names = "ccu", "dram";
+
+		interrupt-parent = <&intc>;
+		interrupts = <0>;
+
+		clocks = <&cgu T32_CLK_TNPU>, <&cgu T32_CLK_SCLKA>,
+			 <&cgu T32_CLK_MPLL>, <&cgu T32_CLK_VPLL>;
+		clock-names = "tnpu", "sclka", "mpll", "vpll";
+
+		status = "disabled";
+	};
 };
