@@ -52,7 +52,9 @@ properties:
               - ingenic,t41-mac
           - const: snps,dwmac
       - items:
-          - const: ingenic,t33-mac
+          - enum:
+              - ingenic,t32pro-mac
+              - ingenic,t33-mac
           - const: ingenic,t32-mac
           - const: snps,dwmac
       - items:
