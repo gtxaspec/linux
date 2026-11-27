@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/misc/ingenic,t32-tnpu.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic T32 and T33 TNPU
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description:
+  A RISC-V core with its own control block and RAM that runs the kernels of
+  a neural network model, driving the TNPU's convolution engine and DMA. The
+  host loads its boot code, queues tasks in the RAM's mailbox and takes one
+  interrupt per finished task.
+
+properties:
+  compatible:
+    oneOf:
+      - const: ingenic,t32-tnpu
+      - items:
+          - const: ingenic,t33-tnpu
+          - const: ingenic,t32-tnpu
+
+  reg:
+    items:
+      - description: control (CCU) registers
+      - description: boot code and task mailbox RAM
+
+  reg-names:
+    items:
+      - const: ccu
+      - const: dram
+
+  interrupts:
+    maxItems: 1
+
+  clocks:
+    minItems: 1
+    items:
+      - description: TNPU clock
+      - description: SCLKA, a parent of the TNPU clock
+      - description: MPLL, a parent of the TNPU clock
+      - description: VPLL, a parent of the TNPU clock
+
+  clock-names:
+    minItems: 1
+    items:
+      - const: tnpu
+      - const: sclka
+      - const: mpll
+      - const: vpll
+
+required:
+  - compatible
+  - reg
+  - reg-names
+  - interrupts
+  - clocks
+  - clock-names
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/ingenic,t32-cgu.h>
+
+    npu@12700000 {
+        compatible = "ingenic,t32-tnpu";
+        reg = <0x12700000 0x1000>, <0x12608000 0x1000>;
+        reg-names = "ccu", "dram";
+        interrupts = <0>;
+        clocks = <&cgu T32_CLK_TNPU>, <&cgu T32_CLK_SCLKA>,
+                 <&cgu T32_CLK_MPLL>, <&cgu T32_CLK_VPLL>;
+        clock-names = "tnpu", "sclka", "mpll", "vpll";
+    };
