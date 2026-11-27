@@ -479,6 +479,16 @@
 		clocks = <&cgu T32_CLK_EFUSE>;
 
 		status = "disabled";
+
+		nvmem-layout {
+			compatible = "fixed-layout";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			tsensor_trim: tsensor-trim@10 {
+				reg = <0x10 0x4>;
+			};
+		};
 	};
 
 	riscv: riscv@12210000 {

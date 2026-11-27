@@ -134,6 +134,9 @@
 };
 
 &sadc {
+	nvmem-cells = <&tsensor_trim>;
+	nvmem-cell-names = "tsensor-trim";
+
 	status = "okay";
 };
 
