@@ -31,6 +31,7 @@ properties:
               - ingenic,t30-sysost
               - ingenic,t31-sysost
               - ingenic,t32-sysost
+              - ingenic,t32pro-sysost
               - ingenic,t33-sysost
           - const: ingenic,x1000-ost
 
