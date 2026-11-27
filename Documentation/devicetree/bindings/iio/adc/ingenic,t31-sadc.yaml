@@ -12,7 +12,8 @@ maintainers:
 description:
   The SAR ADC (SADC) of the Ingenic T-series SoCs converts up to eight
   auxiliary inputs with one 12-bit converter, a channel at a time. Packages
-  bond out a subset of the inputs.
+  bond out a subset of the inputs. On the T32 and T33 the converter also
+  samples an on-die temperature sensor.
 
 properties:
   compatible:
@@ -54,6 +55,15 @@ properties:
 
   '#io-channel-cells':
     const: 1
+
+  nvmem-cells:
+    maxItems: 1
+    description:
+      The eFuse word holding the temperature sensor's per-chip trim (T32
+      and T33).
+
+  nvmem-cell-names:
+    const: tsensor-trim
 
 required:
   - compatible
