@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0
 /*
- * Ingenic T31, T23, T32 and T33 SoC CGU driver
+ * Ingenic T31, T23, T32, T32 Pro and T33 SoC CGU driver
  *
  * Copyright (C) 2026 Alfonso Gamboa <gtxent@gmail.com>
  */
@@ -9,6 +9,7 @@
 #include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/of.h>
+#include <linux/slab.h>
 
 #include <dt-bindings/clock/ingenic,t31-cgu.h>
 #include <dt-bindings/clock/ingenic,t23-cgu.h>
@@ -2080,10 +2081,52 @@ static void __init t33_cgu_init(struct device_node *np)
 }
 
 /*
+ * T32 Pro: the T32's clocks (vendor clk-PRJ009.c matches clk-PRJ007.c), but
+ * the CDR at 0x9c feeds its RISC-V core where the T32 has ISPS at 0x90, and
+ * the MPLL holds both output dividers less one (vendor clk-pll.c and the
+ * U-Boot pll_set() of PRJ009/PRJ010).
+ */
+static const s8 t32pro_mpll_od_encoding[8] = {
+	0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+};
+
+static const struct ingenic_cgu_clk_info t32pro_riscv_clk __initconst = {
+	"riscv", CGU_CLK_MUX | CGU_CLK_DIV | CGU_CLK_GATE,
+	.flags = CLK_IGNORE_UNUSED,
+	.parents = { T32_CLK_SCLKA, T32_CLK_MPLL, T32_CLK_VPLL, -1 },
+	.mux = { CGU_REG_T33_RISCVCDR, 30, 2 },
+	.div = { CGU_REG_T33_RISCVCDR, 0, 1, 4, T32_CDR_CE, T32_CDR_BUSY, T32_CDR_STOP },
+	.gate = { CGU_REG_CLKGR0, 22 },
+};
+
+static void __init t32pro_cgu_init(struct device_node *np)
+{
+	struct ingenic_cgu_clk_info *clocks;
+	struct ingenic_cgu_pll_info *mpll;
+
+	clocks = kmemdup(t32_cgu_clocks, sizeof(t32_cgu_clocks), GFP_KERNEL);
+	if (!clocks)
+		return;
+
+	mpll = &clocks[T32_CLK_MPLL].pll;
+	mpll->od_encoding = t32pro_mpll_od_encoding;
+	mpll->od_max = ARRAY_SIZE(t32pro_mpll_od_encoding);
+	mpll->od1_shift = 8;
+	mpll->od1_bits = 3;
+
+	clocks[T32_CLK_ISPS] = (struct ingenic_cgu_clk_info){ };
+	clocks[T33_CLK_RISCV] = t32pro_riscv_clk;
+
+	t31_cgu_setup(np, clocks, ARRAY_SIZE(t32_cgu_clocks));
+	t32_cgu_enable_msc_exclk();
+}
+
+/*
  * CGU has some children devices, this is useful for probing children devices
  * in the case where the device node is compatible with "simple-mfd".
  */
 CLK_OF_DECLARE_DRIVER(t31_cgu, "ingenic,t31-cgu", t31_cgu_init);
 CLK_OF_DECLARE_DRIVER(t23_cgu, "ingenic,t23-cgu", t23_cgu_init);
 CLK_OF_DECLARE_DRIVER(t32_cgu, "ingenic,t32-cgu", t32_cgu_init);
+CLK_OF_DECLARE_DRIVER(t32pro_cgu, "ingenic,t32pro-cgu", t32pro_cgu_init);
 CLK_OF_DECLARE_DRIVER(t33_cgu, "ingenic,t33-cgu", t33_cgu_init);
