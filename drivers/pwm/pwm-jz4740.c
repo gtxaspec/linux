@@ -278,6 +278,10 @@ static const struct soc_info x1000_soc_info = {
 	.num_pwms = 5,
 };
 
+static const struct soc_info t10_soc_info = {
+	.num_pwms = 4,
+};
+
 static const struct soc_info t40_soc_info = {
 	.num_pwms = 8,
 	.count_includes_tdfr = true,
@@ -287,6 +291,10 @@ static const struct of_device_id jz4740_pwm_dt_ids[] = {
 	{ .compatible = "ingenic,jz4740-pwm", .data = &jz4740_soc_info },
 	{ .compatible = "ingenic,jz4725b-pwm", .data = &jz4725b_soc_info },
 	{ .compatible = "ingenic,x1000-pwm", .data = &x1000_soc_info },
+	{ .compatible = "ingenic,t10-pwm", .data = &t10_soc_info },
+	{ .compatible = "ingenic,t20-pwm", .data = &t10_soc_info },
+	{ .compatible = "ingenic,t23-pwm", .data = &t10_soc_info },
+	{ .compatible = "ingenic,t31-pwm", .data = &t10_soc_info },
 	{ .compatible = "ingenic,t40-pwm", .data = &t40_soc_info },
 	{ }
 };
