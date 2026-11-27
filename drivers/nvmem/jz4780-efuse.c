@@ -327,6 +327,7 @@ static const struct of_device_id jz4780_efuse_match[] = {
 	{ .compatible = "ingenic,t30-efuse",    .data = &t21_efuse_soc_data    },
 	{ .compatible = "ingenic,t31-efuse",    .data = &t31_efuse_soc_data    },
 	{ .compatible = "ingenic,t32-efuse",    .data = &t32_efuse_soc_data    },
+	{ .compatible = "ingenic,t32pro-efuse", .data = &t32_efuse_soc_data    },
 	{ .compatible = "ingenic,t33-efuse",    .data = &t33_efuse_soc_data    },
 	{ .compatible = "ingenic,a1-efuse",     .data = &t33_efuse_soc_data    },
 	{ .compatible = "ingenic,t40-efuse",    .data = &t33_efuse_soc_data    },
