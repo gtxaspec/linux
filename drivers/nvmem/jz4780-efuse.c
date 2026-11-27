@@ -225,7 +225,8 @@ static void clk_disable_unprepare_helper(void *clock)
 static int jz4780_efuse_set_timing(struct jz4780_efuse *efuse,
 				   unsigned long clk_rate)
 {
-	unsigned long rd_adj, rd_strobe;
+	unsigned long rd_adj;
+	long rd_strobe;
 
 	/*
 	 * rd_adj and rd_strobe are 4 bit values
@@ -240,7 +241,11 @@ static int jz4780_efuse_set_timing(struct jz4780_efuse *efuse,
 	 */
 
 	rd_adj = clk_rate / 153846154;
-	rd_strobe = clk_rate / 28571429 - 5 - rd_adj + 1;
+	rd_strobe = (long)(clk_rate / 28571429) - 5 - (long)rd_adj + 1;
+
+	/* Below about 143 MHz the five fixed cycles alone exceed 35 ns */
+	if (rd_strobe < 0)
+		rd_strobe = 0;
 
 	if (rd_adj > EFUCFG_RD_ADJ_MASK ||
 	    rd_strobe > EFUCFG_RD_STR_MASK) {
