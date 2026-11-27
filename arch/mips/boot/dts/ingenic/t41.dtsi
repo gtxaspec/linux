@@ -620,6 +620,29 @@
 		status = "disabled";
 	};
 
+	/*
+	 * The NNA's DMA and descriptor window, and the SRAM that the L2
+	 * cache shares with its ORAM (CCU MSCR sets the split)
+	 */
+	nna: nna@12500000 {
+		compatible = "ingenic,t41-nna";
+		reg = <0x12500000 0x10000>, <0x12600000 0x80000>;
+		reg-names = "nndma", "sram";
+
+		status = "disabled";
+	};
+
+	/* T, F and P at +0x000, +0x200 and +0x300; clocked through CCU MSCR */
+	aip: aip@12b00000 {
+		compatible = "ingenic,t41-aip";
+		reg = <0x12b00000 0x400>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <40>, <39>, <38>;
+
+		status = "disabled";
+	};
+
 	aic: audio-controller@10020000 {
 		compatible = "ingenic,t41-aic";
 		reg = <0x10020000 0x70>;

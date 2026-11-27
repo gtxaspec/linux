@@ -541,6 +541,18 @@
 		status = "disabled";
 	};
 
+	/*
+	 * The NNA's DMA and descriptor window, and the SRAM that the L2
+	 * cache shares with its ORAM (CCU MSCR sets the split)
+	 */
+	nna: nna@12500000 {
+		compatible = "ingenic,a1-nna";
+		reg = <0x12500000 0x10000>, <0x12600000 0x100000>;
+		reg-names = "nndma", "sram";
+
+		status = "disabled";
+	};
+
 	vde: display@13300000 {
 		compatible = "ingenic,a1-vde";
 		reg = <0x13300000 0xa0000>, <0x10075000 0x1000>,

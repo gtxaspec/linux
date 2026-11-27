@@ -577,6 +577,32 @@
 		status = "disabled";
 	};
 
+	/*
+	 * The NNA's DMA and descriptor window, and the SRAM that the L2
+	 * cache shares with its ORAM (CCU MSCR sets the split)
+	 */
+	nna: nna@12500000 {
+		compatible = "ingenic,t40-nna";
+		reg = <0x12500000 0x10000>, <0x12600000 0x100000>;
+		reg-names = "nndma", "sram";
+
+		status = "disabled";
+	};
+
+	bscaler: bscaler@13090000 {
+		compatible = "ingenic,t40-bscaler";
+		reg = <0x13090000 0x100>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <40>, <39>;
+		interrupt-names = "frmt", "frmc";
+
+		clocks = <&cgu T40_CLK_BSCALER>, <&cgu T40_CLK_AHB0>;
+		clock-names = "bscaler", "ahb0";
+
+		status = "disabled";
+	};
+
 	aic: audio-controller@10020000 {
 		compatible = "ingenic,t40-aic";
 		reg = <0x10020000 0x70>;
