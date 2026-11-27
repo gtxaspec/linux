@@ -44,6 +44,7 @@ properties:
               - ingenic,t30-uart
               - ingenic,t31-uart
               - ingenic,t32-uart
+              - ingenic,t32pro-uart
               - ingenic,t33-uart
               - ingenic,a1-uart
               - ingenic,t40-uart
