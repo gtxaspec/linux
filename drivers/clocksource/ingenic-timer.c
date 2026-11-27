@@ -351,6 +351,7 @@ err_tcu_clocksource_cleanup:
 	clk_disable_unprepare(tcu->cs_clk);
 	clk_put(tcu->cs_clk);
 err_free_ingenic_tcu:
+	ingenic_tcu = NULL;
 	kfree(tcu);
 	return ret;
 }
@@ -363,6 +364,7 @@ TIMER_OF_DECLARE(x1000_tcu_intc,  "ingenic,x1000-tcu",  ingenic_tcu_init);
 
 static int __init ingenic_tcu_probe(struct platform_device *pdev)
 {
+	/* Bound even without a timer, for the watchdog's clock supplier */
 	platform_set_drvdata(pdev, ingenic_tcu);
 
 	return 0;
@@ -372,6 +374,9 @@ static int ingenic_tcu_suspend(struct device *dev)
 {
 	struct ingenic_tcu *tcu = dev_get_drvdata(dev);
 	unsigned int cpu;
+
+	if (!tcu)
+		return 0;
 
 	clk_disable(tcu->cs_clk);
 
@@ -386,6 +391,9 @@ static int ingenic_tcu_resume(struct device *dev)
 	struct ingenic_tcu *tcu = dev_get_drvdata(dev);
 	unsigned int cpu;
 	int ret;
+
+	if (!tcu)
+		return 0;
 
 	for (cpu = 0; cpu < num_online_cpus(); cpu++) {
 		ret = clk_enable(tcu->timers[cpu].clk);
