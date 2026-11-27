@@ -22,6 +22,7 @@ properties:
               - ingenic,t23-dtrng
               - ingenic,t31-dtrng
               - ingenic,t32-dtrng
+              - ingenic,t32pro-dtrng
               - ingenic,t33-dtrng
               - ingenic,a1-dtrng
               - ingenic,t40-dtrng
