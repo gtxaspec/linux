@@ -323,6 +323,13 @@ static const struct ingenic_soc_info jz4770_soc_info = {
 	.has_tcu_clk = false,
 };
 
+/* TMR and the TCSRs hold channels 0 to 3 only */
+static const struct ingenic_soc_info t10_soc_info = {
+	.num_channels = 4,
+	.has_ost = true,
+	.has_tcu_clk = false,
+};
+
 static const struct ingenic_soc_info x1000_soc_info = {
 	.num_channels = 8,
 	.has_ost = false, /* X1000 has OST, but it not belong TCU */
@@ -343,6 +350,10 @@ static const struct of_device_id __maybe_unused ingenic_tcu_of_match[] __initcon
 	{ .compatible = "ingenic,jz4725b-tcu", .data = &jz4725b_soc_info, },
 	{ .compatible = "ingenic,jz4760-tcu", .data = &jz4770_soc_info, },
 	{ .compatible = "ingenic,jz4770-tcu", .data = &jz4770_soc_info, },
+	{ .compatible = "ingenic,t10-tcu", .data = &t10_soc_info, },
+	{ .compatible = "ingenic,t20-tcu", .data = &t10_soc_info, },
+	{ .compatible = "ingenic,t23-tcu", .data = &t10_soc_info, },
+	{ .compatible = "ingenic,t31-tcu", .data = &t10_soc_info, },
 	{ .compatible = "ingenic,t32-tcu", .data = &t32_soc_info, },
 	{ .compatible = "ingenic,x1000-tcu", .data = &x1000_soc_info, },
 	{ /* sentinel */ }
