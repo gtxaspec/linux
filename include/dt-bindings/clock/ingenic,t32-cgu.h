@@ -1,12 +1,15 @@
 /* SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause) */
 /*
- * This header provides clock numbers for the ingenic,t32-cgu and
- * ingenic,t33-cgu DT bindings.
+ * This header provides clock numbers for the ingenic,t32-cgu,
+ * ingenic,t32pro-cgu and ingenic,t33-cgu DT bindings.
  *
  * The T33 uses the T32's numbers. It has no VPLL and no ISPS divider; its
  * CIM divider is a fractional one the binding does not describe yet.
  * The I2S source mux feeds both I2S dividers; on the T33 it picks SCLK_A or
  * MPLL only.
+ *
+ * The T32 Pro uses the T32's numbers too. It has the T32's VPLL and three-way
+ * muxes, but a RISC-V divider (T33_CLK_RISCV) where the T32 has its ISPS one.
  *
  * They are roughly ordered as:
  *   - external clocks
@@ -88,7 +91,7 @@
 #define T32_CLK_CE_I2ST		66
 #define T32_CLK_CE_I2SR		67
 
-/* T33 only */
+/* T32 Pro and T33 */
 #define T33_CLK_RISCV		68
 
 /* T32 and T33 */

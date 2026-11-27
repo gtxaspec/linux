@@ -37,6 +37,7 @@ select:
           - ingenic,t30-cgu
           - ingenic,t31-cgu
           - ingenic,t32-cgu
+          - ingenic,t32pro-cgu
           - ingenic,t33-cgu
           - ingenic,t40-cgu
           - ingenic,t41-cgu
@@ -78,6 +79,7 @@ properties:
           - ingenic,t30-cgu
           - ingenic,t31-cgu
           - ingenic,t32-cgu
+          - ingenic,t32pro-cgu
           - ingenic,t33-cgu
           - ingenic,t40-cgu
           - ingenic,t41-cgu
