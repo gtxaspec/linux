@@ -111,6 +111,10 @@
 	status = "okay";
 };
 
+&helix {
+	status = "okay";
+};
+
 &aic {
 	status = "okay";
 };

@@ -655,6 +655,24 @@
 		status = "disabled";
 	};
 
+	/*
+	 * The helix JPEG encoder behind the vendor soc_vpu driver; the IVDC
+	 * can stream frames into it directly.
+	 */
+	helix: video-codec@13280000 {
+		compatible = "ingenic,t41-helix";
+		reg = <0x13280000 0x40000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <0>;
+
+		clocks = <&cgu T41_CLK_RJPEG>, <&cgu T41_CLK_IVDC>,
+			 <&cgu T41_CLK_ISPA>;
+		clock-names = "jpeg", "ivdc", "ahb1";
+
+		status = "disabled";
+	};
+
 	aic: audio-controller@10020000 {
 		compatible = "ingenic,t41-aic";
 		reg = <0x10020000 0x70>;
