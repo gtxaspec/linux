@@ -80,6 +80,7 @@ properties:
               - ingenic,t30-usb-phy-ctrl
               - ingenic,t31-usb-phy-ctrl
               - ingenic,t32-usb-phy-ctrl
+              - ingenic,t32pro-usb-phy-ctrl
               - ingenic,t33-usb-phy-ctrl
               - ingenic,t40-usb-phy-ctrl
               - ingenic,t41-usb-phy-ctrl
