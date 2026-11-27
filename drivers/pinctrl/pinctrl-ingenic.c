@@ -3376,6 +3376,10 @@ static int t23_mac_rmii_pins[] = {
 	0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2d, 0x2e, 0x2f, 0x30,
 };
 static int t23_pwm0_pins[] = { 0x0e, };
+static int t23_pwm0_pb17_pins[] = { 0x31, };
+static int t23_pwm1_pb18_pins[] = { 0x32, };
+static int t23_pwm2_pb27_pins[] = { 0x3b, };
+static int t23_pwm3_pb28_pins[] = { 0x3c, };
 static int t23_dmic_pins[] = { 0x3c, 0x3d, 0x3e, };
 static int t23_cim_mclk_pins[] = { 0x0f, };
 static int t23_cim_data_10bit_low_pins[] = {
@@ -3420,6 +3424,10 @@ static const struct group_desc t23_groups[] = {
 	INGENIC_PIN_GROUP("ssi0-b2", t23_ssi0_b2, 2),
 	INGENIC_PIN_GROUP("mac-rmii", t23_mac_rmii, 0),
 	INGENIC_PIN_GROUP("pwm0", t23_pwm0, 2),
+	INGENIC_PIN_GROUP("pwm0-pb17", t23_pwm0_pb17, 0),
+	INGENIC_PIN_GROUP("pwm1-pb18", t23_pwm1_pb18, 0),
+	INGENIC_PIN_GROUP("pwm2-pb27", t23_pwm2_pb27, 1),
+	INGENIC_PIN_GROUP("pwm3-pb28", t23_pwm3_pb28, 1),
 	INGENIC_PIN_GROUP("dmic", t23_dmic, 3),
 	INGENIC_PIN_GROUP("cim-mclk", t23_cim_mclk, 1),
 	INGENIC_PIN_GROUP("cim-data-10bit-low", t23_cim_data_10bit_low, 0),
@@ -3441,7 +3449,10 @@ static const char *t23_mmc1_groups[] = { "mmc1-4bit-b", "mmc1-4bit-a", };
 static const char *t23_sfc_groups[] = { "sfc-data", };
 static const char *t23_ssi0_groups[] = { "ssi0-b1", "ssi0-b2", };
 static const char *t23_mac_groups[] = { "mac-rmii", };
-static const char *t23_pwm0_groups[] = { "pwm0", };
+static const char * const t23_pwm0_groups[] = { "pwm0", "pwm0-pb17", };
+static const char * const t23_pwm1_groups[] = { "pwm1-pb18", };
+static const char * const t23_pwm2_groups[] = { "pwm2-pb27", };
+static const char * const t23_pwm3_groups[] = { "pwm3-pb28", };
 static const char *t23_dmic_groups[] = { "dmic", };
 static const char *t23_cim_groups[] = {
 	"cim-mclk", "cim-data-10bit-low", "cim-data-10bit-high",
@@ -3462,6 +3473,9 @@ static const struct pinfunction t23_functions[] = {
 	INGENIC_PIN_FUNCTION("ssi0", t23_ssi0),
 	INGENIC_PIN_FUNCTION("mac", t23_mac),
 	INGENIC_PIN_FUNCTION("pwm0", t23_pwm0),
+	INGENIC_PIN_FUNCTION("pwm1", t23_pwm1),
+	INGENIC_PIN_FUNCTION("pwm2", t23_pwm2),
+	INGENIC_PIN_FUNCTION("pwm3", t23_pwm3),
 	INGENIC_PIN_FUNCTION("dmic", t23_dmic),
 	INGENIC_PIN_FUNCTION("cim", t23_cim),
 };
