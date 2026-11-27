@@ -44,6 +44,13 @@
 			no-map;
 			status = "disabled";
 		};
+
+		/* the NNA's memory, where nmem= puts it */
+		nmem: nmem@7000000 {
+			reg = <0x7000000 0x1000000>;
+			no-map;
+			status = "disabled";
+		};
 	};
 };
 
@@ -155,6 +162,14 @@
 	eth_phy: ethernet-phy@0 {
 		reg = <0>;
 	};
+};
+
+&nna {
+	status = "okay";
+};
+
+&aip {
+	status = "okay";
 };
 
 &pinctrl {

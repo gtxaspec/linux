@@ -36,6 +36,13 @@
 			status = "disabled";
 		};
 
+		/* the NNA's memory, where nmem= puts it */
+		nmem: nmem@7000000 {
+			reg = <0x7000000 0x1000000>;
+			no-map;
+			status = "disabled";
+		};
+
 		/* the decoder MMU's 4 MiB + 4 KiB contiguous page table */
 		vdec_mmu: vdec-mmu@b800000 {
 			reg = <0xb800000 0x402000>;
@@ -156,6 +163,10 @@
 		reset-assert-us = <12000>;
 		reset-deassert-us = <80000>;
 	};
+};
+
+&nna {
+	status = "okay";
 };
 
 &pinctrl {
