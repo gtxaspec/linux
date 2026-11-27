@@ -5,5 +5,6 @@
 #include <linux/types.h>
 
 int ingenic_rmem_region(phys_addr_t *base, phys_addr_t *size);
+int ingenic_nmem_region(phys_addr_t *base, phys_addr_t *size);
 
 #endif

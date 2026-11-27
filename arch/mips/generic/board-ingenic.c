@@ -27,8 +27,9 @@
 
 /*
  * Thingino's U-Boot places the media stack's carve-outs at boot and passes
- * them as rmem=<size>@<base> (and ispmem= on the T10 and T20); libimp reads
- * them back from /proc/cmdline. The board device tree describes each as a
+ * them as rmem=<size>@<base> (and ispmem= on the T10 and T20, nmem= for the
+ * NNA on the T40, T41 and A1); libimp and the NNA libraries read them back
+ * from /proc/cmdline. The board device tree describes each as a
  * disabled no-map /reserved-memory node of that name; move the node to where
  * the boot loader put the region and enable it, so that the reserved memory
  * code keeps the kernel off it. A size of 0 leaves the region disabled.
@@ -133,11 +134,14 @@ static int __init ingenic_ispmem_param(char *p)
 }
 early_param("ispmem", ingenic_ispmem_param);
 
-/*
- * The out-of-tree media modules built against this kernel still look the
- * region up through this call; new code finds it by its memory-region.
- */
-int ingenic_rmem_region(phys_addr_t *base, phys_addr_t *size)
+static int __init ingenic_nmem_param(char *p)
+{
+	return ingenic_carveout_param("nmem", p);
+}
+early_param("nmem", ingenic_nmem_param);
+
+static int ingenic_carveout_region(const char *name, phys_addr_t *base,
+				   phys_addr_t *size)
 {
 	struct device_node *parent, *np;
 	struct reserved_mem *rmem = NULL;
@@ -147,7 +151,7 @@ int ingenic_rmem_region(phys_addr_t *base, phys_addr_t *size)
 		return -ENODEV;
 
 	for_each_available_child_of_node(parent, np) {
-		if (of_node_name_eq(np, "rmem")) {
+		if (of_node_name_eq(np, name)) {
 			rmem = of_reserved_mem_lookup(np);
 			of_node_put(np);
 			break;
@@ -162,7 +166,22 @@ int ingenic_rmem_region(phys_addr_t *base, phys_addr_t *size)
 	*size = rmem->size;
 	return 0;
 }
+
+/*
+ * The out-of-tree media modules built against this kernel still look the
+ * regions up through these calls; new code finds them by memory-region.
+ */
+int ingenic_rmem_region(phys_addr_t *base, phys_addr_t *size)
+{
+	return ingenic_carveout_region("rmem", base, size);
+}
 EXPORT_SYMBOL_GPL(ingenic_rmem_region);
+
+int ingenic_nmem_region(phys_addr_t *base, phys_addr_t *size)
+{
+	return ingenic_carveout_region("nmem", base, size);
+}
+EXPORT_SYMBOL_GPL(ingenic_nmem_region);
 
 static __init char *ingenic_get_system_type(unsigned long machtype)
 {
