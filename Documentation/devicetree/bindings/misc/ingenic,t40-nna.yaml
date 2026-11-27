@@ -1,0 +1,48 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/misc/ingenic,t40-nna.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic T40, T41 and A1 neural network accelerator (NNA)
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description:
+  The NNA is driven by the CPU's MXU3 NN instructions; its DMA moves data
+  between memory and the ORAM, the part of an on-chip SRAM that the L2
+  cache does not use (the CCU sets the split). User space maps the DMA and
+  descriptor window, the ORAM and an nmem= region through the device.
+
+properties:
+  compatible:
+    enum:
+      - ingenic,a1-nna
+      - ingenic,t40-nna
+      - ingenic,t41-nna
+
+  reg:
+    items:
+      - description: NN DMA registers and descriptor RAM
+      - description: SRAM shared by the L2 cache and the ORAM
+
+  reg-names:
+    items:
+      - const: nndma
+      - const: sram
+
+required:
+  - compatible
+  - reg
+  - reg-names
+
+additionalProperties: false
+
+examples:
+  - |
+    nna@12500000 {
+        compatible = "ingenic,t41-nna";
+        reg = <0x12500000 0x10000>, <0x12600000 0x80000>;
+        reg-names = "nndma", "sram";
+    };

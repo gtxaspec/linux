@@ -13150,6 +13150,9 @@ M:	Paul Cercueil <paul@crapouillou.net>
 L:	linux-mips@vger.kernel.org
 S:	Maintained
 F:	Documentation/devicetree/bindings/iio/adc/ingenic,t31-sadc.yaml
+F:	Documentation/devicetree/bindings/misc/ingenic,a1-aip.yaml
+F:	Documentation/devicetree/bindings/misc/ingenic,t40-bscaler.yaml
+F:	Documentation/devicetree/bindings/misc/ingenic,t40-nna.yaml
 F:	Documentation/devicetree/bindings/mmc/ingenic,t32-sdhci.yaml
 F:	Documentation/devicetree/bindings/pwm/ingenic,t32-pwm.yaml
 F:	Documentation/devicetree/bindings/reset/ingenic,t21-reset.yaml

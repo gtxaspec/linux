@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/misc/ingenic,t40-bscaler.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic T40 BSCALER
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description:
+  The T40's image scaler and converter for the NNA's input, in the window
+  it shares with the LZMA decompressor. FRMT converts NV12 frames, FRMC
+  resizes and warps through descriptor chains.
+
+properties:
+  compatible:
+    const: ingenic,t40-bscaler
+
+  reg:
+    maxItems: 1
+
+  interrupts:
+    items:
+      - description: FRMT
+      - description: FRMC
+
+  interrupt-names:
+    items:
+      - const: frmt
+      - const: frmc
+
+  clocks:
+    items:
+      - description: BSCALER clock
+      - description: AHB0 bus gate
+
+  clock-names:
+    items:
+      - const: bscaler
+      - const: ahb0
+
+required:
+  - compatible
+  - reg
+  - interrupts
+  - interrupt-names
+  - clocks
+  - clock-names
+
+additionalProperties: false
+
+examples:
+  - |
+    #include <dt-bindings/clock/ingenic,t40-cgu.h>
+
+    bscaler@13090000 {
+        compatible = "ingenic,t40-bscaler";
+        reg = <0x13090000 0x100>;
+        interrupts = <40>, <39>;
+        interrupt-names = "frmt", "frmc";
+        clocks = <&cgu T40_CLK_BSCALER>, <&cgu T40_CLK_AHB0>;
+        clock-names = "bscaler", "ahb0";
+    };

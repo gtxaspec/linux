@@ -1,0 +1,65 @@
+# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
+%YAML 1.2
+---
+$id: http://devicetree.org/schemas/misc/ingenic,a1-aip.yaml#
+$schema: http://devicetree.org/meta-schemas/core.yaml#
+
+title: Ingenic A1 and T41 AI preprocessor (AIP)
+
+maintainers:
+  - Alfonso Gamboa <gtxent@gmail.com>
+
+description:
+  Three image engines for the NNA's input, each with its own interrupt,
+  T (format conversion) at +0x000, F (resize) at +0x200 and P (affine and
+  perspective warps) at +0x300.
+
+properties:
+  compatible:
+    enum:
+      - ingenic,a1-aip
+      - ingenic,t41-aip
+
+  reg:
+    maxItems: 1
+
+  interrupts:
+    items:
+      - description: T engine
+      - description: F engine
+      - description: P engine
+
+  clocks:
+    maxItems: 1
+
+  clock-names:
+    const: gate_aip
+
+required:
+  - compatible
+  - reg
+  - interrupts
+
+allOf:
+  - if:
+      properties:
+        compatible:
+          const: ingenic,a1-aip
+    then:
+      required:
+        - clocks
+        - clock-names
+    else:
+      properties:
+        clocks: false
+        clock-names: false
+
+additionalProperties: false
+
+examples:
+  - |
+    aip@12b00000 {
+        compatible = "ingenic,t41-aip";
+        reg = <0x12b00000 0x400>;
+        interrupts = <40>, <39>, <38>;
+    };
