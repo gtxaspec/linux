@@ -260,11 +260,19 @@ static const struct ingenic_soc_info jz4725b_soc_info = {
 	.num_channels = 6,
 };
 
+static const struct ingenic_soc_info t10_soc_info = {
+	.num_channels = 4,
+};
+
 static const struct of_device_id ingenic_tcu_of_match[] = {
 	{ .compatible = "ingenic,jz4740-tcu", .data = &jz4740_soc_info, },
 	{ .compatible = "ingenic,jz4725b-tcu", .data = &jz4725b_soc_info, },
 	{ .compatible = "ingenic,jz4760-tcu", .data = &jz4740_soc_info, },
 	{ .compatible = "ingenic,jz4770-tcu", .data = &jz4740_soc_info, },
+	{ .compatible = "ingenic,t10-tcu", .data = &t10_soc_info, },
+	{ .compatible = "ingenic,t20-tcu", .data = &t10_soc_info, },
+	{ .compatible = "ingenic,t23-tcu", .data = &t10_soc_info, },
+	{ .compatible = "ingenic,t31-tcu", .data = &t10_soc_info, },
 	{ .compatible = "ingenic,x1000-tcu", .data = &jz4740_soc_info, },
 	{ /* sentinel */ }
 };
@@ -298,6 +306,13 @@ static int __init ingenic_tcu_init(struct device_node *np)
 					 num_possible_cpus() + 1);
 	of_property_read_u32(np, "ingenic,pwm-channels-mask",
 			     (u32 *)&tcu->pwm_channels_mask);
+
+	/* Every channel a PWM: the SoC's OST is the timer */
+	if (hweight8(tcu->pwm_channels_mask) == soc_info->num_channels) {
+		pr_info("%s: all channels are PWMs, no TCU timer\n", __func__);
+		ret = 0;
+		goto err_free_ingenic_tcu;
+	}
 
 	/* Verify that we have at least num_possible_cpus() + 1 free channels */
 	if (hweight8(tcu->pwm_channels_mask) >
