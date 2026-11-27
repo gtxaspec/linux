@@ -27,6 +27,7 @@ properties:
               - ingenic,t30-reset
               - ingenic,t31-reset
               - ingenic,t32-reset
+              - ingenic,t32pro-reset
               - ingenic,t33-reset
               - ingenic,t40-reset
               - ingenic,t41-reset
