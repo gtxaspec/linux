@@ -33,6 +33,7 @@ properties:
           - const: ingenic,x1000-sfc
       - items:
           - enum:
+              - ingenic,t32pro-sfc
               - ingenic,t33-sfc
               - ingenic,a1-sfc
               - ingenic,t40-sfc
