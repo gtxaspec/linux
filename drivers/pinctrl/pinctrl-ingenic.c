@@ -3213,6 +3213,14 @@ static int t21_pwm0_pins[] = { 0x31, };
 static int t21_pwm1_pins[] = { 0x32, };
 static int t21_pwm2_pins[] = { 0x48, };
 static int t21_pwm3_pins[] = { 0x49, };
+static int t21_pwm0_pc17_pins[] = { 0x51, };
+static int t21_pwm1_pc18_pins[] = { 0x52, };
+static int t21_pwm2_pc11_pins[] = { 0x4b, };
+static int t21_pwm3_pc12_pins[] = { 0x4c, };
+static int t21_pwm4_pc13_pins[] = { 0x4d, };
+static int t21_pwm5_pc14_pins[] = { 0x4e, };
+static int t21_pwm6_pc15_pins[] = { 0x4f, };
+static int t21_pwm7_pc16_pins[] = { 0x50, };
 /* The sensor clock, which stays a GPIO unless this group muxes it */
 static int t21_cim_pclk_pins[] = { 0x0e, };
 static int t21_cim_mclk_pins[] = { 0x0f, };
@@ -3251,6 +3259,14 @@ static const struct group_desc t21_groups[] = {
 	INGENIC_PIN_GROUP("pwm1", t21_pwm1, 0),
 	INGENIC_PIN_GROUP("pwm2", t21_pwm2, 0),
 	INGENIC_PIN_GROUP("pwm3", t21_pwm3, 0),
+	INGENIC_PIN_GROUP("pwm0-pc17", t21_pwm0_pc17, 0),
+	INGENIC_PIN_GROUP("pwm1-pc18", t21_pwm1_pc18, 0),
+	INGENIC_PIN_GROUP("pwm2-pc11", t21_pwm2_pc11, 1),
+	INGENIC_PIN_GROUP("pwm3-pc12", t21_pwm3_pc12, 1),
+	INGENIC_PIN_GROUP("pwm4-pc13", t21_pwm4_pc13, 1),
+	INGENIC_PIN_GROUP("pwm5-pc14", t21_pwm5_pc14, 1),
+	INGENIC_PIN_GROUP("pwm6-pc15", t21_pwm6_pc15, 0),
+	INGENIC_PIN_GROUP("pwm7-pc16", t21_pwm7_pc16, 1),
 	INGENIC_PIN_GROUP("cim-pclk", t21_cim_pclk, 1),
 	INGENIC_PIN_GROUP("cim-mclk", t21_cim_mclk, 1),
 	INGENIC_PIN_GROUP("cim-sync", t21_cim_sync, 1),
@@ -3273,10 +3289,15 @@ static const char *t21_ssi0_groups[] = {
 static const char *t21_mac_groups[] = {
 	"mac-rmii", "mac-ephy-led", "mac-ephy-led-link",
 };
-static const char *t21_pwm0_groups[] = { "pwm0", };
-static const char *t21_pwm1_groups[] = { "pwm1", };
-static const char *t21_pwm2_groups[] = { "pwm2", };
-static const char *t21_pwm3_groups[] = { "pwm3", };
+
+static const char * const t21_pwm0_groups[] = { "pwm0", "pwm0-pc17", };
+static const char * const t21_pwm1_groups[] = { "pwm1", "pwm1-pc18", };
+static const char * const t21_pwm2_groups[] = { "pwm2", "pwm2-pc11", };
+static const char * const t21_pwm3_groups[] = { "pwm3", "pwm3-pc12", };
+static const char * const t21_pwm4_groups[] = { "pwm4-pc13", };
+static const char * const t21_pwm5_groups[] = { "pwm5-pc14", };
+static const char * const t21_pwm6_groups[] = { "pwm6-pc15", };
+static const char * const t21_pwm7_groups[] = { "pwm7-pc16", };
 static const char *t21_cim_groups[] = {
 	"cim-pclk", "cim-mclk", "cim-sync", "cim-data-10bit",
 	"cim-data-10bit-high", "cim-data-12bit",
@@ -3297,6 +3318,10 @@ static const struct pinfunction t21_functions[] = {
 	INGENIC_PIN_FUNCTION("pwm1", t21_pwm1),
 	INGENIC_PIN_FUNCTION("pwm2", t21_pwm2),
 	INGENIC_PIN_FUNCTION("pwm3", t21_pwm3),
+	INGENIC_PIN_FUNCTION("pwm4", t21_pwm4),
+	INGENIC_PIN_FUNCTION("pwm5", t21_pwm5),
+	INGENIC_PIN_FUNCTION("pwm6", t21_pwm6),
+	INGENIC_PIN_FUNCTION("pwm7", t21_pwm7),
 	INGENIC_PIN_FUNCTION("cim", t21_cim),
 };
 
