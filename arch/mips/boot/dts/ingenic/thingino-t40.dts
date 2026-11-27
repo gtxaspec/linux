@@ -139,6 +139,11 @@
 	memory-region = <&rmem>;
 };
 
+&i2d {
+	/* /dev/i2d (libimp rotation), bound by the out-of-tree i2d module */
+	status = "okay";
+};
+
 &aic {
 	status = "okay";
 };

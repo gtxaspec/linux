@@ -643,6 +643,18 @@
 		status = "disabled";
 	};
 
+	i2d: i2d@130b0000 {
+		compatible = "ingenic,t41-i2d";
+		reg = <0x130b0000 0x10000>;
+
+		interrupt-parent = <&intc>;
+		interrupts = <45>;
+
+		clocks = <&cgu T41_CLK_I2D>;
+
+		status = "disabled";
+	};
+
 	aic: audio-controller@10020000 {
 		compatible = "ingenic,t41-aic";
 		reg = <0x10020000 0x70>;
