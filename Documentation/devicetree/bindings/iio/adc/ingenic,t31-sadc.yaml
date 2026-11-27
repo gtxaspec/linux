@@ -29,7 +29,9 @@ properties:
           - const: ingenic,t10-sadc
           - const: ingenic,t20-sadc
       - items:
-          - const: ingenic,t33-sadc
+          - enum:
+              - ingenic,t32pro-sadc
+              - ingenic,t33-sadc
           - const: ingenic,t32-sadc
       - items:
           - const: ingenic,t41-sadc
