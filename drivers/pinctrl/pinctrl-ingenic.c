@@ -5224,7 +5224,8 @@ static const struct pinconf_ops ingenic_confops = {
  * map is the T32NQ/T32LQ and T33LQ data sheets' function columns, which the
  * vendor PRJ007/PRJ008-pinctrl.dtsi groups agree with except where noted.
  * The two differ in UART2: the T32 has it on PA21/PA22 (function 3), the
- * T33 moves it to function 0 there with RTS/CTS on PA19/PA20.
+ * T33 moves it to function 0 there with RTS/CTS on PA19/PA20. The T32 Pro
+ * (T32ProZN data sheet) has the T32's map.
  */
 static int t32_uart0_data_b_pins[] = { 0x22, 0x25, };
 
@@ -6132,6 +6133,7 @@ static const struct of_device_id ingenic_gpio_of_matches[] __initconst = {
 	{ .compatible = "ingenic,t30-gpio" },
 	{ .compatible = "ingenic,t31-gpio" },
 	{ .compatible = "ingenic,t32-gpio" },
+	{ .compatible = "ingenic,t32pro-gpio" },
 	{ .compatible = "ingenic,t33-gpio" },
 	{ .compatible = "ingenic,t40-gpio" },
 	{ .compatible = "ingenic,t41-gpio" },
@@ -6415,6 +6417,10 @@ static const struct of_device_id ingenic_pinctrl_of_matches[] = {
 	},
 	{
 		.compatible = "ingenic,t32-pinctrl",
+		.data = IF_ENABLED(CONFIG_MACH_T32, &t32_chip_info)
+	},
+	{
+		.compatible = "ingenic,t32pro-pinctrl",
 		.data = IF_ENABLED(CONFIG_MACH_T32, &t32_chip_info)
 	},
 	{
