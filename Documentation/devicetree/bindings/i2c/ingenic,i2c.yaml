@@ -33,6 +33,7 @@ properties:
               - ingenic,t30-i2c
               - ingenic,t31-i2c
               - ingenic,t32-i2c
+              - ingenic,t32pro-i2c
               - ingenic,t33-i2c
               - ingenic,a1-i2c
               - ingenic,t40-i2c
