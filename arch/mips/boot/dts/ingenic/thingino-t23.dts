@@ -54,12 +54,6 @@
 	pinctrl-0 = <&pins_uart1>;
 };
 
-&tcu {
-	/* 750 kHz for the system timer and clocksource; SYSOST is sched_clock */
-	assigned-clocks = <&tcu TCU_CLK_TIMER0>, <&tcu TCU_CLK_TIMER1>;
-	assigned-clock-rates = <750000>, <750000>;
-};
-
 &sfc {
 	status = "okay";
 

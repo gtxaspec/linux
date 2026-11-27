@@ -52,7 +52,7 @@
 
 &tcu {
 	/* 750 kHz for the system timer and clocksource; SYSOST is sched_clock */
-	assigned-clocks = <&tcu TCU_CLK_TIMER0>, <&tcu TCU_CLK_TIMER1>;
+	assigned-clocks = <&tcu TCU_CLK_TIMER6>, <&tcu TCU_CLK_TIMER7>;
 	assigned-clock-rates = <750000>, <750000>;
 };
 
