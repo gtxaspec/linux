@@ -123,6 +123,9 @@
 		interrupt-parent = <&intc>;
 		interrupts = <27 26 25>;
 
+		/* channels 0 to 3, all PWM pads: the OST is the timer */
+		ingenic,pwm-channels-mask = <0x0f>;
+
 		watchdog: watchdog@0 {
 			compatible = "ingenic,t23-watchdog",
 				     "ingenic,jz4780-watchdog";

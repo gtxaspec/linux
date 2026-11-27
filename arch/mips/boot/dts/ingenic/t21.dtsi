@@ -128,6 +128,9 @@
 		interrupt-parent = <&intc>;
 		interrupts = <27 26 25>;
 
+		/* keep PWM0 and PWM1 (PB17, PB18) free: the timer takes channels 6 and 7 */
+		ingenic,pwm-channels-mask = <0x3f>;
+
 		watchdog: watchdog@0 {
 			compatible = "ingenic,t21-watchdog",
 				     "ingenic,jz4780-watchdog";
