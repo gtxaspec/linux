@@ -5569,6 +5569,20 @@ static const struct group_desc t33_groups[] = {
 	INGENIC_PIN_GROUP("mac-mdio", t32_mac_mdio, 0),
 	INGENIC_PIN_GROUP("cim-mclk0", t32_cim_mclk0, 0),
 	INGENIC_PIN_GROUP("cim-mclk1", t32_cim_mclk1, 0),
+	/* the T32's PWM pads, but PB28 and PB30 at function 0 (T33A data sheet) */
+	INGENIC_PIN_GROUP("pwm0-pa17", t32_pwm0_pa17, 3),
+	INGENIC_PIN_GROUP("pwm0-pb30", t32_pwm0_pb30, 0),
+	INGENIC_PIN_GROUP("pwm0-pc08", t32_pwm0_pc08, 2),
+	INGENIC_PIN_GROUP("pwm1-pa19", t32_pwm1_pa19, 3),
+	INGENIC_PIN_GROUP("pwm1-pb26", t32_pwm1_pb26, 1),
+	INGENIC_PIN_GROUP("pwm2-pa15", t32_pwm2_pa15, 3),
+	INGENIC_PIN_GROUP("pwm2-pb11", t32_pwm2_pb11, 2),
+	INGENIC_PIN_GROUP("pwm2-pb27", t32_pwm2_pb27, 1),
+	INGENIC_PIN_GROUP("pwm2-pc09", t32_pwm2_pc09, 2),
+	INGENIC_PIN_GROUP("pwm3-pa14", t32_pwm3_pa14, 3),
+	INGENIC_PIN_GROUP("pwm3-pb13", t32_pwm3_pb13, 2),
+	INGENIC_PIN_GROUP("pwm3-pb28", t32_pwm3_pb28, 0),
+	INGENIC_PIN_GROUP("pwm3-pb31", t32_pwm3_pb31, 0),
 };
 
 static const char * const t33_uart2_groups[] = {
@@ -5588,6 +5602,10 @@ static const struct pinfunction t33_functions[] = {
 	INGENIC_PIN_FUNCTION("ssi0", t32_ssi0),
 	INGENIC_PIN_FUNCTION("mac", t32_mac),
 	INGENIC_PIN_FUNCTION("cim", t32_cim),
+	INGENIC_PIN_FUNCTION("pwm0", t32_pwm0),
+	INGENIC_PIN_FUNCTION("pwm1", t32_pwm1),
+	INGENIC_PIN_FUNCTION("pwm2", t32_pwm2),
+	INGENIC_PIN_FUNCTION("pwm3", t32_pwm3),
 };
 
 static const u32 t32_pull_ups[3] = {
