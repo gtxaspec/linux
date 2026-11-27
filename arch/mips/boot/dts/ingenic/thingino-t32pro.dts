@@ -1,0 +1,206 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "t32pro.dtsi"
+
+/ {
+	compatible = "thingino,t32pro", "ingenic,t32pro";
+	model = "Thingino T32 Pro Generic Board";
+
+	aliases {
+		serial1 = &uart1;
+	};
+
+	chosen {
+		stdout-path = "serial1:115200n8";
+	};
+
+	/* the smallest RAM a T32 Pro comes with; the boot loader's mem= has the real map */
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x4000000>;
+	};
+
+	/* the 3.3 V rail of the USB PHY */
+	vcc_3v3: regulator-3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+	/*
+	 * The media memory of the out-of-tree camera stack, where thingino's
+	 * U-Boot puts it on this RAM size; its rmem= places and enables it
+	 */
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		rmem: rmem@2900000 {
+			reg = <0x2900000 0x1700000>;
+			no-map;
+			status = "disabled";
+		};
+	};
+};
+
+&exclk {
+	clock-frequency = <24000000>;
+};
+
+&uart1 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_uart1>;
+};
+
+&sfc0 {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_sfc0>;
+
+	/* partitions come from the mtdparts= the boot loader passes */
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <25000000>;
+	};
+};
+
+&msc0 {
+	status = "okay";
+	bus-width = <4>;
+	max-frequency = <25000000>;
+	broken-cd;
+	no-1-8-v;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mmc0>;
+};
+
+&ipu {
+	/* /dev/ipu (libimp OSD), bound by an out-of-tree module */
+	status = "okay";
+};
+
+&isp {
+	/* consumed by the out-of-tree ISP modules, not bound by a driver */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_cim_mclk>;
+
+	memory-region = <&rmem>;
+};
+
+&helix {
+	/* the H.264/JPEG encoder, bound by the out-of-tree soc-vpu module */
+	status = "okay";
+};
+
+&radix {
+	/* the H.265 encoder, bound by the same module */
+	status = "okay";
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <100000>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_i2c0>;
+};
+
+&otg_phy {
+	status = "okay";
+
+	vcc-supply = <&vcc_3v3>;
+};
+
+&otg {
+	status = "okay";
+	disable-over-current;
+};
+
+&sadc {
+	status = "okay";
+};
+
+&dtrng {
+	status = "okay";
+};
+
+&efuse {
+	status = "okay";
+};
+
+&mac {
+	status = "okay";
+
+	phy-mode = "rmii";
+	phy-handle = <&eth_phy>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_mac>;
+};
+
+&mdio {
+	eth_phy: ethernet-phy@0 {
+		reg = <0>;
+	};
+};
+
+&pinctrl {
+	pins_uart1: uart1 {
+		function = "uart1";
+		groups = "uart1-data";
+	};
+
+	pins_sfc0: sfc0 {
+		function = "sfc0";
+		groups = "sfc0-data", "sfc0-clk", "sfc0-ce";
+	};
+
+	pins_mmc0: mmc0 {
+		function = "mmc0";
+		groups = "mmc0-1bit", "mmc0-4bit";
+	};
+
+	pins_dmic: dmic {
+		function = "dmic";
+		groups = "dmic";
+	};
+
+	pins_cim_mclk: cim-mclk {
+		function = "cim";
+		groups = "cim-mclk0";
+	};
+
+	pins_i2c0: i2c0 {
+		function = "i2c0";
+		groups = "i2c0-data";
+	};
+
+	pins_mac: mac {
+		function = "mac";
+		groups = "mac-rmii", "mac-mdio";
+	};
+};
+
+&aic {
+	status = "okay";
+};
+
+&codec {
+	status = "okay";
+};
+
+&dmic {
+	status = "okay";
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&pins_dmic>;
+};
