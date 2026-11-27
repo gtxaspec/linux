@@ -5911,6 +5911,16 @@ static int t40_pwm4_pins[] = { 0x46, };
 static int t40_pwm5_pins[] = { 0x47, };
 static int t40_pwm6_pins[] = { 0x76, };
 static int t40_pwm7_pins[] = { 0x77, };
+static int t40_pwm0_pc27_pins[] = { 0x5b, };
+static int t40_pwm0_pd26_pins[] = { 0x7a, };
+static int t40_pwm1_pc28_pins[] = { 0x5c, };
+static int t40_pwm1_pd27_pins[] = { 0x7b, };
+static int t40_pwm2_pb30_pins[] = { 0x3e, };
+static int t40_pwm3_pb31_pins[] = { 0x3f, };
+static int t40_pwm4_pb25_pins[] = { 0x39, };
+static int t40_pwm5_pb26_pins[] = { 0x3a, };
+static int t40_pwm6_pb06_pins[] = { 0x26, };
+static int t40_pwm7_pb07_pins[] = { 0x27, };
 
 static const struct group_desc t40_groups[] = {
 	INGENIC_PIN_GROUP("uart0-data-c", t40_uart0_data_c, 0),
@@ -5960,6 +5970,16 @@ static const struct group_desc t40_groups[] = {
 	INGENIC_PIN_GROUP("pwm5", t40_pwm5, 2),
 	INGENIC_PIN_GROUP("pwm6", t40_pwm6, 2),
 	INGENIC_PIN_GROUP("pwm7", t40_pwm7, 2),
+	INGENIC_PIN_GROUP("pwm0-pc27", t40_pwm0_pc27, 1),
+	INGENIC_PIN_GROUP("pwm0-pd26", t40_pwm0_pd26, 2),
+	INGENIC_PIN_GROUP("pwm1-pc28", t40_pwm1_pc28, 1),
+	INGENIC_PIN_GROUP("pwm1-pd27", t40_pwm1_pd27, 2),
+	INGENIC_PIN_GROUP("pwm2-pb30", t40_pwm2_pb30, 0),
+	INGENIC_PIN_GROUP("pwm3-pb31", t40_pwm3_pb31, 0),
+	INGENIC_PIN_GROUP("pwm4-pb25", t40_pwm4_pb25, 1),
+	INGENIC_PIN_GROUP("pwm5-pb26", t40_pwm5_pb26, 1),
+	INGENIC_PIN_GROUP("pwm6-pb06", t40_pwm6_pb06, 1),
+	INGENIC_PIN_GROUP("pwm7-pb07", t40_pwm7_pb07, 1),
 	INGENIC_PIN_GROUP("mac-rmii", t32_mac_rmii, 0),
 	INGENIC_PIN_GROUP("mac-mdio", t32_mac_mdio, 0),
 };
@@ -6008,21 +6028,21 @@ static const char * const t40_cim_groups[] = {
 
 static const char * const t40_dmic_groups[] = { "dmic", };
 
-static const char * const t40_pwm0_groups[] = { "pwm0", };
+static const char * const t40_pwm0_groups[] = { "pwm0", "pwm0-pc27", "pwm0-pd26", };
 
-static const char * const t40_pwm1_groups[] = { "pwm1", };
+static const char * const t40_pwm1_groups[] = { "pwm1", "pwm1-pc28", "pwm1-pd27", };
 
-static const char * const t40_pwm2_groups[] = { "pwm2", };
+static const char * const t40_pwm2_groups[] = { "pwm2", "pwm2-pb30", };
 
-static const char * const t40_pwm3_groups[] = { "pwm3", };
+static const char * const t40_pwm3_groups[] = { "pwm3", "pwm3-pb31", };
 
-static const char * const t40_pwm4_groups[] = { "pwm4", };
+static const char * const t40_pwm4_groups[] = { "pwm4", "pwm4-pb25", };
 
-static const char * const t40_pwm5_groups[] = { "pwm5", };
+static const char * const t40_pwm5_groups[] = { "pwm5", "pwm5-pb26", };
 
-static const char * const t40_pwm6_groups[] = { "pwm6", };
+static const char * const t40_pwm6_groups[] = { "pwm6", "pwm6-pb06", };
 
-static const char * const t40_pwm7_groups[] = { "pwm7", };
+static const char * const t40_pwm7_groups[] = { "pwm7", "pwm7-pb07", };
 
 static const char * const t40_mac_groups[] = { "mac-rmii", "mac-mdio", };
 
