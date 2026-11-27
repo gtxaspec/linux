@@ -24,7 +24,9 @@ properties:
           - ingenic,t32-pwm
           - ingenic,t41-pwm
       - items:
-          - const: ingenic,t33-pwm
+          - enum:
+              - ingenic,t32pro-pwm
+              - ingenic,t33-pwm
           - const: ingenic,t32-pwm
 
   reg:
