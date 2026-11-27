@@ -23,6 +23,7 @@ properties:
       - ingenic,t30-efuse
       - ingenic,t31-efuse
       - ingenic,t32-efuse
+      - ingenic,t32pro-efuse
       - ingenic,t33-efuse
       - ingenic,a1-efuse
       - ingenic,t40-efuse
