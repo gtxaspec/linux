@@ -3041,10 +3041,18 @@ static int t31_ssi0_ce_pins[] = { 0x4e, };
 static int t31_mac_rmii_pins[] = {
 	0x26, 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e,
 };
+
+/* PA22 and PC17 to PC20 are BGA balls only; the QFN has the PA14 and PB pads */
 static int t31_pwm_pwm0_pins[] = { 0x51, };
 static int t31_pwm_pwm1_pins[] = { 0x52, };
 static int t31_pwm_pwm2_pins[] = { 0x53, };
 static int t31_pwm_pwm3_pins[] = { 0x54, };
+static int t31_pwm0_pa14_pins[] = { 0x0e, };
+static int t31_pwm0_pb17_pins[] = { 0x31, };
+static int t31_pwm1_pa22_pins[] = { 0x16, };
+static int t31_pwm1_pb18_pins[] = { 0x32, };
+static int t31_pwm2_pb27_pins[] = { 0x3b, };
+static int t31_pwm3_pb28_pins[] = { 0x3c, };
 static int t31_dmic_pins[] = { 0x3c, 0x3d, 0x3e, };
 
 /* CIM (camera) MCLK pin - sensor master clock output, needed for both
@@ -3084,6 +3092,12 @@ static const struct group_desc t31_groups[] = {
 	INGENIC_PIN_GROUP("pwm1", t31_pwm_pwm1, 0),
 	INGENIC_PIN_GROUP("pwm2", t31_pwm_pwm2, 0),
 	INGENIC_PIN_GROUP("pwm3", t31_pwm_pwm3, 0),
+	INGENIC_PIN_GROUP("pwm0-pa14", t31_pwm0_pa14, 2),
+	INGENIC_PIN_GROUP("pwm0-pb17", t31_pwm0_pb17, 0),
+	INGENIC_PIN_GROUP("pwm1-pa22", t31_pwm1_pa22, 2),
+	INGENIC_PIN_GROUP("pwm1-pb18", t31_pwm1_pb18, 0),
+	INGENIC_PIN_GROUP("pwm2-pb27", t31_pwm2_pb27, 1),
+	INGENIC_PIN_GROUP("pwm3-pb28", t31_pwm3_pb28, 1),
 	INGENIC_PIN_GROUP("dmic", t31_dmic, 3),
 	INGENIC_PIN_GROUP("cim-mclk", t31_cim_mclk, 1),
 };
@@ -3108,10 +3122,10 @@ static const char *t31_ssi0_groups[] = {
 	"ssi0-dt", "ssi0-dr", "ssi0-clk", "ssi0-ce",
 };
 static const char *t31_mac_groups[] = { "mac-rmii", };
-static const char *t31_pwm0_groups[] = { "pwm0", };
-static const char *t31_pwm1_groups[] = { "pwm1", };
-static const char *t31_pwm2_groups[] = { "pwm2", };
-static const char *t31_pwm3_groups[] = { "pwm3", };
+static const char * const t31_pwm0_groups[] = { "pwm0", "pwm0-pa14", "pwm0-pb17", };
+static const char * const t31_pwm1_groups[] = { "pwm1", "pwm1-pa22", "pwm1-pb18", };
+static const char * const t31_pwm2_groups[] = { "pwm2", "pwm2-pb27", };
+static const char * const t31_pwm3_groups[] = { "pwm3", "pwm3-pb28", };
 static const char * const t31_dmic_groups[] = { "dmic", };
 static const char *t31_cim_groups[] = { "cim-mclk", };
 
