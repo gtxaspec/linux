@@ -6124,6 +6124,14 @@ static int a1_mac1_pins[] = {
 	0x1b,
 };
 static int a1_mac1_mdio_pins[] = { 0x1c, 0x1d, };
+static int a1_pwm0_pb28_pins[] = { 0x3c, };
+static int a1_pwm1_pb29_pins[] = { 0x3d, };
+static int a1_pwm2_pb30_pins[] = { 0x3e, };
+static int a1_pwm3_pb31_pins[] = { 0x3f, };
+static int a1_pwm0_pc14_pins[] = { 0x4e, };
+static int a1_pwm1_pc15_pins[] = { 0x4f, };
+static int a1_pwm2_pc16_pins[] = { 0x50, };
+static int a1_pwm3_pc17_pins[] = { 0x51, };
 
 static const struct group_desc a1_groups[] = {
 	INGENIC_PIN_GROUP("uart0-data-b", a1_uart0_data_b, 1),
@@ -6151,6 +6159,14 @@ static const struct group_desc a1_groups[] = {
 	INGENIC_PIN_GROUP("mac0-mdio", a1_mac0_mdio, 0),
 	INGENIC_PIN_GROUP("mac1", a1_mac1, 0),
 	INGENIC_PIN_GROUP("mac1-mdio", a1_mac1_mdio, 0),
+	INGENIC_PIN_GROUP("pwm0-pb28", a1_pwm0_pb28, 0),
+	INGENIC_PIN_GROUP("pwm1-pb29", a1_pwm1_pb29, 0),
+	INGENIC_PIN_GROUP("pwm2-pb30", a1_pwm2_pb30, 0),
+	INGENIC_PIN_GROUP("pwm3-pb31", a1_pwm3_pb31, 0),
+	INGENIC_PIN_GROUP("pwm0-pc14", a1_pwm0_pc14, 2),
+	INGENIC_PIN_GROUP("pwm1-pc15", a1_pwm1_pc15, 2),
+	INGENIC_PIN_GROUP("pwm2-pc16", a1_pwm2_pc16, 2),
+	INGENIC_PIN_GROUP("pwm3-pc17", a1_pwm3_pc17, 2),
 };
 
 static const char * const a1_uart0_groups[] = {
@@ -6185,6 +6201,14 @@ static const char * const a1_mac0_groups[] = { "mac0", "mac0-mdio", };
 
 static const char * const a1_mac1_groups[] = { "mac1", "mac1-mdio", };
 
+static const char * const a1_pwm0_groups[] = { "pwm0-pb28", "pwm0-pc14", };
+
+static const char * const a1_pwm1_groups[] = { "pwm1-pb29", "pwm1-pc15", };
+
+static const char * const a1_pwm2_groups[] = { "pwm2-pb30", "pwm2-pc16", };
+
+static const char * const a1_pwm3_groups[] = { "pwm3-pb31", "pwm3-pc17", };
+
 static const struct pinfunction a1_functions[] = {
 	INGENIC_PIN_FUNCTION("uart0", a1_uart0),
 	INGENIC_PIN_FUNCTION("uart1", a1_uart1),
@@ -6197,6 +6221,10 @@ static const struct pinfunction a1_functions[] = {
 	INGENIC_PIN_FUNCTION("sfc1", a1_sfc1),
 	INGENIC_PIN_FUNCTION("mac0", a1_mac0),
 	INGENIC_PIN_FUNCTION("mac1", a1_mac1),
+	INGENIC_PIN_FUNCTION("pwm0", a1_pwm0),
+	INGENIC_PIN_FUNCTION("pwm1", a1_pwm1),
+	INGENIC_PIN_FUNCTION("pwm2", a1_pwm2),
+	INGENIC_PIN_FUNCTION("pwm3", a1_pwm3),
 };
 
 static const u32 a1_pull_ups[5] = {
