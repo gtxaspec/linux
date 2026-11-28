@@ -4,7 +4,7 @@
 $id: http://devicetree.org/schemas/misc/ingenic,t32-tnpu.yaml#
 $schema: http://devicetree.org/meta-schemas/core.yaml#
 
-title: Ingenic T32 and T33 TNPU
+title: Ingenic T32, T32 Pro and T33 TNPU
 
 maintainers:
   - Alfonso Gamboa <gtxent@gmail.com>
@@ -15,10 +15,15 @@ description:
   host loads its boot code, queues tasks in the RAM's mailbox and takes one
   interrupt per finished task.
 
+  The T32 Pro's TNPU is a later design with two such cores, a control block
+  four times larger with a register block per core, and a larger RAM that
+  sits apart from the control block.
+
 properties:
   compatible:
     oneOf:
       - const: ingenic,t32-tnpu
+      - const: ingenic,t32pro-tnpu
       - items:
           - const: ingenic,t33-tnpu
           - const: ingenic,t32-tnpu
