@@ -44,6 +44,13 @@
 			no-map;
 			status = "disabled";
 		};
+
+		/* the TNPU's memory pool, where nmem= puts it */
+		nmem: nmem@3800000 {
+			reg = <0x3800000 0x800000>;
+			no-map;
+			status = "disabled";
+		};
 	};
 };
 
@@ -126,6 +133,9 @@
 };
 
 &sadc {
+	nvmem-cells = <&tsensor_trim>;
+	nvmem-cell-names = "tsensor-trim";
+
 	status = "okay";
 };
 
@@ -151,6 +161,10 @@
 	eth_phy: ethernet-phy@0 {
 		reg = <0>;
 	};
+};
+
+&tnpu {
+	status = "okay";
 };
 
 &pinctrl {
