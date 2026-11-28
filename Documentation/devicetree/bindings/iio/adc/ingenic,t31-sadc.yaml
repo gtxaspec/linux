@@ -59,8 +59,8 @@ properties:
   nvmem-cells:
     maxItems: 1
     description:
-      The eFuse word holding the temperature sensor's per-chip trim (T32
-      and T33).
+      The eFuse word holding the temperature sensor's per-chip trim (T32,
+      T32 Pro and T33).
 
   nvmem-cell-names:
     const: tsensor-trim
