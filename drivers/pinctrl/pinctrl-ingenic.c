@@ -3211,8 +3211,6 @@ static int t21_mac_ephy_led_pins[] = { 0x27, 0x2f, };
 static int t21_mac_ephy_led_link_pins[] = { 0x26, };
 static int t21_pwm0_pins[] = { 0x31, };
 static int t21_pwm1_pins[] = { 0x32, };
-static int t21_pwm2_pins[] = { 0x48, };
-static int t21_pwm3_pins[] = { 0x49, };
 static int t21_pwm0_pc17_pins[] = { 0x51, };
 static int t21_pwm1_pc18_pins[] = { 0x52, };
 static int t21_pwm2_pc11_pins[] = { 0x4b, };
@@ -3257,8 +3255,6 @@ static const struct group_desc t21_groups[] = {
 	INGENIC_PIN_GROUP("mac-ephy-led-link", t21_mac_ephy_led_link, 2),
 	INGENIC_PIN_GROUP("pwm0", t21_pwm0, 0),
 	INGENIC_PIN_GROUP("pwm1", t21_pwm1, 0),
-	INGENIC_PIN_GROUP("pwm2", t21_pwm2, 0),
-	INGENIC_PIN_GROUP("pwm3", t21_pwm3, 0),
 	INGENIC_PIN_GROUP("pwm0-pc17", t21_pwm0_pc17, 0),
 	INGENIC_PIN_GROUP("pwm1-pc18", t21_pwm1_pc18, 0),
 	INGENIC_PIN_GROUP("pwm2-pc11", t21_pwm2_pc11, 1),
@@ -3292,8 +3288,8 @@ static const char *t21_mac_groups[] = {
 
 static const char * const t21_pwm0_groups[] = { "pwm0", "pwm0-pc17", };
 static const char * const t21_pwm1_groups[] = { "pwm1", "pwm1-pc18", };
-static const char * const t21_pwm2_groups[] = { "pwm2", "pwm2-pc11", };
-static const char * const t21_pwm3_groups[] = { "pwm3", "pwm3-pc12", };
+static const char * const t21_pwm2_groups[] = { "pwm2-pc11", };
+static const char * const t21_pwm3_groups[] = { "pwm3-pc12", };
 static const char * const t21_pwm4_groups[] = { "pwm4-pc13", };
 static const char * const t21_pwm5_groups[] = { "pwm5-pc14", };
 static const char * const t21_pwm6_groups[] = { "pwm6-pc15", };
