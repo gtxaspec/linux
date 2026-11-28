@@ -592,4 +592,25 @@
 
 		status = "disabled";
 	};
+
+	/*
+	 * The TNPU: two RISC-V cores (control at 0x12700000, a register block
+	 * per core; their boot and mailbox RAM at 0x150b0000) that run the NN
+	 * kernels of a model and drive the engines at 0x15030000-0x1511ffff;
+	 * it interrupts on INTC 0 (vendor tnpu_t32pro driver 0x020112)
+	 */
+	tnpu: npu@12700000 {
+		compatible = "ingenic,t32pro-tnpu";
+		reg = <0x12700000 0x4000>, <0x150b0000 0x2000>;
+		reg-names = "ccu", "dram";
+
+		interrupt-parent = <&intc>;
+		interrupts = <0>;
+
+		clocks = <&cgu T32_CLK_TNPU>, <&cgu T32_CLK_SCLKA>,
+			 <&cgu T32_CLK_MPLL>, <&cgu T32_CLK_VPLL>;
+		clock-names = "tnpu", "sclka", "mpll", "vpll";
+
+		status = "disabled";
+	};
 };
